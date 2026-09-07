@@ -28,6 +28,7 @@ export const AngiEmailActivityPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'TODAY' | 'SUCCESS' | 'NEEDS_REVIEW' | 'FAILED' | 'DUPLICATE'>('ALL');
   const [lastUpdated, setLastUpdated] = useState<string>(new Date().toLocaleTimeString());
+  const [retryingHouzzId, setRetryingHouzzId] = useState<string | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -39,6 +40,28 @@ export const AngiEmailActivityPage: React.FC = () => {
       console.error('Failed to load Angi email activity:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRetryHouzz = async (leadId: string) => {
+    setRetryingHouzzId(leadId);
+    try {
+      const res = await fetch('/api/webhooks/retry-houzz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        loadData();
+      } else {
+        alert(`Houzz Delivery Error: ${json.error || json.message || 'Failed to deliver'}`);
+        loadData();
+      }
+    } catch (err: any) {
+      alert(`Retry error: ${err.message || 'Network error'}`);
+    } finally {
+      setRetryingHouzzId(null);
     }
   };
 
@@ -238,7 +261,7 @@ export const AngiEmailActivityPage: React.FC = () => {
                   const parsingStatus = lead.parsingResult || 'Extracted';
                   const crmStatus = lead.crmResult || 'New Lead Created';
                   const sheetsStatus = lead.sheetSynced ? 'Sheet Synced' : 'Pending';
-                  const houzzStatus = lead.houzzResult || (lead.sheetSynced ? 'Sent to Houzz Pro' : 'Pending');
+                  const houzzStatus = lead.houzzResult || lead.houzzStatus || 'Pending';
                   const overall = lead.overallStatus || (lead.clientName ? 'Success' : 'Needs Review');
 
                   return (
@@ -278,7 +301,48 @@ export const AngiEmailActivityPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap">
-                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{houzzStatus}</span>
+                        {houzzStatus.startsWith('Sending') ? (
+                          <span className="text-amber-600 dark:text-amber-400 font-semibold inline-flex items-center gap-1.5">
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>{houzzStatus}</span>
+                          </span>
+                        ) : houzzStatus.startsWith('Sent') ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold inline-flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>{houzzStatus}</span>
+                          </span>
+                        ) : houzzStatus.startsWith('Failed') ? (
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="text-red-600 dark:text-red-400 font-semibold inline-flex items-center gap-1.5"
+                              title={lead.houzzError || houzzStatus}
+                            >
+                              <AlertCircle className="w-3.5 h-3.5" />
+                              <span>{houzzStatus}</span>
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRetryHouzz(lead.id);
+                              }}
+                              disabled={retryingHouzzId === lead.id}
+                              type="button"
+                              className="px-2 py-0.5 text-xs font-bold bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 rounded-md transition-all cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
+                              title="Retry Houzz Delivery"
+                            >
+                              {retryingHouzzId === lead.id ? (
+                                <>
+                                  <RefreshCw className="w-3 h-3 animate-spin" />
+                                  <span>Retrying...</span>
+                                </>
+                              ) : (
+                                <span>Retry</span>
+                              )}
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-zinc-400 font-medium">{houzzStatus}</span>
+                        )}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap">
                         {getStatusBadge(overall)}

@@ -8,6 +8,7 @@ import sharp from 'sharp';
 import * as sheetsService from './server/sheetsService.ts';
 import * as durableStore from './server/durableStore.ts';
 import * as calendarService from './server/calendarService.ts';
+import * as houzzDelivery from './server/houzzDelivery.ts';
 
 const app = express();
 const PORT = 3000;
@@ -477,51 +478,107 @@ function setHouzzDispatchFailed(phone: string, name: string, errorMsg?: string):
 
 app.post('/api/send-houzz-webhook', async (req, res) => {
   try {
-    let { webhookUrl, payload } = req.body;
+    let { webhookUrl, payload, leadId } = req.body;
     if (!webhookUrl || !webhookUrl.trim()) {
       webhookUrl = getBackendWebhookUrl();
     }
 
-    if (!webhookUrl || !webhookUrl.trim()) {
-      return res.status(400).json({ success: false, message: 'Zapier / Houzz Pro Webhook URL is not configured.' });
-    }
+    const resolvedLeadId = leadId || payload?.leadId || payload?.id || payload?.submissionId || `lead_${Date.now()}`;
 
-    const phone = payload?.clientPhone || payload?.phone || payload?.phoneNumber || '';
-    const name = payload?.clientName || payload?.name || payload?.fullName || '';
-    if (!canDispatchToHouzz(phone, name)) {
-      console.log(`[Houzz Pro] Deduplicating dispatch for ${name} (${phone}) - already sent.`);
-      return res.json({ success: true, message: 'Lead already forwarded to Houzz Pro (deduplicated).', forwardUrl: webhookUrl.trim() });
-    }
-
-    const response = await fetch(webhookUrl.trim(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(payload),
+    const result = await houzzDelivery.dispatchLeadToHouzz({
+      leadId: resolvedLeadId,
+      payload: payload || {},
+      webhookUrl,
     });
 
-    // Weakness 15: Check response status before reporting success
-    if (!response.ok) {
-      const errText = await response.text().catch(() => '');
-      setHouzzDispatchFailed(phone, name, `HTTP ${response.status}: ${errText}`);
-      console.error(`[Houzz Pro] Destination rejected webhook with HTTP ${response.status}:`, errText);
-      return res.status(response.status >= 400 && response.status < 600 ? response.status : 502).json({
+    if (result.success) {
+      return res.json({
+        success: true,
+        message: result.activityStatus,
+        destination: result.destinationLabel,
+        statusCode: result.statusCode,
+      });
+    } else {
+      return res.status(result.statusCode && result.statusCode >= 400 && result.statusCode < 600 ? result.statusCode : 502).json({
         success: false,
-        message: `Houzz Pro / Zapier destination returned an error (${response.status}).`,
-        details: errText,
+        message: result.activityStatus,
+        error: result.error,
+        destination: result.destinationLabel,
+        statusCode: result.statusCode,
       });
     }
-
-    setHouzzDispatchConfirmed(phone, name);
-    return res.json({ success: true, message: 'Webhook sent successfully.', forwardUrl: webhookUrl.trim() });
   } catch (error: any) {
-    const phone = req.body?.payload?.clientPhone || req.body?.payload?.phone || '';
-    const name = req.body?.payload?.clientName || req.body?.payload?.name || '';
-    setHouzzDispatchFailed(phone, name, error.message);
-    console.error('Error forwarding webhook:', error);
-    return res.status(500).json({ success: false, message: error.message || 'Failed to send webhook.' });
+    const destInfo = houzzDelivery.getHouzzDestinationInfo(req.body?.webhookUrl || getBackendWebhookUrl());
+    const safeErr = houzzDelivery.sanitizeErrorMessage(error.message || 'Server error');
+    return res.status(500).json({
+      success: false,
+      message: destInfo.failedLabel,
+      error: safeErr,
+      destination: destInfo.displayName,
+    });
+  }
+});
+
+app.post('/api/webhooks/retry-houzz', async (req, res) => {
+  try {
+    const { leadId, webhookUrl } = req.body;
+    if (!leadId) {
+      return res.status(400).json({ success: false, error: 'leadId is required for retry.' });
+    }
+
+    const incomingFile = path.join(process.cwd(), 'data', 'incoming_leads.json');
+    let leadData: any = null;
+    if (fs.existsSync(incomingFile)) {
+      try {
+        const leads = JSON.parse(fs.readFileSync(incomingFile, 'utf-8'));
+        if (Array.isArray(leads)) {
+          leadData = leads.find((l: any) => l.id === leadId);
+        }
+      } catch {}
+    }
+
+    if (!leadData) {
+      const meta = durableStore.getLeadMetadata(leadId);
+      if (meta) {
+        leadData = { id: leadId, notes: meta.notes };
+      }
+    }
+
+    if (!leadData && req.body.payload) {
+      leadData = req.body.payload;
+    }
+
+    if (!leadData) {
+      return res.status(404).json({ success: false, error: `Lead with ID ${leadId} not found.` });
+    }
+
+    const resolvedUrl = webhookUrl || getBackendWebhookUrl();
+
+    const result = await houzzDelivery.dispatchLeadToHouzz({
+      leadId,
+      payload: leadData,
+      webhookUrl: resolvedUrl,
+    });
+
+    if (result.success) {
+      return res.json({
+        success: true,
+        message: result.activityStatus,
+        destination: result.destinationLabel,
+        statusCode: result.statusCode,
+      });
+    } else {
+      return res.status(result.statusCode && result.statusCode >= 400 && result.statusCode < 600 ? result.statusCode : 502).json({
+        success: false,
+        message: result.activityStatus,
+        error: result.error,
+        destination: result.destinationLabel,
+        statusCode: result.statusCode,
+      });
+    }
+  } catch (error: any) {
+    const safeErr = houzzDelivery.sanitizeErrorMessage(error.message || 'Server error');
+    return res.status(500).json({ success: false, error: safeErr });
   }
 });
 
@@ -1437,82 +1494,16 @@ function saveIncomingLeadAndLog(
   }
 
   // Attempt automatic background forward to Houzz Pro / Zapier webhook without clicking anything (unless skipped)
-  // Weakness 14: Check config.autoSendToHouzz before automatic forwarding
   if (!options.skipAutoHouzz && isAutoSendToHouzzEnabled()) {
     try {
       const houzzUrl = getBackendWebhookUrl();
-      const phone = newLeadRecord.clientPhone || '';
-      const name = newLeadRecord.clientName || '';
-      if (houzzUrl && canDispatchToHouzz(phone, name)) {
-        const addrStr = (newLeadRecord.address || '').trim();
-        const parsedAddr = parseAddressForHouzz(addrStr);
-        const nameParts = (newLeadRecord.clientName || '').split(' ');
-        const firstName = nameParts[0] || newLeadRecord.clientName || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
-
-        const houzzPayload = {
-          submissionId: leadId,
-          eventId: leadId,
-          createNewLead: true,
-          forceNewLead: true,
-          createNewRecord: true,
-          createFreshLead: true,
-          action: 'create_new_lead',
-          clientName: newLeadRecord.clientName,
-          name: newLeadRecord.clientName,
-          fullName: newLeadRecord.clientName,
-          customerName: newLeadRecord.clientName,
-          leadName: newLeadRecord.clientName,
-          firstName,
-          lastName,
-          first_name: firstName,
-          last_name: lastName,
-          clientPhone: newLeadRecord.clientPhone,
-          phone: newLeadRecord.clientPhone,
-          phoneNumber: newLeadRecord.clientPhone,
-          clientEmail: newLeadRecord.clientEmail,
-          email: newLeadRecord.clientEmail,
-          address: addrStr,
-          clientAddress: addrStr,
-          fullAddress: addrStr,
-          propertyAddress: addrStr,
-          location: addrStr,
-          street: parsedAddr.street || addrStr,
-          streetAddress: parsedAddr.streetAddress || addrStr,
-          address1: parsedAddr.address1 || addrStr,
-          address_line_1: parsedAddr.address1 || addrStr,
-          city: parsedAddr.city || '',
-          clientCity: parsedAddr.city || '',
-          state: parsedAddr.state || '',
-          clientState: parsedAddr.state || '',
-          zip: parsedAddr.zip || '',
-          zipCode: parsedAddr.zip || '',
-          postalCode: parsedAddr.postalCode || '',
-          serviceNeeded: newLeadRecord.serviceNeeded,
-          service: newLeadRecord.serviceNeeded,
-          leadSource: newLeadRecord.leadSource,
-          source: newLeadRecord.leadSource,
-          leadFee: newLeadRecord.leadFee,
-          notes: newLeadRecord.notes,
-          status: newLeadRecord.status,
-          timestamp: now,
-        };
-        fetch(houzzUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(houzzPayload),
-        })
-          .then((res) => {
-            if (res.ok) {
-              setHouzzDispatchConfirmed(phone, name);
-            } else {
-              setHouzzDispatchFailed(phone, name, `HTTP ${res.status}`);
-            }
-          })
-          .catch((err) => {
-            setHouzzDispatchFailed(phone, name, err.message);
-          });
-      }
+      houzzDelivery.dispatchLeadToHouzz({
+        leadId,
+        payload: newLeadRecord,
+        webhookUrl: houzzUrl,
+      }).catch((err) => {
+        console.error('[Houzz Auto-Send Error]:', err);
+      });
     } catch (err) {}
   }
 
@@ -1970,89 +1961,19 @@ Lead Fee: $45.00`;
     let houzzResult: any = { attempted: sendToHouzz, success: false };
     const zapierUrl = getBackendWebhookUrl();
     if (sendToHouzz && zapierUrl) {
-      try {
-        if (!canDispatchToHouzz(savedLead.clientPhone, savedLead.clientName)) {
-          houzzResult = {
-            attempted: true,
-            success: true,
-            status: 200,
-            url: zapierUrl,
-            message: 'Lead already dispatched to Houzz Pro (deduplicated - exactly 1 sent).',
-          };
-        } else {
-          const addrStr = (savedLead.address || '').trim();
-          const parsedAddr = parseAddressForHouzz(addrStr);
-          const nameParts = (savedLead.clientName || '').split(' ');
-          const firstName = nameParts[0] || savedLead.clientName || '';
-          const lastName = nameParts.slice(1).join(' ') || '';
-
-          const houzzPayload = {
-            testMode: true,
-            submissionId: savedLead.id,
-            eventId: savedLead.id,
-            createNewLead: true,
-            forceNewLead: true,
-            createNewRecord: true,
-            createFreshLead: true,
-            action: 'create_new_lead',
-            clientName: savedLead.clientName,
-            name: savedLead.clientName,
-            fullName: savedLead.clientName,
-            customerName: savedLead.clientName,
-            leadName: savedLead.clientName,
-            firstName,
-            lastName,
-            first_name: firstName,
-            last_name: lastName,
-            clientPhone: savedLead.clientPhone,
-            phone: savedLead.clientPhone,
-            phoneNumber: savedLead.clientPhone,
-            clientEmail: savedLead.clientEmail,
-            email: savedLead.clientEmail,
-            // Robust address mapping so Houzz Pro / Zapier never has empty address
-            address: addrStr,
-            clientAddress: addrStr,
-            fullAddress: addrStr,
-            propertyAddress: addrStr,
-            location: addrStr,
-            street: parsedAddr.street || addrStr,
-            streetAddress: parsedAddr.streetAddress || addrStr,
-            address1: parsedAddr.address1 || addrStr,
-            address_line_1: parsedAddr.address1 || addrStr,
-            city: parsedAddr.city || '',
-            clientCity: parsedAddr.city || '',
-            state: parsedAddr.state || '',
-            clientState: parsedAddr.state || '',
-            zip: parsedAddr.zip || '',
-            zipCode: parsedAddr.zip || '',
-            postalCode: parsedAddr.postalCode || '',
-            serviceNeeded: savedLead.serviceNeeded,
-            service: savedLead.serviceNeeded,
-            leadSource: savedLead.leadSource,
-            source: savedLead.leadSource,
-            leadFee: savedLead.leadFee,
-            notes: savedLead.notes,
-            status: savedLead.status,
-            timestamp: new Date().toISOString(),
-          };
-          const zapierRes = await fetch(zapierUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(houzzPayload),
-          });
-          const zapierBody = await zapierRes.text().catch(() => '');
-          houzzResult = {
-            attempted: true,
-            success: zapierRes.ok,
-            status: zapierRes.status,
-            url: zapierUrl,
-            responseBody: zapierBody.substring(0, 200),
-            sentPayload: houzzPayload,
-          };
-        }
-      } catch (zapierErr: any) {
-        houzzResult = { attempted: true, success: false, url: zapierUrl, error: zapierErr.message };
-      }
+      const dispatchRes = await houzzDelivery.dispatchLeadToHouzz({
+        leadId: savedLead.id,
+        payload: savedLead,
+        webhookUrl: zapierUrl,
+      });
+      houzzResult = {
+        attempted: true,
+        success: dispatchRes.success,
+        status: dispatchRes.statusCode || (dispatchRes.success ? 200 : 502),
+        destination: dispatchRes.destinationLabel,
+        activityStatus: dispatchRes.activityStatus,
+        error: dispatchRes.error,
+      };
     }
 
     return res.json({

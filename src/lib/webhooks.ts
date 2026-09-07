@@ -19,6 +19,9 @@ export interface IncomingWebhookLead {
  parsingResult?: string;
  crmResult?: string;
  houzzResult?: string;
+ houzzStatus?: string;
+ houzzError?: string;
+ houzzStatusCode?: number | null;
  overallStatus?: string;
  rawPayload?: any;
 }

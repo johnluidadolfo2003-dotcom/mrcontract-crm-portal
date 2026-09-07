@@ -161,140 +161,114 @@ export function markLeadAsSentToHouzzPro(lead: {
  * share the centralized backend webhook without needing to enter it manually.
  */
 export async function sendLeadToHouzzPro(
- webhookUrl?: string,
- data: Partial<AppointmentFormData> & {
- id?: string;
- tabName?: string;
- rowIndex?: number;
- clientName: string;
- clientPhone?: string;
- clientEmail?: string;
- address?: string;
- serviceNeeded?: string;
- leadSource?: string;
- notes?: string;
- } = {} as any
+  webhookUrl?: string,
+  data: Partial<AppointmentFormData> & {
+    id?: string;
+    tabName?: string;
+    rowIndex?: number;
+    clientName: string;
+    clientPhone?: string;
+    clientEmail?: string;
+    address?: string;
+    serviceNeeded?: string;
+    leadSource?: string;
+    notes?: string;
+  } = {} as any
 ): Promise<{ success: boolean; message: string }> {
- const addr = (data.address || '').trim();
- const parsedAddr = parseAddress(addr);
- const submissionId = 'lead_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
- 
- const rawData = data as any;
- const resolvedClientName = (data.clientName && data.clientName.trim()) ? data.clientName.trim() : (rawData.name || rawData.fullName || rawData.customerName || rawData.leadName || 'New Lead');
- const nameParts = resolvedClientName.split(' ');
- const firstName = nameParts[0] || resolvedClientName;
- const lastName = nameParts.slice(1).join(' ') || '';
- const resolvedPhone = data.clientPhone || '';
- const resolvedEmail = data.clientEmail || '';
- const resolvedService = data.serviceNeeded || data.leadType || '';
- const resolvedSource = data.leadSource || 'Web App';
- const resolvedNotes = data.notes || '';
+  const addr = (data.address || '').trim();
+  const parsedAddr = parseAddress(addr);
+  const leadId = data.id || `lead_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  
+  const rawData = data as any;
+  const resolvedClientName = (data.clientName && data.clientName.trim()) ? data.clientName.trim() : (rawData.name || rawData.fullName || rawData.customerName || rawData.leadName || 'New Lead');
+  const nameParts = resolvedClientName.split(' ');
+  const firstName = nameParts[0] || resolvedClientName;
+  const lastName = nameParts.slice(1).join(' ') || '';
+  const resolvedPhone = data.clientPhone || '';
+  const resolvedEmail = data.clientEmail || '';
+  const resolvedService = data.serviceNeeded || data.leadType || '';
+  const resolvedSource = data.leadSource || 'Web App';
+  const resolvedNotes = data.notes || '';
 
- const payload: any = {
- submissionId,
- eventId: submissionId,
- forceNewLead: true,
- createNewRecord: true,
- createNewLead: true,
- createFreshLead: true,
- allowDuplicate: true,
- matchByEmail: false,
- updateOrCreate: 'create',
- action: 'create_new_lead',
- skipContactMatching: true,
- ignoreExistingContact: true,
- clientName: resolvedClientName,
- name: resolvedClientName,
- fullName: resolvedClientName,
- customerName: resolvedClientName,
- leadName: resolvedClientName,
- client_name: resolvedClientName,
- client_full_name: resolvedClientName,
- customer_name: resolvedClientName,
- firstName: firstName,
- first_name: firstName,
- lastName: lastName,
- last_name: lastName,
- clientPhone: resolvedPhone,
- phone: resolvedPhone,
- phoneNumber: resolvedPhone,
- phone_number: resolvedPhone,
- clientEmail: resolvedEmail,
- email: resolvedEmail,
- address: addr,
- clientAddress: addr,
- location: addr,
- street: addr,
- fullAddress: addr,
- propertyAddress: addr,
- address1: parsedAddr.address1,
- streetAddress: parsedAddr.address1,
- address2: parsedAddr.address2,
- city: parsedAddr.city,
- clientCity: parsedAddr.city,
- state: parsedAddr.state,
- clientState: parsedAddr.state,
- zip: parsedAddr.zip,
- zipCode: parsedAddr.zip,
- postalCode: parsedAddr.postalCode,
- addressName: parsedAddr.addressName,
- serviceNeeded: resolvedService,
- service: resolvedService,
- leadSource: resolvedSource,
- source: resolvedSource,
- leadType: data.leadType || '',
- salespersonCode: data.salespersonCode || '',
- appointmentDate: data.appointmentDate || new Date().toISOString().split('T')[0],
- startTime: data.startTime || '',
- endTime: data.endTime || '',
- notes: resolvedNotes,
- message: resolvedNotes,
- status: data.status || 'New',
- timestamp: new Date().toISOString(),
- };
+  const payload: any = {
+    leadId,
+    submissionId: leadId,
+    eventId: leadId,
+    externalReferenceId: leadId,
+    forceNewLead: true,
+    createNewRecord: true,
+    createNewLead: true,
+    createFreshLead: true,
+    allowDuplicate: true,
+    action: 'create_new_lead',
+    clientName: resolvedClientName,
+    name: resolvedClientName,
+    fullName: resolvedClientName,
+    customerName: resolvedClientName,
+    leadName: resolvedClientName,
+    firstName: firstName,
+    first_name: firstName,
+    lastName: lastName,
+    last_name: lastName,
+    clientPhone: resolvedPhone,
+    phone: resolvedPhone,
+    phoneNumber: resolvedPhone,
+    clientEmail: resolvedEmail,
+    email: resolvedEmail,
+    address: addr,
+    clientAddress: addr,
+    location: addr,
+    street: addr,
+    fullAddress: addr,
+    propertyAddress: addr,
+    address1: parsedAddr.address1,
+    streetAddress: parsedAddr.address1,
+    city: parsedAddr.city,
+    clientCity: parsedAddr.city,
+    state: parsedAddr.state,
+    clientState: parsedAddr.state,
+    zip: parsedAddr.zip,
+    zipCode: parsedAddr.zip,
+    postalCode: parsedAddr.postalCode,
+    serviceNeeded: resolvedService,
+    service: resolvedService,
+    leadSource: resolvedSource,
+    source: resolvedSource,
+    notes: resolvedNotes,
+    message: resolvedNotes,
+    status: data.status || 'New',
+    timestamp: new Date().toISOString(),
+  };
 
- try {
- const res = await fetch('/api/send-houzz-webhook', {
- method: 'POST',
- headers: {
- 'Content-Type': 'application/json',
- },
- body: JSON.stringify({
- webhookUrl: (webhookUrl || '').trim(),
- payload,
- }),
- });
+  try {
+    const res = await fetch('/api/send-houzz-webhook', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        leadId,
+        webhookUrl: (webhookUrl || '').trim(),
+        payload,
+      }),
+    });
 
- if (!res.ok) {
- const errRes = await res.json().catch(() => null);
- if (errRes && errRes.message) {
- throw new Error(errRes.message);
- }
- if (webhookUrl && webhookUrl.trim()) {
- // Fallback to direct fetch if proxy fails
- await fetch(webhookUrl.trim(), {
- method: 'POST',
- headers: {
- 'Content-Type': 'application/json',
- 'Accept': 'application/json',
- },
- mode: 'no-cors',
- body: JSON.stringify(payload),
- });
- } else {
- throw new Error('Backend failed to forward lead to Zapier webhook.');
- }
- }
+    const json = await res.json().catch(() => null);
 
- // Mark as sent so it cannot be added again
- markLeadAsSentToHouzzPro(data);
+    if (!res.ok || !json?.success) {
+      const errMsg = json?.error || json?.message || `HTTP ${res.status}: Failed to send to Houzz endpoint`;
+      throw new Error(errMsg);
+    }
 
- return {
- success: true,
- message:"Lead sent to Houzz Pro",
- };
- } catch (error: any) {
- console.error('Error sending lead to Houzz Pro webhook:', error);
- throw new Error(error.message || 'Failed to send lead to Houzz Pro webhook.');
- }
+    // Mark as sent on confirmed success only
+    markLeadAsSentToHouzzPro(data);
+
+    return {
+      success: true,
+      message: json.message || 'Lead successfully delivered',
+    };
+  } catch (error: any) {
+    console.error('Error sending lead to Houzz webhook:', error);
+    throw new Error(error.message || 'Failed to send lead to Houzz webhook.');
+  }
 }
