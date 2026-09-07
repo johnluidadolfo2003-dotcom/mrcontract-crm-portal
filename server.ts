@@ -205,7 +205,7 @@ app.post('/api/extract-text', async (req, res) => {
 });
 
 // Extract from image
-app.post('/api/extract-image', upload.single('image'), async (req, res) => {
+app.post('/api/extract-image', upload.single('image') as any, async (req: express.Request, res: express.Response) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
     
