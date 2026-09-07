@@ -18,7 +18,9 @@ import {
  ChevronUp,
  History,
  UserCheck,
+ User,
  ListTodo,
+ Mail,
 } from 'lucide-react';
 import { useUser } from '../lib/userContext';
 import { getNewLeads } from '../lib/newLeads';
@@ -252,22 +254,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
  }, [location.search]);
 
  // Main Navigation Items exactly matching requested order (Leads removed)
- const mainNavItems = [
- {
- name: 'Dashboard',
- path: '/',
- icon: LayoutGrid,
- exact: true,
- },
- {
- name: 'Tasks',
- path: '/today',
- icon: ListTodo,
- },
+ const mainNavItems = [{
+    name: 'Overview',
+    path: '/',
+    icon: LayoutGrid,
+    exact: true,
+  },
+  {
+    name: 'Angi Email Activity',
+    path: '/angi-email-activity',
+    icon: Mail,
+  },
+ 
  {
  name: 'New',
  path: '/new',
- icon: UserPlus,
+ icon: User,
  badge: newLeadsCount > 0 ? newLeadsCount : undefined,
  },
  {

@@ -44,7 +44,7 @@ export const DEFAULT_CONFIG: AppConfig = {
  leadSources: DEFAULT_LEAD_SOURCES,
  leadTypes: DEFAULT_LEAD_TYPES,
  timeZone: 'America/New_York',
- theme: 'light',
+ theme: 'dark',
  spreadsheetId: '1arAGlZO9VyY1St_ywT9ZtEaKyLaFfr3RIzw0-ebhJX0',
  spreadsheetName: 'Lead Master List',
  sheetTabName: 'Angi',
@@ -55,7 +55,7 @@ export const DEFAULT_CONFIG: AppConfig = {
 const STORAGE_KEY = 'masonry_appointment_config';
 
 export function applyTheme(theme?: 'dark' | 'light'): void {
- const currentTheme = theme || loadAppConfig().theme || 'light';
+ const currentTheme = theme || loadAppConfig().theme || 'dark';
  if (currentTheme === 'light') {
  document.documentElement.classList.add('light');
  document.documentElement.classList.remove('dark');
@@ -102,7 +102,7 @@ export function loadAppConfig(): AppConfig {
  leadSources: mergedLeadSources,
  leadTypes: parsed.leadTypes && parsed.leadTypes.length > 0 ? parsed.leadTypes : DEFAULT_LEAD_TYPES,
  timeZone: parsed.timeZone || 'America/New_York',
- theme: parsed.theme || 'light',
+ theme: parsed.theme || 'dark',
  spreadsheetId: 'env',
  spreadsheetName: 'Google Sheets (Environment Configured)',
  sheetTabName: parsed.sheetTabName || 'Angi',

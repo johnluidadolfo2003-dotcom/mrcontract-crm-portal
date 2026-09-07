@@ -1417,8 +1417,8 @@ export const SpreadsheetPage: React.FC = () => {
  >
  {/* NAME & AGING / OVERDUE BADGES */}
  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
- <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-zinc-100 dark:bg-black flex items-center justify-center shrink-0 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-white">
- <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-700 dark:text-white"/>
+ <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#FF5500]/10 border border-[#FF5500]/20 flex items-center justify-center shrink-0 text-[#FF5500]">
+ <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#FF5500]"/>
  </div>
  <div className="min-w-0 flex-1">
  <h3 className="font-bold text-zinc-900 dark:text-white text-xs sm:text-base truncate">

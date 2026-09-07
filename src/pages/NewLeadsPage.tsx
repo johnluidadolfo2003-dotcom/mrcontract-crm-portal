@@ -536,8 +536,8 @@ export const NewLeadsPage: React.FC = () => {
  {/* Leads Content */}
  {filteredLeads.length === 0 ? (
  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-12 text-center space-y-4 shadow-sm">
- <div className="w-16 h-16 mx-auto rounded-3xl bg-[#FF5500]/10 flex items-center justify-center text-[#FF5500]">
- <UserPlus className="w-8 h-8"/>
+ <div className="w-16 h-16 mx-auto rounded-3xl bg-[#FF5500]/10 border border-[#FF5500]/20 flex items-center justify-center text-[#FF5500]">
+ <User className="w-8 h-8 text-[#FF5500]"/>
  </div>
  <div className="space-y-1">
  <h3 className="text-base font-bold text-zinc-900 dark:text-white">No New Leads Found</h3>
@@ -581,8 +581,8 @@ export const NewLeadsPage: React.FC = () => {
               >
                 {/* LEFT: Client Identity & Metadata Badges */}
                 <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                  <div className="w-10 h-10 rounded-xl bg-[#FF5500]/10 border border-[#FF5500]/20 flex items-center justify-center text-[#FF5500] font-black text-sm shrink-0">
-                    {lead.clientName ? lead.clientName.charAt(0).toUpperCase() : 'C'}
+                  <div className="w-10 h-10 rounded-xl bg-[#FF5500]/10 border border-[#FF5500]/20 flex items-center justify-center text-[#FF5500] shrink-0">
+                    <User className="w-5 h-5 text-[#FF5500]" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -699,7 +699,12 @@ export const NewLeadsPage: React.FC = () => {
                 className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer"
               >
  <td className="py-3 px-4 font-bold text-zinc-900 dark:text-white whitespace-nowrap">
+ <div className="flex items-center gap-2.5">
+ <div className="w-7 h-7 rounded-lg bg-[#FF5500]/10 border border-[#FF5500]/20 flex items-center justify-center text-[#FF5500] shrink-0">
+ <User className="w-3.5 h-3.5 text-[#FF5500]" />
+ </div>
  <span className="hover:text-[#FF5500] transition-colors">{lead.clientName}</span>
+ </div>
  </td>
  <td className="py-3 px-4 whitespace-nowrap">{lead.clientPhone || '—'}</td>
  <td className="py-3 px-4 whitespace-nowrap">{lead.clientEmail || '—'}</td>

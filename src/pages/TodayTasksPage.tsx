@@ -210,7 +210,7 @@ export const TodayTasksPage: React.FC = () => {
  }`}
  >
  {isAppt && <CalendarClock className="w-5 h-5"/>}
- {isNew && <UserPlus className="w-5 h-5"/>}
+ {isNew && <User className="w-5 h-5 text-[#FF5500]"/>}
  {isFollowUp && <Clock className="w-5 h-5"/>}
  </div>
 

@@ -28,7 +28,7 @@ export const UserGatekeeper: React.FC<{ children: React.ReactNode }> = ({ childr
   const [editColor, setEditColor] = useState('#FF5500');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => loadAppConfig().theme || 'light');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => loadAppConfig().theme || 'dark');
   const [userToDelete, setUserToDelete] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {

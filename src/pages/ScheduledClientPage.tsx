@@ -750,8 +750,8 @@ export const ScheduledClientPage: React.FC = () => {
  <tr key={`${client.id || 'row'}_${idx}`} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 transition-colors">
  <td className="p-3.5 pl-5 font-bold text-zinc-900 dark:text-white">
  <div className="flex items-center gap-2">
- <div className="w-8 h-8 rounded-lg bg-[#FF5500]/10 text-[#FF5500] font-black text-xs flex items-center justify-center shrink-0">
- {client.clientName.charAt(0).toUpperCase()}
+ <div className="w-8 h-8 rounded-lg bg-[#FF5500]/10 border border-[#FF5500]/20 text-[#FF5500] flex items-center justify-center shrink-0">
+ <User className="w-4 h-4 text-[#FF5500]" />
  </div>
  <div>
  <div className="font-bold text-black dark:text-white">{client.clientName}</div>
@@ -760,12 +760,12 @@ export const ScheduledClientPage: React.FC = () => {
  </div>
  </td>
  <td className="p-3.5 text-zinc-600 dark:text-zinc-300">
- <div>{client.clientPhone ? formatPhoneNumber(client.clientPhone) : 'No phone'}</div>
+ <div className="font-bold text-zinc-800 dark:text-zinc-200">{client.leadSource || 'Web Portal'}</div>
  <div className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate max-w-[180px]">{client.clientEmail || 'No email'}</div>
  </td>
  <td className="p-3.5 text-zinc-600 dark:text-zinc-300">
  <div className="font-semibold">{client.serviceNeeded}</div>
- <div className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate max-w-[200px]">{client.address || 'No address'}</div>
+ <div className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate max-w-[200px]">{client.address || 'No address'} • Source: {client.leadSource || 'Web Portal'}</div>
  </td>
  <td className="p-3.5 text-zinc-700 dark:text-zinc-300 font-bold whitespace-nowrap">
  <div>{formatAppointmentDateNice(client.appointmentDate) || client.appointmentDate}</div>
