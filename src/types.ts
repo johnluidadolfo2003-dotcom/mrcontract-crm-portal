@@ -42,6 +42,7 @@ export interface AppointmentFormData {
  leadFee?: string;
  calendarEventId?: string;
  calendarHtmlLink?: string;
+  houzzProjectLink?: string;
 }
 
 export interface AppConfig {

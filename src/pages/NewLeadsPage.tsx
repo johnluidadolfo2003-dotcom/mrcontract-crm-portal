@@ -420,7 +420,19 @@ export const NewLeadsPage: React.FC = () => {
  }, 100);
  };
 
- const availableSources = Array.from(
+ 
+  const formatLeadDate = (dateStr?: string) => {
+    if (!dateStr) return '—';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) + ' at ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  const availableSources = Array.from(
  new Set([
  'Angi',
  'Thumbtack',
@@ -687,7 +699,8 @@ export const NewLeadsPage: React.FC = () => {
  <th className="py-3 px-4">Service Needed</th>
  <th className="py-3 px-4">Lead Fee</th>
  <th className="py-3 px-4">Source</th>
- <th className="py-3 px-4">Status</th>
+ <th className="py-3 px-4">Created Date</th>
+  <th className="py-3 px-4">Status</th>
  <th className="py-3 px-4 text-right">Actions</th>
  </tr>
  </thead>

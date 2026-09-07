@@ -27,6 +27,7 @@ import {
  RotateCcw,
  Send,
  Upload,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { AppointmentFormData, AppConfig } from '../types';
 import { DEFAULT_LEAD_SOURCES, DEFAULT_LEAD_TYPES, isLeadSourceTab } from '../config';
@@ -798,7 +799,7 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
  </div>
 
  {/* ROW 4: Lead Source, Lead Type, & Service Needed */}
- <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2.5 border-t border-zinc-200 dark:border-zinc-800">
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-2.5 border-t border-zinc-200 dark:border-zinc-800">
  {/* Lead Source */}
  <div className="space-y-1.5 min-w-0">
  <label className={labelStyle}>
@@ -816,6 +817,21 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
  </span>
  <ChevronDown className="w-4 h-4 text-zinc-400 shrink-0 ml-1"/>
  </div>
+
+  {/* Houzz Project Link */}
+  <div className="space-y-1.5 min-w-0">
+  <label className={labelStyle}>
+  <LinkIcon className="w-4 h-4 text-zinc-400 shrink-0 hidden sm:inline"/>
+  Houzz Project Link
+  </label>
+  <input
+  type="text"
+  placeholder="https://..."
+  value={formData.houzzProjectLink || ''}
+  onChange={(e) => handleChange('houzzProjectLink', e.target.value)}
+  className={inputStyle}
+  />
+  </div>
  <select
  value={formData.leadSource}
  onChange={(e) => handleChange('leadSource', e.target.value)}

@@ -525,6 +525,18 @@ app.post('/api/send-houzz-webhook', async (req, res) => {
   }
 });
 
+// Helper function to extract service requested from Angi subject line
+function extractAngiServiceFromSubject(subject: unknown): string {
+  const text = typeof subject === 'string' ? subject.trim() : '';
+  if (!text) return '';
+
+  const match = text.match(
+    /^New\s+Customer\s+Match:\s*(.+?)\s*-\s*from\s+Angi(?:\s*#\d+)?\s*$/i
+  );
+
+  return match?.[1]?.trim() || '';
+}
+
 // Helper function to extract structured lead details from raw email text (Angi, HomeAdvisor, etc.)
 function extractFromEmailText(rawText: string, defaultSource: string = 'Angi'): {
   clientName: string;
@@ -577,11 +589,11 @@ function extractFromEmailText(rawText: string, defaultSource: string = 'Angi'): 
   }
 
   if (!serviceNeeded) {
-    const servicePattern = /(?:service\s*(?:requested|needed)?|task(?:\s*name)?|project(?:\s*type)?|category|job\s*type|work\s*requested)[:\s\-]+([^\r\n]{3,100})/i;
+    const servicePattern = /(?:service\s*(?:requested|needed)?|task(?:\s*name)?|project(?:\s*type)?|category|job\s*type|work\s*requested)[:\-]+\s*([^\r\n]{3,100})/i;
     const serviceMatch = clean.match(servicePattern);
     if (serviceMatch) {
       const s = serviceMatch[1].trim();
-      if (!/angi|homeadvisor|pro|click here|view lead|customer information/i.test(s)) {
+      if (!/angi|homeadvisor|pro|click here|view lead|customer information|^(?:label|details|information|description|needed|requested|type|category)\b/i.test(s)) {
         serviceNeeded = s;
       }
     }
@@ -589,7 +601,7 @@ function extractFromEmailText(rawText: string, defaultSource: string = 'Angi'): 
 
   // Fallback for Subject line like "New Customer Match: Clean & Inspect Chimney - from Angi #..."
   if (!serviceNeeded) {
-    const subjectMatch = clean.match(/(?:match|lead)[:\s\-]+([^#\-\r\n]{3,60})(?:\s*-\s*from Angi|\s*#\d+|$)/i);
+    const subjectMatch = clean.match(/(?:match|lead)[:\-]+\s*([^#\-\r\n]{3,60})(?:\s*-\s*from Angi|\s*#\d+|$)/i);
     if (subjectMatch && !/angi|lead|information/i.test(subjectMatch[1].trim())) {
       serviceNeeded = subjectMatch[1].trim();
     }
@@ -848,7 +860,7 @@ async function parseIncomingLeadPayload(body: any, defaultSource: string = 'Angi
     extractedEmailData = extractFromEmailText(rawEmailCandidate, defaultSource);
 
     // If AI is available and clientName was not found by heuristic regex, try Gemini extraction
-    if (!extractedEmailData.clientName && !(Date.now() < aiDeniedUntil)) {
+    if (!extractedEmailData.clientName && !(Date.now() < aiDeniedUntil) && process.env.NODE_ENV !== 'test') {
       try {
         const response = await callGeminiWithFallback({
           contents: `Extract client details from this contractor lead notification email from Angi/HomeAdvisor:\n\n${rawEmailCandidate.slice(0, 3000)}`,
@@ -870,14 +882,28 @@ async function parseIncomingLeadPayload(body: any, defaultSource: string = 'Angi
         });
         const aiResult = parseGeminiJson(response.text);
         const aiParsed = aiResult?.parsed;
+        const cleanAiStr = (v: any) => {
+          if (typeof v !== 'string') return '';
+          const t = v.trim();
+          if (/^(?:null|undefined|none|n\/a|unknown)$/i.test(t) || /without\s+a\s+service/i.test(t)) return '';
+          return t;
+        };
         if (aiParsed && typeof aiParsed === 'object') {
-          if (aiParsed.clientName && !extractedEmailData.clientName) extractedEmailData.clientName = aiParsed.clientName;
-          if (aiParsed.clientPhone && !extractedEmailData.clientPhone) extractedEmailData.clientPhone = aiParsed.clientPhone;
-          if (aiParsed.clientEmail && !extractedEmailData.clientEmail) extractedEmailData.clientEmail = aiParsed.clientEmail;
-          if (aiParsed.address && !extractedEmailData.address) extractedEmailData.address = aiParsed.address;
-          if (aiParsed.serviceNeeded && !extractedEmailData.serviceNeeded) extractedEmailData.serviceNeeded = aiParsed.serviceNeeded;
-          if (aiParsed.leadFee && !extractedEmailData.leadFee) extractedEmailData.leadFee = aiParsed.leadFee;
-          if (aiParsed.notes && !extractedEmailData.notes) extractedEmailData.notes = aiParsed.notes;
+          const name = cleanAiStr(aiParsed.clientName);
+          const phone = cleanAiStr(aiParsed.clientPhone);
+          const email = cleanAiStr(aiParsed.clientEmail);
+          const addr = cleanAiStr(aiParsed.address);
+          const service = cleanAiStr(aiParsed.serviceNeeded);
+          const fee = cleanAiStr(aiParsed.leadFee);
+          const n = cleanAiStr(aiParsed.notes);
+
+          if (name && !extractedEmailData.clientName) extractedEmailData.clientName = name;
+          if (phone && !extractedEmailData.clientPhone) extractedEmailData.clientPhone = phone;
+          if (email && !extractedEmailData.clientEmail) extractedEmailData.clientEmail = email;
+          if (addr && !extractedEmailData.address) extractedEmailData.address = addr;
+          if (service && !extractedEmailData.serviceNeeded) extractedEmailData.serviceNeeded = service;
+          if (fee && !extractedEmailData.leadFee) extractedEmailData.leadFee = fee;
+          if (n && !extractedEmailData.notes) extractedEmailData.notes = n;
         }
       } catch (err) {
         console.warn('AI extraction fallback encountered, using heuristic text parse:', err);
@@ -1015,8 +1041,19 @@ async function parseIncomingLeadPayload(body: any, defaultSource: string = 'Angi
   }
 
   // Extract Service / Project Needed
-  // Weakness 21: If missing, flag as "Service details needed" or leave empty instead of assuming "General Masonry"
-  const serviceNeededRaw = String(
+  // Read email subject safely from webhook payload fields (emailSubject, email_subject, subject, Subject)
+  const emailSubjectCandidate =
+    b.emailSubject ||
+    b.email_subject ||
+    b.subject ||
+    b.Subject ||
+    nestedLead.emailSubject ||
+    nestedLead.email_subject ||
+    nestedLead.subject ||
+    nestedLead.Subject ||
+    '';
+
+  const explicitService = String(
     b.serviceNeeded ||
     b.service_needed ||
     b.service ||
@@ -1035,12 +1072,20 @@ async function parseIncomingLeadPayload(body: any, defaultSource: string = 'Angi
     task.description ||
     nestedLead.serviceNeeded ||
     nestedLead.taskName ||
-    (extractedEmailData?.serviceNeeded) ||
-    b.project_description ||
-    b.description ||
     ''
   ).trim();
-  const serviceNeeded = serviceNeededRaw || 'Service details needed';
+
+  const emailBodyService = String(extractedEmailData?.serviceNeeded || '').trim();
+  const emailSubjectService = extractAngiServiceFromSubject(emailSubjectCandidate);
+  const descriptionService = String(b.project_description || b.description || '').trim();
+
+  // Priority: explicit service fields -> rawEmail -> emailSubject -> description -> default fallback
+  const serviceNeeded =
+    explicitService ||
+    emailBodyService ||
+    emailSubjectService ||
+    descriptionService ||
+    'Service details needed';
 
   // Extract Lead Source
   // Weakness 20: If missing, flag as "Source needs review" instead of defaulting to Angi
@@ -3384,4 +3429,8 @@ async function startServer() {
   });
 }
 
-startServer();
+export { extractAngiServiceFromSubject, parseIncomingLeadPayload };
+
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}

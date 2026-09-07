@@ -35,83 +35,103 @@ export function getTimezoneOffsetString(
  * Builds Google Calendar event payload formatted with explicit business timezone.
  */
 export function buildEventPayload(
- formData: AppointmentFormData,
- config?: AppConfig
+  formData: AppointmentFormData,
+  config?: AppConfig
 ): GoogleCalendarEventPayload {
- const {
- clientName,
- appointmentDate,
- startTime,
- endTime,
- salespersonCode,
- clientPhone,
- clientEmail,
- address,
- leadSource,
- leadType,
- notes,
- } = formData;
+  const {
+    clientName,
+    appointmentDate,
+    startTime,
+    endTime,
+    salespersonCode,
+    clientPhone,
+    clientEmail,
+    address,
+    leadSource,
+    leadType,
+    notes,
+    serviceNeeded,
+    houzzProjectLink,
+    status,
+  } = formData;
 
- const timeZone = config?.timeZone || BUSINESS_TIME_ZONE;
+  const timeZone = config?.timeZone || BUSINESS_TIME_ZONE;
 
- // 1. Title format: Appt - {Client Name} - {Salesperson} ({Service})
- const serviceStr = (formData.serviceNeeded || formData.leadType || '').trim();
- const summary = `Appt - ${clientName.trim()} - ${salespersonCode.trim()}${serviceStr ? ` (${serviceStr})` : ''}`;
+  // 1. Title format: Appt - Client Name (Service Needed) - Sales person initial example DG
+  const clientStr = (clientName || '').trim();
+  const serviceStr = (serviceNeeded || '').trim();
+  const spStr = (salespersonCode || '').trim();
 
- // 2. Format Date and Time with exact target timezone offset
- const startOffset = getTimezoneOffsetString(appointmentDate, startTime, timeZone);
- const endOffset = getTimezoneOffsetString(appointmentDate, endTime, timeZone);
- const startISO = `${appointmentDate}T${startTime}:00${startOffset}`;
- const endISO = `${appointmentDate}T${endTime}:00${endOffset}`;
+  let summary = `Appt - ${clientStr}`;
+  if (serviceStr) {
+    summary += ` (${serviceStr})`;
+  }
+  if (spStr) {
+    summary += ` - ${spStr}`;
+  }
 
- // 3. Location
- const location = address.trim();
+  // 2. Format Date and Time with exact target timezone offset
+  const startOffset = getTimezoneOffsetString(appointmentDate, startTime, timeZone);
+  const endOffset = getTimezoneOffsetString(appointmentDate, endTime, timeZone);
+  const startISO = `${appointmentDate}T${startTime}:00${startOffset}`;
+  const endISO = `${appointmentDate}T${endTime}:00${endOffset}`;
 
- // Helper to validate email format
- const isValidEmail = (email?: string): boolean => {
- if (!email || typeof email !== 'string') return false;
- const cleaned = email.trim();
- return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(cleaned);
- };
+  // 3. Location
+  const location = (address || '').trim();
 
- // 4. Attendees / Guests
- const attendeeSet = new Set<string>();
- if (clientEmail && isValidEmail(clientEmail.trim())) {
- attendeeSet.add(clientEmail.toLowerCase().trim());
- }
+  // Helper to validate email format
+  const isValidEmail = (email?: string): boolean => {
+    if (!email || typeof email !== 'string') return false;
+    const cleaned = email.trim();
+    return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(cleaned);
+  };
 
- const attendees = Array.from(attendeeSet).map((email) => ({ email }));
+  // 4. Attendees / Guests
+  const attendeeSet = new Set<string>();
+  if (clientEmail && isValidEmail(clientEmail.trim())) {
+    attendeeSet.add(clientEmail.toLowerCase().trim());
+  }
 
- // 5. Description Format
- const description = `CLIENT NAME: ${clientName.trim()}
+  const attendees = Array.from(attendeeSet).map((email) => ({ email }));
+
+  // 5. Description Format
+  const rawType = (leadType || '').trim();
+  const typeDisplay = rawType
+    ? (rawType.startsWith('□') ? rawType : `□ ${rawType}`)
+    : '□ Direct';
+
+  const statusDisplay = (status || 'Appointment Scheduled').trim();
+  const houzzLinkDisplay = (houzzProjectLink || '').trim();
+
+  const description = `CLIENT NAME: ${clientStr}
 EVENT NAME: APPOINTMENT
-PHONE: ${clientPhone.trim()}
-EMAIL: ${clientEmail.trim()}
-ADDRESS: ${address.trim()}
+PHONE: ${(clientPhone || '').trim()}
+EMAIL: ${(clientEmail || '').trim()}
+ADDRESS: ${location}
 
-LEAD SOURCE: ${leadSource.trim()}
-TYPE: ${leadType.trim()}
-SALESPERSON: ${salespersonCode.trim()}
-STATUS: Appointment Scheduled
-SALESPERSON: ${salespersonCode.trim()}
+LEAD SOURCE: ${(leadSource || '').trim()}
+TYPE: ${typeDisplay}
+SALESPERSON: ${spStr}
+STATUS: ${statusDisplay}
+HOUZZ PROJECT LINK: ${houzzLinkDisplay}
 
 Notes:
 ${(notes || '').trim()}`;
 
- return {
- summary,
- location,
- description,
- start: {
- dateTime: startISO,
- timeZone,
- },
- end: {
- dateTime: endISO,
- timeZone,
- },
- attendees,
- };
+  return {
+    summary,
+    location,
+    description,
+    start: {
+      dateTime: startISO,
+      timeZone,
+    },
+    end: {
+      dateTime: endISO,
+      timeZone,
+    },
+    attendees,
+  };
 }
 
 export function getCachedCalendarEvents(): any[] {
@@ -556,6 +576,18 @@ export function parseCalendarEventToFormData(
  const address = getDescVal('ADDRESS') || location;
  let leadSource = getDescVal('LEAD SOURCE');
  let leadType = getDescVal('TYPE');
+  if (leadType.startsWith('□')) {
+    leadType = leadType.substring(1).trim();
+  }
+  let status = getDescVal('STATUS') || 'Appointment Scheduled';
+  let houzzProjectLink = getDescVal('HOUZZ PROJECT LINK') || getDescVal('HOUZZ LINK') || '';
+  let serviceNeeded = getDescVal('SERVICE NEEDED');
+  if (!serviceNeeded && summary) {
+    const sMatch = summary.match(/\(([^)]+)\)/);
+    if (sMatch && sMatch[1]) {
+      serviceNeeded = sMatch[1].trim();
+    }
+  }
  let salespersonCode =
  getDescVal('SALESPERSON') ||
  getDescVal('REPRESENTATIVE') ||

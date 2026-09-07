@@ -181,23 +181,7 @@ export const Dashboard: React.FC = () => {
  <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-[#FF5500]' : ''}`} />
  </button>
 
- {/* Schedule Appointment Button */}
- <button
- onClick={handleOpenSchedule}
- className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 text-zinc-700 dark:text-zinc-200 text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-2 cursor-pointer min-h-[44px]"
- >
- <Calendar className="w-4 h-4 text-zinc-500 dark:text-zinc-400 shrink-0"/>
- <span className="truncate">Schedule Appointment</span>
- </button>
-
- {/* + Add Lead Button */}
- <button
- onClick={handleOpenAddLead}
- className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2.5 rounded-lg bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px]"
- >
- <PlusCircle className="w-4 h-4 text-white shrink-0"/>
- <span className="truncate">Add Lead</span>
- </button>
+ 
  </div>
  </div>
 
