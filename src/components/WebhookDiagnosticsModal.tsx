@@ -12,6 +12,7 @@ import {
   Code,
   ShieldCheck,
   Check,
+  AlertCircle,
 } from 'lucide-react';
 import {
   getWebhookUrls,
@@ -297,6 +298,20 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
           {/* TAB: FULL PIPELINE TEST */}
           {activeTab === 'pipeline' && (
             <div className="space-y-4">
+              {/* Test-only & Setup Reminder Notice */}
+              <div className="bg-orange-500/10 border border-orange-500/30 rounded-2xl p-4 text-xs space-y-2 text-zinc-800 dark:text-zinc-200">
+                <div className="flex items-center gap-2 font-bold text-[#FF5500]">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>Test only — does not prove that live Angi emails are connected.</span>
+                </div>
+                <p className="text-zinc-600 dark:text-zinc-400">
+                  Your Zapier, Make, or email-forwarding automation must send real Angi emails to this URL: <code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-900 dark:text-white font-mono text-[11px]">{window.location.origin}/api/webhooks/angi</code>
+                </p>
+                <div className="text-[11px] text-zinc-500 dark:text-zinc-400 pt-1 border-t border-orange-500/20">
+                  Live Status: <strong className="text-zinc-800 dark:text-zinc-200">{diagData?.webhookStatus?.lastRealAngiWebhookAt ? `Last real Angi webhook received at ${new Date(diagData.webhookStatus.lastRealAngiWebhookAt).toLocaleString()}` : 'No real Angi webhooks received yet'}</strong>
+                </div>
+              </div>
+
               <div className="bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 space-y-4 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-200 dark:border-zinc-800/80 pb-4">
                   <div className="space-y-0.5">

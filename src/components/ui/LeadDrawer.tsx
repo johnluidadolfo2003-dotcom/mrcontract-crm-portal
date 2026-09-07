@@ -269,7 +269,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
       {/* Drawer */}
       <div
         className={`fixed top-0 right-0 h-full w-full max-w-md bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
-          isOpen ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'
+          isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {/* Header */}

@@ -889,9 +889,7 @@ export const ScheduledClientPage: React.FC = () => {
  TODAY
  </span>
  )}
- <span className="text-xs font-semibold px-2.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-300 truncate max-w-[220px]">
- {client.serviceNeeded || 'Service details needed'}
- </span>
+ 
  </div>
 
  {/* Subline: Time, Phone, Rep */}
@@ -900,12 +898,9 @@ export const ScheduledClientPage: React.FC = () => {
  <Clock className="w-3.5 h-3.5 text-[#FF5500] shrink-0"/>
  {formatAppointmentDateTime(client.appointmentDate, client.startTime || '09:00', client.endTime || '10:00')}
  </span>
- {client.clientPhone && (
- <span className="flex items-center gap-1 font-semibold">
- <Phone className="w-3 h-3 text-zinc-400 shrink-0"/>
- {formatPhoneNumber(client.clientPhone)}
- </span>
- )}
+ <span className="inline-flex items-center gap-1 font-semibold px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300">
+										{client.leadSource || 'Unknown source'}
+									</span>
  <span className="flex items-center gap-1 font-semibold">
  <User className="w-3 h-3 text-zinc-400 shrink-0"/>
  Rep: <strong className="text-zinc-700 dark:text-zinc-300">{client.salespersonName || client.salespersonCode || 'Unassigned'}</strong>
@@ -945,7 +940,7 @@ export const ScheduledClientPage: React.FC = () => {
  {isExpanded && (
  <div className="border-t border-zinc-100 dark:border-zinc-800/80 p-5 bg-zinc-50/50 dark:bg-zinc-950/40 space-y-4">
  {/* Detail Metrics Grid */}
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
  {/* Address & Google Maps Link */}
  <div className="bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-1">
  <span className="text-[10px] font-bold uppercase text-zinc-400 dark:text-zinc-500 flex items-center gap-1">

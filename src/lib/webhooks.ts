@@ -16,6 +16,10 @@ export interface IncomingWebhookLead {
  isWebhookLead: boolean;
  webhookSource: string;
  sheetSynced?: boolean;
+ parsingResult?: string;
+ crmResult?: string;
+ houzzResult?: string;
+ overallStatus?: string;
  rawPayload?: any;
 }
 
@@ -276,6 +280,10 @@ export interface WebhookDiagnosticsData {
  };
  lastReceivedLead: any;
  recentLogs: WebhookLogItem[];
+ webhookStatus?: {
+   lastRealAngiWebhookAt?: string;
+   lastRealWebhookAt?: string;
+ };
  serverTime: string;
 }
 

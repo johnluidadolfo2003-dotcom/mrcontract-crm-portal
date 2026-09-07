@@ -95,8 +95,12 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     fetchUsers().finally(() => setIsLoading(false));
 
-    // Poll users every 5 seconds to sync across computers and workers
-    const interval = setInterval(fetchUsers, 5000);
+    // Poll users every 60 seconds to sync across computers and workers
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchUsers();
+      }
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 

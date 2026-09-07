@@ -593,7 +593,7 @@ export const SpreadsheetPage: React.FC = () => {
  if (document.visibilityState === 'visible') {
  fetchSharedStatusOverrides().catch(() => {});
  }
- }, 10000);
+ }, 30000);
 
  const interval = setInterval(() => {
  if (
@@ -603,7 +603,7 @@ export const SpreadsheetPage: React.FC = () => {
  ) {
  fetchRows(config.spreadsheetId, selectedTab, true);
  }
- }, 45000);
+ }, 90000);
 
  return () => {
  window.removeEventListener('focus', handleWindowFocus);
@@ -722,17 +722,12 @@ export const SpreadsheetPage: React.FC = () => {
 
  const targetTabName = (row.tabName && row.tabName !== 'ALL') ? row.tabName : (selectedTab !== 'ALL' ? selectedTab : 'Angi');
  const colIndex = row.statusColIndex !== undefined ? row.statusColIndex : (headers.indexOf('Status') >= 0 ? headers.indexOf('Status') : 7);
- await updateRowStatusInSheet(
- undefined,
- config.spreadsheetId,
- targetTabName,
- row.rowIndex,
- newStatus,
- colIndex,
- row.clientName
- );
-
- // Update local storage caches
+ if (config.spreadsheetId) {
+    const targetTabName = (row.tabName && row.tabName !== 'ALL') ? row.tabName : (selectedTab !== 'ALL' ? selectedTab : 'Angi');
+    const colIndex = row.statusColIndex !== undefined ? row.statusColIndex : 7;
+    updateRowStatusInSheet(undefined, config.spreadsheetId, targetTabName, row.rowIndex, newStatus, colIndex, row.clientName)
+      .catch(err => console.error('Background sheet sync error:', err));
+  }// Update local storage caches
  try {
  const targetTabName = (row.tabName && row.tabName !== 'ALL') ? row.tabName : (selectedTab !== 'ALL' ? selectedTab : 'Angi');
  const tabCacheKey = `mrcontract_cache_${config.spreadsheetId}_${targetTabName}`;
@@ -912,17 +907,12 @@ export const SpreadsheetPage: React.FC = () => {
  try {
  const targetTabName = (row.tabName && row.tabName !== 'ALL') ? row.tabName : (selectedTab !== 'ALL' ? selectedTab : 'Angi');
  const colIndex = row.statusColIndex !== undefined ? row.statusColIndex : (headers.indexOf('Status') >= 0 ? headers.indexOf('Status') : 7);
- await updateRowStatusInSheet(
- undefined,
- config.spreadsheetId!,
- targetTabName,
- row.rowIndex,
- milestoneStatus,
- colIndex,
- row.clientName
- );
-
- setEmailSendResult({ success: true, msg: 'Email sent & status updated in Sheets' });
+ if (config.spreadsheetId) {
+    const targetTabName = (row.tabName && row.tabName !== 'ALL') ? row.tabName : (selectedTab !== 'ALL' ? selectedTab : 'Angi');
+    const colIndex = row.statusColIndex !== undefined ? row.statusColIndex : 7;
+    updateRowStatusInSheet(undefined, config.spreadsheetId, targetTabName, row.rowIndex, milestoneStatus, colIndex, row.clientName)
+      .catch(err => console.error('Background sheet sync error:', err));
+  }setEmailSendResult({ success: true, msg: 'Email sent & status updated in Sheets' });
  await fetchRows(config.spreadsheetId, selectedTab);
  } catch (sheetErr: any) {
  console.warn('Email sent successfully, but Sheets status update failed:', sheetErr);

@@ -20,7 +20,7 @@ import {
  UserCheck,
  User,
  ListTodo,
- Mail,
+ Activity,
 } from 'lucide-react';
 import { useUser } from '../lib/userContext';
 import { getNewLeads } from '../lib/newLeads';
@@ -254,17 +254,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
  }, [location.search]);
 
  // Main Navigation Items exactly matching requested order (Leads removed)
- const mainNavItems = [{
-    name: 'Overview',
-    path: '/',
-    icon: LayoutGrid,
-    exact: true,
-  },
-  {
-    name: 'Angi Email Activity',
-    path: '/angi-email-activity',
-    icon: Mail,
-  },
+ const mainNavItems = [
+ {
+ name: 'Overview',
+ path: '/',
+ icon: LayoutGrid,
+ exact: true,
+ },
  
  {
  name: 'New',
@@ -286,11 +282,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
  },
  {
  name: 'Estimate Sent',
- path: '/leads?status=Estimate Sent',
- icon: CalendarCheck,
- badge: counts['Estimate Sent'] > 0 ? counts['Estimate Sent'] : undefined,
- },
- ];
+		path: '/leads?status=Estimate Sent',
+		icon: CalendarCheck,
+		badge: counts['Estimate Sent'] > 0 ? counts['Estimate Sent'] : undefined,
+	},
+	
+];
 
  const followUpSubItems = [
  {
@@ -772,6 +769,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
  )}
  </button>
 
+  {/* Lead Hook Activity */}
+  <button
+    type="button"
+    onClick={() => {
+      navigate('/angi-email-activity');
+      if (isMobileView) setIsMobileOpen && setIsMobileOpen(false);
+    }}
+    className={`flex items-center ${
+      showExpanded ? 'w-full px-3.5 py-2.5 gap-3.5' : 'w-11 h-11 mx-auto justify-center'
+    } ${
+      location.pathname === '/angi-email-activity'
+        ? 'bg-[#FF5500]/10 text-[#FF5500] font-bold'
+        : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
+    } rounded-2xl transition-colors font-semibold text-xs cursor-pointer`}
+    title={!showExpanded ? 'Lead Hook Activity' : undefined}
+  >
+    <Activity className="w-4 h-4 shrink-0 text-zinc-500 dark:text-zinc-400"/>
+    {showExpanded && (
+      <span className="flex-1 text-left truncate tracking-tight">
+        Lead Hook Activity
+      </span>
+    )}
+  </button>
+
+  
+
  {/* Trash & Deleted Leads */}
  <button
  type="button"
@@ -782,6 +805,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
  className={`flex items-center ${
  showExpanded ? 'w-full px-3.5 py-2.5 gap-3.5' : 'w-11 h-11 mx-auto justify-center'
  } text-zinc-600 dark:text-zinc-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/10 rounded-2xl transition-colors font-semibold text-xs cursor-pointer`}
+  
+
  title={!showExpanded ? 'Trash & Deleted Leads' : undefined}
  >
  <Trash2 className="w-4 h-4 shrink-0 text-zinc-500 dark:text-zinc-400"/>

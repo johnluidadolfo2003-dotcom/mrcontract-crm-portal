@@ -1313,6 +1313,20 @@ function saveIncomingLeadAndLog(
   }
   fs.writeFileSync(incomingFile, JSON.stringify(existingLeads, null, 2), 'utf-8');
 
+  // Track webhook status timestamp
+  const statusFile = path.join(dataDir, 'webhook_status.json');
+  let webhookStatus: any = {};
+  if (fs.existsSync(statusFile)) {
+    try { webhookStatus = JSON.parse(fs.readFileSync(statusFile, 'utf-8')); } catch {}
+  }
+  webhookStatus.lastRealWebhookAt = now;
+  if (parsed.leadSource === 'Angi' || req.path?.includes('angi')) {
+    webhookStatus.lastRealAngiWebhookAt = now;
+  }
+  try {
+    fs.writeFileSync(statusFile, JSON.stringify(webhookStatus, null, 2), 'utf-8');
+  } catch {}
+
   // Record in Webhook Logs (Weakness 7: Mask phone number in log preview)
   const logsFile = path.join(dataDir, 'webhook_logs.json');
   let logs: any[] = [];
@@ -2052,6 +2066,12 @@ app.get('/api/webhooks/diagnostics', (req, res) => {
       } catch {}
     }
 
+    let webhookStatus: any = {};
+    const statusFile = path.join(dataDir, 'webhook_status.json');
+    if (fs.existsSync(statusFile)) {
+      try { webhookStatus = JSON.parse(fs.readFileSync(statusFile, 'utf-8')); } catch {}
+    }
+
     return res.json({
       success: true,
       status: 'operational',
@@ -2069,6 +2089,7 @@ app.get('/api/webhooks/diagnostics', (req, res) => {
       },
       lastReceivedLead,
       recentLogs,
+      webhookStatus,
       serverTime: new Date().toISOString(),
     });
   } catch (err: any) {
