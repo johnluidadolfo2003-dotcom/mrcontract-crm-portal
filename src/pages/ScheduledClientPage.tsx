@@ -44,7 +44,6 @@ import { useUser } from '../lib/userContext';
 import { AppConfig, AppointmentFormData, LEAD_STATUS_OPTIONS } from '../types';
 import { loadAppConfig, saveAppConfig, DEFAULT_LEAD_SOURCES, isLeadSourceTab } from '../config';
 import { formatPhoneNumber, isMeetingScheduledStatus } from '../lib/utils';
-import { withGoogleToken, isAuthError, clearCachedAccessToken, getCachedAccessToken, fetchSharedTokenFromServer, googleSignIn } from '../lib/firebase';
 import { buildEventPayload, createGoogleCalendarEvent, fetchGoogleCalendarEvents, getCachedCalendarEvents, matchCalendarEventForLead, parseCalendarEventToFormData, formatTime12Hour, formatAppointmentDateTime, formatAppointmentDateNice, getCalendarSyncStatus, CalendarSyncStatus } from '../lib/calendar';
 import { appendAppointmentToSheet, updateLeadStatusInSpreadsheet, readAllSpreadsheetTabs, getSpreadsheetDetails, invalidateSpreadsheetCache } from '../lib/sheets';
 import { sendLeadToHouzzPro } from '../lib/houzz';
@@ -84,12 +83,7 @@ export const ScheduledClientPage: React.FC = () => {
  const loadCalendarEvents = async (showToast = false) => {
  setIsSyncingCalendar(true);
  try {
- let token = typeof window !== 'undefined' ? localStorage.getItem('gcal_access_token') : null;
- if (!token) {
- const shared = await fetchSharedTokenFromServer();
- if (shared?.accessToken) token = shared.accessToken;
- }
- const events = await fetchGoogleCalendarEvents(token);
+ const events = await fetchGoogleCalendarEvents(config.calendarId);
  setCalendarEvents(events);
  setScheduledClients(getScheduledClients(events));
  const freshStatus = getCalendarSyncStatus();
@@ -112,23 +106,6 @@ export const ScheduledClientPage: React.FC = () => {
  setErrorMessage(err.message || 'Failed to sync Google Calendar.');
  setTimeout(() => setErrorMessage(null), 4000);
  }
- } finally {
- setIsSyncingCalendar(false);
- }
- };
-
- const handleConnectCalendar = async () => {
- setIsSyncingCalendar(true);
- try {
- const authResult = await googleSignIn(true);
- if (authResult?.accessToken) {
- setSuccessMessage('Google Calendar connected');
- await loadCalendarEvents(true);
- }
- } catch (err: any) {
- console.error('Failed to sign in with Google:', err);
- setErrorMessage(err.message || 'Failed to authorize Google Calendar.');
- setTimeout(() => setErrorMessage(null), 4000);
  } finally {
  setIsSyncingCalendar(false);
  }
@@ -466,9 +443,7 @@ export const ScheduledClientPage: React.FC = () => {
  // Publish to Google Calendar
  try {
  const payload = buildEventPayload(formData, config);
- calResult = await withGoogleToken(async (token) => {
- return await createGoogleCalendarEvent(token, payload);
- });
+ calResult = await createGoogleCalendarEvent(payload, config.calendarId);
  } catch (calErr: any) {
  console.warn('Google Calendar sync notice:', calErr);
  if (calErr?.message?.includes('already has an appointment')) {

@@ -33,7 +33,6 @@ import { getNewLeads, deleteNewLead, updateNewLeadInfo, NewLeadRecord } from '..
 import { logAuditActivity } from '../lib/activityLogger';
 import { loadAppConfig, isLeadSourceTab, DEFAULT_LEAD_SOURCES } from '../config';
 import { LEAD_STATUS_OPTIONS } from '../types';
-import { withGoogleToken, getCachedAccessToken } from '../lib/firebase';
 import {
  readSpreadsheetRows,
  readAllSpreadsheetTabs,

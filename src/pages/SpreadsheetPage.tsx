@@ -309,8 +309,7 @@ export const SpreadsheetPage: React.FC = () => {
  let isMounted = true;
  const loadEvents = async () => {
  try {
- const token = typeof window !== 'undefined' ? localStorage.getItem('gcal_access_token') : null;
- const events = await fetchGoogleCalendarEvents(token);
+ const events = await fetchGoogleCalendarEvents(config.calendarId);
  if (isMounted && Array.isArray(events)) {
  setCalendarEvents(events);
  }

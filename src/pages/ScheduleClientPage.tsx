@@ -23,9 +23,6 @@ import {
 import { AppConfig, LEAD_STATUS_OPTIONS } from '../types';
 import { loadAppConfig, saveAppConfig, applyTheme, isLeadSourceTab, DEFAULT_LEAD_SOURCES } from '../config';
 import {
-  googleSignIn,
-} from '../lib/firebase';
-import {
   getSpreadsheetDetails,
   readSpreadsheetRows,
   updateRowStatusInSheet,
@@ -455,27 +452,26 @@ export const ScheduleClientPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Auth Required Banner */}
+        {/* Auth / Connection Notice Banner */}
         {isAuthRequired && (
           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 text-center space-y-4 max-w-md mx-auto my-6 shadow-xl">
             <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center mx-auto text-zinc-600 dark:text-zinc-300">
-              <AlertCircle className="w-6 h-6" />
+              <AlertCircle className="w-6 h-6 text-[#FF5500]" />
             </div>
             <div className="space-y-1">
-              <h2 className="text-sm font-bold text-zinc-900 dark:text-white">Google Account Sign-In Required</h2>
+              <h2 className="text-sm font-bold text-zinc-900 dark:text-white">Spreadsheet Sync Notice</h2>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Sign in with your Google account to sync all leads from your connected spreadsheet.
+                Could not connect to the Google Spreadsheet backend service. Please check backend configuration or try again.
               </p>
             </div>
             <button
-              onClick={async () => {
-                await googleSignIn(true);
+              onClick={() => {
                 setIsAuthRequired(false);
                 fetchAllNewLeads();
               }}
               className="bg-[#FF5500] hover:bg-[#E64D00] text-white font-bold py-2.5 px-6 rounded-xl text-xs transition-colors cursor-pointer shadow-sm"
             >
-              Sign In with Google
+              Retry Sync
             </button>
           </div>
         )}

@@ -4,7 +4,6 @@ import { Sidebar } from './Sidebar';
 import { SettingsModal } from './SettingsModal';
 import { AppConfig, AppointmentFormData, CreatedCalendarEvent, GoogleCalendarEventPayload } from '../types';
 import { loadAppConfig, saveAppConfig, applyTheme, fetchAndSyncServerConfig } from '../config';
-import { initAuth, googleSignIn, getCachedAccessToken, signOutUser, withGoogleToken, clearCachedAccessToken, isAuthError } from '../lib/firebase';
 import {
  Sun,
  Moon,
@@ -28,7 +27,6 @@ import {
  Plus,
  History,
  User,
- LogIn,
 } from 'lucide-react';
 import { AppointmentForm } from './AppointmentForm';
 import { AddLeadForm } from './AddLeadForm';
@@ -38,7 +36,7 @@ import { SwitchUserModal } from './SwitchUserModal';
 import { ActivityLogModal } from './ActivityLogModal';
 import { useUser } from '../lib/userContext';
 import { logAuditActivity } from '../lib/activityLogger';
-import { buildEventPayload, createGoogleCalendarEvent } from '../lib/calendar';
+import { buildEventPayload, createGoogleCalendarEvent, checkBackendCalendarStatus, BackendCalendarStatus } from '../lib/calendar';
 import { appendAppointmentToSheet } from '../lib/sheets';
 import { sendLeadToHouzzPro } from '../lib/houzz';
 import { addOrUpdateScheduledClient } from '../lib/scheduledClients';
@@ -49,11 +47,8 @@ export const MainLayout: React.FC = () => {
  const location = useLocation();
  const { currentUser, setIsSwitchUserModalOpen, setIsActivityLogModalOpen } = useUser();
  const [config, setConfig] = useState<AppConfig>(loadAppConfig);
- const [user, setUser] = useState<any>(() => {
- const token = getCachedAccessToken();
- return token ? { displayName: 'Google User', access_token: token } : null;
- });
- const [isLoggingIn, setIsLoggingIn] = useState(false);
+ const [calendarStatus, setCalendarStatus] = useState<BackendCalendarStatus | null>(null);
+ const [isCheckingCalendar, setIsCheckingCalendar] = useState<boolean>(true);
  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
  const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'integrations'>('general');
  const [settingsInitialSubTab, setSettingsInitialSubTab] = useState<'connections' | 'webhooks' | 'troubleshooting'>('connections');
@@ -104,17 +99,29 @@ export const MainLayout: React.FC = () => {
  };
  }, []);
 
- // Init Auth on load
+ // Check backend calendar status on mount and on update events
  useEffect(() => {
- const unsubscribe = initAuth(
- (authenticatedUser) => {
- setUser(authenticatedUser);
- },
- () => {
- setUser(null);
+ let isMounted = true;
+ setIsCheckingCalendar(true);
+ checkBackendCalendarStatus().then((status) => {
+ if (isMounted) {
+ setCalendarStatus(status);
+ setIsCheckingCalendar(false);
  }
- );
- return () => unsubscribe();
+ });
+
+ const handleCalendarStatusUpdate = (e: any) => {
+ if (e?.detail) {
+ setCalendarStatus(e.detail);
+ setIsCheckingCalendar(false);
+ }
+ };
+
+ window.addEventListener('calendar_status_updated', handleCalendarStatusUpdate);
+ return () => {
+ isMounted = false;
+ window.removeEventListener('calendar_status_updated', handleCalendarStatusUpdate);
+ };
  }, []);
 
  // Global custom event listeners for opening modals
@@ -152,30 +159,11 @@ export const MainLayout: React.FC = () => {
  };
  }, []);
 
- const handleSignIn = async () => {
- setIsLoggingIn(true);
- try {
- const res = await googleSignIn();
- setUser(res.user);
- showToast('success', 'Google connected');
- } catch (err: any) {
- console.error('Google Sign In failed:', err);
- showToast('error', err.message || 'Failed to connect Google account');
- } finally {
- setIsLoggingIn(false);
- }
- };
-
- const handleSignOut = async () => {
- await signOutUser();
- setUser(null);
- showToast('success', 'Signed out from Google');
- };
-
  const handleSaveConfig = (newConfig: AppConfig) => {
  setConfig(newConfig);
  saveAppConfig(newConfig);
  applyTheme(newConfig.theme || 'dark');
+ checkBackendCalendarStatus(newConfig.calendarId);
  };
 
  const toggleTheme = () => {
@@ -197,15 +185,7 @@ export const MainLayout: React.FC = () => {
  setIsSubmitting(true);
 
  try {
- let calendarResult: CreatedCalendarEvent;
- try {
- const cachedToken = getCachedAccessToken();
- calendarResult = await createGoogleCalendarEvent(cachedToken, pendingPayload);
- } catch (calErr) {
- calendarResult = await withGoogleToken(async (accessToken) => {
- return await createGoogleCalendarEvent(accessToken, pendingPayload);
- });
- }
+ const calendarResult = await createGoogleCalendarEvent(pendingPayload, config.calendarId);
 
  if (config.spreadsheetId && config.autoSyncToSheets !== false) {
  try {
@@ -246,15 +226,16 @@ export const MainLayout: React.FC = () => {
  setIsScheduleModalOpen(false);
  setPendingPayload(null);
  setLastSubmittedFormData(null);
- showToast('success', `Appointment for"${lastSubmittedFormData.clientName}"published to Google Calendar!`);
+ showToast('success', `Appointment for "${lastSubmittedFormData.clientName}" published to Google Calendar!`);
  window.dispatchEvent(new CustomEvent('dashboard_data_refresh'));
  } catch (err: any) {
  console.error('Failed to publish calendar event:', err);
- if (isAuthError(err)) {
- clearCachedAccessToken();
- showToast('error', 'Google session expired. Please sign in again.');
+ setIsConfirmationOpen(false);
+ const isConflict = err?.message?.includes('already has an appointment');
+ if (isConflict) {
+ showToast('error', 'This salesperson already has an appointment at this time.');
  } else {
- showToast('error', err.message || 'Failed to schedule appointment on Google Calendar.');
+ showToast('error', 'The shared calendar is currently unavailable. Please contact an administrator.');
  }
  } finally {
  setIsSubmitting(false);
@@ -378,9 +359,9 @@ export const MainLayout: React.FC = () => {
  return 'Portal';
  };
 
- const isGoogleConnected = !!user || !!getCachedAccessToken();
 
- return (
+
+  return (
  <div className={`flex h-screen overflow-hidden ${config.theme === 'dark' ? 'dark' : ''} bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 font-sans antialiased`}>
  {/* Persistent Global Sidebar across all views with mobile drawer support */}
  <Sidebar
@@ -418,8 +399,8 @@ export const MainLayout: React.FC = () => {
 
  {/* Right Action Controls */}
  <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
- {/* Google Connection Status Badge / Reconnect Notice */}
- {isGoogleConnected ? (
+ {/* Calendar Connection Status Badge */}
+ {isCheckingCalendar ? (
  <button
  type="button"
  onClick={() => {
@@ -427,22 +408,39 @@ export const MainLayout: React.FC = () => {
  setSettingsInitialSubTab('connections');
  setIsSettingsOpen(true);
  }}
- className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl text-black dark:text-white text-xs font-semibold cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
- title="Google account connected. Click to view integration settings."
+ className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-600 dark:text-zinc-300 text-xs font-semibold cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+ title="Checking backend calendar status..."
+ >
+ <span className="w-2 h-2 rounded-full bg-zinc-400" />
+ <span className="hidden sm:inline">Checking calendar…</span>
+ </button>
+ ) : calendarStatus?.connected ? (
+ <button
+ type="button"
+ onClick={() => {
+ setSettingsInitialTab('integrations');
+ setSettingsInitialSubTab('connections');
+ setIsSettingsOpen(true);
+ }}
+ className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl text-emerald-800 dark:text-emerald-300 text-xs font-semibold cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+ title="Google Calendar connected securely via backend. Click to view settings."
  >
  <span className="w-2 h-2 rounded-full bg-emerald-500" />
- <span className="hidden sm:inline text-black dark:text-white">Google connected</span>
+ <span className="hidden sm:inline">Calendar connected</span>
  </button>
  ) : (
  <button
  type="button"
- onClick={handleSignIn}
- disabled={isLoggingIn}
- className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer"
- title="Google authorization required. Click to connect account."
+ onClick={() => {
+ setSettingsInitialTab('integrations');
+ setSettingsInitialSubTab('connections');
+ setIsSettingsOpen(true);
+ }}
+ className="flex items-center gap-1.5 px-2.5 py-1.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-xl text-red-700 dark:text-red-300 text-xs font-semibold cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+ title="Calendar is currently unavailable. Click to configure backend integration."
  >
- <LogIn className="w-3.5 h-3.5 text-black dark:text-white"/>
- <span>{isLoggingIn ? 'Connecting...' : 'Reconnect Google'}</span>
+ <span className="w-2 h-2 rounded-full bg-red-500" />
+ <span className="hidden sm:inline">Calendar unavailable</span>
  </button>
  )}
 
@@ -492,10 +490,10 @@ export const MainLayout: React.FC = () => {
  config,
  handleSaveConfig,
  toggleTheme,
- user,
- handleSignIn,
- handleSignOut,
- isLoggingIn,
+ user: null,
+ handleSignIn: () => {},
+ handleSignOut: () => {},
+ isLoggingIn: false,
  setIsSettingsOpen,
  openScheduleModal: () => setIsScheduleModalOpen(true),
  openAddLeadModal: () => setIsAddLeadModalOpen(true),
@@ -669,10 +667,6 @@ export const MainLayout: React.FC = () => {
  onClose={() => setIsSettingsOpen(false)}
  config={config}
  onSaveConfig={handleSaveConfig}
- user={user}
- onSignIn={handleSignIn}
- onSignOut={handleSignOut}
- isLoggingIn={isLoggingIn}
  initialTab={settingsInitialTab}
  initialSubTab={settingsInitialSubTab}
  />

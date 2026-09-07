@@ -25,7 +25,7 @@ import { US_TIME_ZONES, applyTheme, isLeadSourceTab } from '../config';
 import { sendLeadToHouzzPro } from '../lib/houzz';
 import { getWebhookUrls, sendTestWebhookLead, runFullPipelineTest } from '../lib/webhooks';
 import { WebhookDiagnosticsModal } from './WebhookDiagnosticsModal';
-import { googleSignIn } from '../lib/firebase';
+import { checkBackendCalendarStatus, BackendCalendarStatus } from '../lib/calendar';
 import { useUser } from '../lib/userContext';
 import { User, Pencil } from 'lucide-react';
 
@@ -167,16 +167,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [isDiagOpen, setIsDiagOpen] = useState(false);
   const [sheetsStatus, setSheetsStatus] = useState<{ configured: boolean; clientEmail?: string; error?: string } | null>(null);
-  const [googleAuthStatus, setGoogleAuthStatus] = useState<{ connected: boolean; user?: any; tokenExpired?: boolean } | null>(null);
-  const [calendarBackendStatus, setCalendarBackendStatus] = useState<{
-    connected: boolean;
-    email?: string | null;
-    authSource?: string;
-    debugReason?: string;
-    reason?: string;
-    error?: string;
-  } | null>(null);
-  const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
+  const [calendarBackendStatus, setCalendarBackendStatus] = useState<BackendCalendarStatus | null>(null);
+  const [isCheckingCalendar, setIsCheckingCalendar] = useState(false);
 
   const [newCode, setNewCode] = useState('');
   const [newName, setNewName] = useState('');
@@ -184,19 +176,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [newLeadSource, setNewLeadSource] = useState('');
   const [newLeadType, setNewLeadType] = useState('');
 
-  const checkGoogleAuth = () => {
-    fetch('/api/calendar/status')
-      .then((res) => res.json())
-      .then((data) => setCalendarBackendStatus(data))
-      .catch(() => setCalendarBackendStatus({ connected: false, error: 'Could not reach server.' }));
-
-    fetch('/api/google-auth')
-      .then((res) => res.json())
-      .then((data) => setGoogleAuthStatus(data))
-      .catch(() => setGoogleAuthStatus({ connected: false }));
+  const checkGoogleAuth = async () => {
+    setIsCheckingCalendar(true);
+    try {
+      const data = await checkBackendCalendarStatus();
+      setCalendarBackendStatus(data);
+    } catch {
+      setCalendarBackendStatus({ connected: false, error: 'Could not reach server.' });
+    } finally {
+      setIsCheckingCalendar(false);
+    }
   };
 
-  const isCalendarConnected = !!(calendarBackendStatus?.connected || googleAuthStatus?.connected);
+  const isCalendarConnected = !!calendarBackendStatus?.connected;
 
   useEffect(() => {
     if (isOpen) {
@@ -215,26 +207,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .then((data) => setSheetsStatus(data))
         .catch(() => setSheetsStatus({ configured: false, error: 'Could not reach server.' }));
 
-      // Check Google Auth status
+      // Check Google Calendar backend status
       checkGoogleAuth();
     }
   }, [isOpen, config]);
-
-  const handleConnectGoogle = async () => {
-    setIsConnectingGoogle(true);
-    try {
-      if (onSignIn) {
-        await onSignIn();
-      } else {
-        await googleSignIn(true);
-      }
-      checkGoogleAuth();
-    } catch (err) {
-      console.error('Failed to connect Google account:', err);
-    } finally {
-      setIsConnectingGoogle(false);
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -704,51 +680,51 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="flex items-center justify-between">
                       <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5 text-[#FF5500]" />
-                        Master Google Calendar Account
+                        Shared Google Calendar (Server Integration)
                       </label>
-                      {isCalendarConnected ? (
+                      {isCheckingCalendar ? (
+                        <span className="inline-flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                          <RefreshCw className="w-3 h-3 animate-spin text-zinc-500" />
+                          Checking Backend...
+                        </span>
+                      ) : isCalendarConnected ? (
                         <span className="inline-flex items-center gap-1 bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
                           <CheckCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                          Connected (Backend OAuth)
+                          Connected ({calendarBackendStatus?.authSource === 'service_account' ? 'Service Account' : 'Server OAuth'})
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 bg-orange-100 dark:bg-orange-950/60 border border-orange-300 dark:border-orange-800 text-orange-800 dark:text-orange-300 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
                           <AlertCircle className="w-3 h-3 text-orange-600 dark:text-orange-400" />
-                          {googleAuthStatus?.tokenExpired ? 'Re-Authorization Needed' : 'Not Connected'}
+                          Server Config Required
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                    <div className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed space-y-1.5">
                       {isCalendarConnected ? (
-                        <>
-                          Connected as <span className="text-zinc-900 dark:text-white font-bold">{calendarBackendStatus?.email || googleAuthStatus?.user?.email || 'info@mrcontract.us'}</span>. Master Google Calendar synchronization is active via backend OAuth. All team members automatically share this Calendar connection to view and schedule appointments without requiring individual logins.
-                        </>
+                        <p>
+                          Connected as <span className="text-zinc-900 dark:text-white font-bold">{calendarBackendStatus?.email || 'Shared Server Account'}</span>. Google Calendar synchronization is managed securely by the backend server. All team members automatically share this Calendar connection without requiring individual Google logins.
+                        </p>
                       ) : (
-                        <>
-                          Google Calendar OAuth authorization is needed to create and synchronize calendar appointments with Google Calendar.
-                        </>
+                        <p>
+                          The backend server needs Google Calendar credentials (Service Account JSON or Refresh Token in environment variables). Individual workers do not need to sign in with their Google accounts.
+                        </p>
                       )}
-                    </p>
+                      {calendarBackendStatus?.error && (
+                        <div className="p-2 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-lg text-red-700 dark:text-red-300 text-[11px]">
+                          <strong>Server Notice:</strong> {calendarBackendStatus.error}
+                        </div>
+                      )}
+                    </div>
                     <div className="pt-1 flex items-center gap-2">
                       <button
                         type="button"
                         onClick={checkGoogleAuth}
-                        className="px-3 py-1.5 bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-800 dark:text-zinc-100 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                        disabled={isCheckingCalendar}
+                        className="px-3 py-1.5 bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-800 dark:text-zinc-100 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
                       >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        <span>Refresh Status</span>
+                        <RefreshCw className={`w-3.5 h-3.5 ${isCheckingCalendar ? 'animate-spin' : ''}`} />
+                        <span>Test Backend Connection</span>
                       </button>
-                      {!isCalendarConnected && (
-                        <button
-                          type="button"
-                          onClick={handleConnectGoogle}
-                          disabled={isConnectingGoogle || isLoggingIn}
-                          className="px-3 py-1.5 bg-[#FF5500] hover:bg-[#E64D00] disabled:opacity-50 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-                        >
-                          <Calendar className="w-3.5 h-3.5" />
-                          <span>{isConnectingGoogle || isLoggingIn ? 'Connecting...' : 'Connect Google Calendar'}</span>
-                        </button>
-                      )}
                     </div>
                   </div>
 

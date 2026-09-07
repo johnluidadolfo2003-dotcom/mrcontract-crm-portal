@@ -185,23 +185,75 @@ export function setCalendarSyncStatus(status: Partial<CalendarSyncStatus>): Cale
  return updated;
 }
 
+export interface BackendCalendarStatus {
+  connected: boolean;
+  authSource?: string;
+  calendarId?: string;
+  email?: string | null;
+  error?: string | null;
+  debugReason?: string;
+  reason?: string;
+  requiresAdminAction?: boolean;
+}
+
+export async function checkBackendCalendarStatus(calendarId?: string): Promise<BackendCalendarStatus> {
+  try {
+    const query = calendarId ? `?calendarId=${encodeURIComponent(calendarId)}` : '';
+    const res = await fetch(`/api/calendar/status${query}`);
+    const data = await res.json().catch(() => ({}));
+    const result: BackendCalendarStatus = {
+      connected: res.ok && !!data.connected,
+      authSource: data.authSource,
+      calendarId: data.calendarId,
+      email: data.email,
+      error: data.error || (!res.ok ? `Server returned status ${res.status}` : null),
+      debugReason: data.debugReason,
+      reason: data.reason,
+      requiresAdminAction: data.requiresAdminAction,
+    };
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('calendar_status_updated', { detail: result }));
+    }
+    return result;
+  } catch (err: any) {
+    const result: BackendCalendarStatus = {
+      connected: false,
+      error: err.message || 'Could not connect to calendar server.',
+    };
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('calendar_status_updated', { detail: result }));
+    }
+    return result;
+  }
+}
+
 /**
  * Fetch events directly from Google Calendar via backend server proxy.
  * Workers do not need to provide or store access tokens.
  */
 export async function fetchGoogleCalendarEvents(
- _ignoredToken?: string | null,
+ arg1?: string | null | { timeMin?: string; timeMax?: string; calendarId?: string },
  timeMin?: string,
  timeMax?: string,
  calendarId?: string
 ): Promise<any[]> {
  setCalendarSyncStatus({ status: 'syncing' });
 
+ let actualTimeMin = timeMin;
+ let actualTimeMax = timeMax;
+ let actualCalId = calendarId;
+
+ if (typeof arg1 === 'object' && arg1 !== null) {
+ actualTimeMin = arg1.timeMin;
+ actualTimeMax = arg1.timeMax;
+ actualCalId = arg1.calendarId;
+ }
+
  try {
  const params = new URLSearchParams();
- if (timeMin) params.append('timeMin', timeMin);
- if (timeMax) params.append('timeMax', timeMax);
- if (calendarId) params.append('calendarId', calendarId);
+ if (actualTimeMin) params.append('timeMin', actualTimeMin);
+ if (actualTimeMax) params.append('timeMax', actualTimeMax);
+ if (actualCalId) params.append('calendarId', actualCalId);
  const queryString = params.toString() ? `?${params.toString()}` : '';
 
  const serverRes = await fetch(`/api/calendar/events${queryString}`);
@@ -269,10 +321,25 @@ export function isSameSalesperson(sp1: string, sp2: string): boolean {
  * Creates a Google Calendar event via the backend server proxy.
  */
 export async function createGoogleCalendarEvent(
- _ignoredToken?: string | null,
- payload?: GoogleCalendarEventPayload
+ arg1?: string | null | GoogleCalendarEventPayload,
+ arg2?: GoogleCalendarEventPayload | string,
+ arg3?: string
 ): Promise<CreatedCalendarEvent> {
- const res = await fetch('/api/calendar/events', {
+ let payload: GoogleCalendarEventPayload | undefined;
+ let calendarId: string | undefined;
+
+ if (arg1 && typeof arg1 === 'object') {
+ payload = arg1 as GoogleCalendarEventPayload;
+ if (typeof arg2 === 'string') calendarId = arg2;
+ } else {
+ if (arg2 && typeof arg2 === 'object') {
+ payload = arg2 as GoogleCalendarEventPayload;
+ if (typeof arg3 === 'string') calendarId = arg3;
+ }
+ }
+
+ const query = calendarId ? `?calendarId=${encodeURIComponent(calendarId)}` : '';
+ const res = await fetch(`/api/calendar/events${query}`, {
  method: 'POST',
  headers: {
  'Content-Type': 'application/json',
@@ -319,11 +386,27 @@ export async function createGoogleCalendarEvent(
  * Updates an existing Google Calendar event via the backend server proxy.
  */
 export async function updateGoogleCalendarEvent(
- _ignoredToken: string | null | undefined,
- eventId: string,
- payload: GoogleCalendarEventPayload
+ arg1: string | null | undefined,
+ arg2: string | GoogleCalendarEventPayload,
+ arg3?: GoogleCalendarEventPayload | string,
+ arg4?: string
 ): Promise<CreatedCalendarEvent> {
- const response = await fetch(`/api/calendar/events/${encodeURIComponent(eventId)}`, {
+ let eventId = '';
+ let payload: GoogleCalendarEventPayload | undefined;
+ let calendarId: string | undefined;
+
+ if (typeof arg1 === 'string' && arg2 && typeof arg2 === 'object') {
+ eventId = arg1;
+ payload = arg2 as GoogleCalendarEventPayload;
+ if (typeof arg3 === 'string') calendarId = arg3;
+ } else if (typeof arg2 === 'string' && arg3 && typeof arg3 === 'object') {
+ eventId = arg2;
+ payload = arg3 as GoogleCalendarEventPayload;
+ if (typeof arg4 === 'string') calendarId = arg4;
+ }
+
+ const query = calendarId ? `?calendarId=${encodeURIComponent(calendarId)}` : '';
+ const response = await fetch(`/api/calendar/events/${encodeURIComponent(eventId)}${query}`, {
  method: 'PUT',
  headers: {
  'Content-Type': 'application/json',
@@ -343,9 +426,9 @@ export async function updateGoogleCalendarEvent(
  const updated: CreatedCalendarEvent = {
  id: result.id || eventId,
  htmlLink: result.htmlLink,
- summary: result.summary || payload.summary,
- start: result.start?.dateTime || result.start?.date || payload.start.dateTime,
- end: result.end?.dateTime || result.end?.date || payload.end.dateTime,
+ summary: result.summary || payload?.summary,
+ start: result.start?.dateTime || result.start?.date || payload?.start?.dateTime,
+ end: result.end?.dateTime || result.end?.date || payload?.end?.dateTime,
  };
 
  try {

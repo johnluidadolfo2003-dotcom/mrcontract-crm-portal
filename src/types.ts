@@ -50,6 +50,7 @@ export interface AppConfig {
  leadTypes: string[];
  timeZone: string;
  theme?: 'dark' | 'light';
+ calendarId?: string;
  spreadsheetId?: string;
  spreadsheetName?: string;
  sheetTabName?: string;
