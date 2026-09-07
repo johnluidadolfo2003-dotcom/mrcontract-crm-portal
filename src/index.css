@@ -1,0 +1,477 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-brand-orange: #FF5500;
+  --color-brand-orange-light: #FF7020;
+  --color-brand-orange-dark: #E64D00;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+*, html, body, #root, button, input, select, textarea, optgroup, option {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  letter-spacing: -0.011em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==========================================================================
+   Design System Tokens (Item 45: Shared theme instead of exception overrides)
+   ========================================================================== */
+:root {
+  /* Surfaces & Backgrounds */
+  --app-bg: #FFFFFF;
+  --app-card-bg: #FFFFFF;
+  --app-card-border: #E4E4E7;
+  --app-panel-bg: #F4F4F5;
+  --app-panel-border: #E4E4E7;
+  --app-panel-subtle-bg: #FAFAFA;
+  --app-panel-subtle-border: #E4E4E7;
+
+  /* Typography */
+  --app-text-primary: #18181B;
+  --app-text-secondary: #52525B;
+  --app-text-muted: #71717A;
+
+  /* Primary Action Button */
+  --btn-primary-bg: #FF5500;
+  --btn-primary-text: #FFFFFF;
+  --btn-primary-hover: #E64D00;
+  --btn-primary-disabled-bg: #A1A1AA;
+  --btn-primary-disabled-text: #FFFFFF;
+
+  /* Secondary Action Button */
+  --btn-secondary-bg: #F4F4F5;
+  --btn-secondary-text: #18181B;
+  --btn-secondary-border: #E4E4E7;
+  --btn-secondary-hover: #E4E4E7;
+
+  /* Outline Action Button */
+  --btn-outline-bg: transparent;
+  --btn-outline-text: #18181B;
+  --btn-outline-border: #D4D4D8;
+  --btn-outline-hover: #F4F4F5;
+
+  /* Form Controls */
+  --input-bg: #FFFFFF;
+  --input-border: #D4D4D8;
+  --input-text: #18181B;
+  --input-placeholder: #A1A1AA;
+  --input-focus-border: #FF5500;
+  --input-focus-ring: rgba(255, 85, 0, 0.15);
+
+  /* Semantic Badges */
+  --badge-brand-bg: #FFF7ED;
+  --badge-brand-text: #C2410C;
+  --badge-brand-border: #FED7AA;
+
+  --badge-neutral-bg: #F4F4F5;
+  --badge-neutral-text: #52525B;
+  --badge-neutral-border: #E4E4E7;
+
+  --badge-success-bg: #F0FDF4;
+  --badge-success-text: #15803D;
+  --badge-success-border: #BBF7D0;
+
+  --badge-warning-bg: #FEFCE8;
+  --badge-warning-text: #A16207;
+  --badge-warning-border: #FEF08A;
+
+  --badge-danger-bg: #FEF2F2;
+  --badge-danger-text: #B91C1C;
+  --badge-danger-border: #FECACA;
+}
+
+html.dark {
+  /* Surfaces & Backgrounds */
+  --app-bg: #09090B;
+  --app-card-bg: #18181B;
+  --app-card-border: #27272A;
+  --app-panel-bg: #27272A;
+  --app-panel-border: #3F3F46;
+  --app-panel-subtle-bg: #18181B;
+  --app-panel-subtle-border: #27272A;
+
+  /* Typography */
+  --app-text-primary: #FAFAFA;
+  --app-text-secondary: #A1A1AA;
+  --app-text-muted: #71717A;
+
+  /* Primary Action Button */
+  --btn-primary-bg: #FF5500;
+  --btn-primary-text: #FFFFFF;
+  --btn-primary-hover: #E64D00;
+  --btn-primary-disabled-bg: #3F3F46;
+  --btn-primary-disabled-text: #71717A;
+
+  /* Secondary Action Button */
+  --btn-secondary-bg: #27272A;
+  --btn-secondary-text: #F4F4F5;
+  --btn-secondary-border: #3F3F46;
+  --btn-secondary-hover: #3F3F46;
+
+  /* Outline Action Button */
+  --btn-outline-bg: transparent;
+  --btn-outline-text: #F4F4F5;
+  --btn-outline-border: #3F3F46;
+  --btn-outline-hover: #27272A;
+
+  /* Form Controls */
+  --input-bg: #18181B;
+  --input-border: #3F3F46;
+  --input-text: #FAFAFA;
+  --input-placeholder: #71717A;
+  --input-focus-border: #FF5500;
+  --input-focus-ring: rgba(255, 85, 0, 0.25);
+
+  /* Semantic Badges */
+  --badge-brand-bg: rgba(255, 85, 0, 0.15);
+  --badge-brand-text: #FF8A4C;
+  --badge-brand-border: rgba(255, 85, 0, 0.3);
+
+  --badge-neutral-bg: #27272A;
+  --badge-neutral-text: #A1A1AA;
+  --badge-neutral-border: #3F3F46;
+
+  --badge-success-bg: rgba(22, 163, 74, 0.15);
+  --badge-success-text: #4ADE80;
+  --badge-success-border: rgba(22, 163, 74, 0.3);
+
+  --badge-warning-bg: rgba(202, 138, 4, 0.15);
+  --badge-warning-text: #FACC15;
+  --badge-warning-border: rgba(202, 138, 4, 0.3);
+
+  --badge-danger-bg: rgba(220, 38, 38, 0.15);
+  --badge-danger-text: #F87171;
+  --badge-danger-border: rgba(220, 38, 38, 0.3);
+}
+
+/* Base HTML Setup */
+html {
+  font-size: 14px;
+  color-scheme: light dark;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+html.light {
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--app-bg);
+  color: var(--app-text-primary);
+}
+
+/* ==========================================================================
+   Shared Component Classes (Item 45)
+   ========================================================================== */
+
+/* 1. Page Backgrounds & Wrappers */
+.app-page {
+  background-color: var(--app-bg);
+  color: var(--app-text-primary);
+  min-height: 100vh;
+}
+
+/* 2. Panels & Cards */
+.app-card {
+  background-color: var(--app-card-bg);
+  border: 1px solid var(--app-card-border);
+  color: var(--app-text-primary);
+  border-radius: 0.75rem;
+}
+
+.app-card-elevated {
+  background-color: var(--app-card-bg);
+  border: 1px solid var(--app-card-border);
+  color: var(--app-text-primary);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+}
+
+.app-panel {
+  background-color: var(--app-panel-bg);
+  border: 1px solid var(--app-panel-border);
+  color: var(--app-text-primary);
+  border-radius: 0.75rem;
+}
+
+.app-panel-subtle {
+  background-color: var(--app-panel-subtle-bg);
+  border: 1px solid var(--app-panel-subtle-border);
+  color: var(--app-text-secondary);
+  border-radius: 0.5rem;
+}
+
+/* 3. Typography */
+.app-text-primary {
+  color: var(--app-text-primary);
+}
+
+.app-text-secondary {
+  color: var(--app-text-secondary);
+}
+
+.app-text-muted {
+  color: var(--app-text-muted);
+}
+
+/* 4. Buttons */
+.btn-primary {
+  background-color: var(--btn-primary-bg) !important;
+  color: var(--btn-primary-text) !important;
+  border: 1px solid transparent;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background-color 150ms ease, opacity 150ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.btn-primary * {
+  color: var(--btn-primary-text) !important;
+}
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--btn-primary-hover) !important;
+}
+.btn-primary:disabled {
+  background-color: var(--btn-primary-disabled-bg) !important;
+  color: var(--btn-primary-disabled-text) !important;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background-color: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
+  font-weight: 600;
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--btn-secondary-hover);
+}
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  background-color: var(--btn-outline-bg);
+  color: var(--btn-outline-text);
+  border: 1px solid var(--btn-outline-border);
+  font-weight: 600;
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.btn-outline:hover:not(:disabled) {
+  background-color: var(--btn-outline-hover);
+}
+.btn-outline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 5. Inputs, Selects, & Textareas */
+.app-input,
+.app-select,
+.app-textarea,
+html.light input:not([type="checkbox"]):not([type="radio"]),
+html.light select,
+html.light textarea {
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  border: 1px solid var(--input-border);
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.app-input::placeholder,
+.app-textarea::placeholder,
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: var(--input-placeholder);
+}
+
+.app-input:focus,
+.app-select:focus,
+.app-textarea:focus,
+html.light input:focus,
+html.light select:focus,
+html.light textarea:focus {
+  border-color: var(--input-focus-border);
+  box-shadow: 0 0 0 2px var(--input-focus-ring);
+}
+
+/* Options */
+html.light option {
+  background-color: #FFFFFF;
+  color: #18181B;
+}
+html.dark option {
+  background-color: #18181B;
+  color: #FAFAFA;
+}
+
+/* 6. Badges */
+.badge-brand {
+  background-color: var(--badge-brand-bg);
+  color: var(--badge-brand-text);
+  border: 1px solid var(--badge-brand-border);
+  font-weight: 700;
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.badge-neutral {
+  background-color: var(--badge-neutral-bg);
+  color: var(--badge-neutral-text);
+  border: 1px solid var(--badge-neutral-border);
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.badge-success {
+  background-color: var(--badge-success-bg);
+  color: var(--badge-success-text);
+  border: 1px solid var(--badge-success-border);
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.badge-warning {
+  background-color: var(--badge-warning-bg);
+  color: var(--badge-warning-text);
+  border: 1px solid var(--badge-warning-border);
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.badge-danger {
+  background-color: var(--badge-danger-bg);
+  color: var(--badge-danger-text);
+  border: 1px solid var(--badge-danger-border);
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* Structural Header & Navigation */
+header {
+  background-color: var(--app-card-bg);
+  border-bottom: 1px solid var(--app-card-border);
+}
+
+aside {
+  background-color: var(--app-card-bg);
+  border-right: 1px solid var(--app-card-border);
+}
+
+main {
+  background-color: var(--app-bg);
+}
+
+/* Table Clean Styling */
+thead tr {
+  background-color: var(--app-panel-subtle-bg);
+  color: var(--app-text-secondary);
+  border-bottom: 1px solid var(--app-card-border);
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--app-card-border);
+  transition: background-color 100ms ease;
+}
+
+tbody tr:hover {
+  background-color: var(--app-panel-subtle-bg);
+}
+
+/* Mobile & Tablet UX */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  overscroll-behavior-y: none;
+}
+
+.overflow-x-auto, .overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+.pb-safe {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+
+/* Clean standard scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(161, 161, 170, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(161, 161, 170, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Accessibility: Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

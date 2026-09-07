@@ -1,0 +1,11 @@
+{
+  "name": "Remix Remix  Create Appointment automation",
+  "description": "Internal web application for creating masonry appointments, managing leads via Angi and Thumbtack webhooks, and syncing with Google Calendar and Sheets.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

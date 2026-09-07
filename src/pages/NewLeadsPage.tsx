@@ -1,0 +1,1009 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+ UserPlus,
+ Phone,
+ Mail,
+ MapPin,
+ CalendarClock,
+ Trash2,
+ Search,
+ 
+ Tag,
+ Clock,
+ LayoutGrid,
+ Table as TableIcon,
+ DollarSign,
+ RefreshCw,
+ ChevronDown,
+ ChevronRight,
+ User,
+ Loader2,
+ Webhook,
+ Zap,
+ Edit2,
+ Save,
+ Check,
+ X,
+ Activity,
+ Filter,
+ AlertCircle,
+} from 'lucide-react';
+import { getNewLeads, deleteNewLead, updateNewLeadInfo, NewLeadRecord } from '../lib/newLeads';
+import { logAuditActivity } from '../lib/activityLogger';
+import { loadAppConfig, isLeadSourceTab, DEFAULT_LEAD_SOURCES } from '../config';
+import { LEAD_STATUS_OPTIONS } from '../types';
+import { withGoogleToken, getCachedAccessToken } from '../lib/firebase';
+import {
+ readSpreadsheetRows,
+ readAllSpreadsheetTabs,
+ getSpreadsheetDetails,
+ invalidateSpreadsheetCache,
+ deleteRowFromSheet,
+ updateLeadStatusInSpreadsheet,
+ updateLeadInSpreadsheet,
+ SheetRowRecord,
+} from '../lib/sheets';
+import { LeadDrawer } from '../components/ui/LeadDrawer';
+import { syncIncomingWebhookLeads } from '../lib/webhooks';
+import { WebhookDiagnosticsModal } from '../components/WebhookDiagnosticsModal';
+
+export const NewLeadsPage: React.FC = () => {
+ const navigate = useNavigate();
+ const [leads, setLeads] = useState<NewLeadRecord[]>(() => getNewLeads());
+ const [searchTerm, setSearchTerm] = useState('');
+ const [sourceFilter, setSourceFilter] = useState('ALL');
+ const [viewMode, setViewMode] = useState<'clean' | 'table'>('clean');
+ const [syncMsg, setSyncMsg] = useState<string | null>(null);
+ const [updatingId, setUpdatingId] = useState<string | null>(null);
+ const [leadToDelete, setLeadToDelete] = useState<NewLeadRecord | null>(null);
+ const [isWebhookDiagOpen, setIsWebhookDiagOpen] = useState(false);
+ const [syncIssue, setSyncIssue] = useState<{ message: string; details: string } | null>(null);
+
+  const config = loadAppConfig();
+  const [selectedLeadForDrawer, setSelectedLeadForDrawer] = useState<SheetRowRecord | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const handleOpenLead = (lead: NewLeadRecord) => {
+    const sheetLead: SheetRowRecord = {
+      rowIndex: lead.rowIndex || 0,
+      clientName: lead.clientName,
+      clientPhone: lead.clientPhone,
+      clientEmail: lead.clientEmail,
+      address: lead.address,
+      serviceNeeded: lead.serviceNeeded,
+      leadType: lead.serviceNeeded,
+      leadSource: lead.leadSource || 'Angi',
+      tabName: (lead as any).tabName || lead.leadSource || 'Angi',
+      status: lead.status || 'New',
+      leadFee: lead.leadFee,
+      notes: lead.notes,
+      rawValues: [],
+    };
+    (sheetLead as any).id = lead.id;
+    setSelectedLeadForDrawer(sheetLead);
+    setIsDrawerOpen(true);
+  };
+
+  const handleDrawerStatusChange = async (row: SheetRowRecord, newStatus: string) => {
+    const leadId = (row as any).id;
+    const matched = leads.find((l) => l.id === leadId || l.clientName === row.clientName);
+    if (matched) {
+      await handleStatusChange(matched, newStatus);
+    } else {
+      const dummyRecord: NewLeadRecord = {
+        id: leadId || String(Date.now()),
+        clientName: row.clientName || '',
+        clientPhone: row.clientPhone || '',
+        clientEmail: row.clientEmail || '',
+        address: row.address || '',
+        serviceNeeded: row.serviceNeeded || '',
+        leadSource: row.leadSource || row.tabName || 'Angi',
+        status: newStatus,
+        notes: row.notes || '',
+        rowIndex: row.rowIndex,
+        statusColIndex: row.statusColIndex,
+        createdAt: new Date().toISOString(),
+      };
+      await handleStatusChange(dummyRecord, newStatus);
+    }
+    setSelectedLeadForDrawer((prev) => (prev ? { ...prev, status: newStatus } : null));
+  };
+
+  const handleDrawerLeadUpdate = async (updatedLead: SheetRowRecord) => {
+    refreshLocalLeads();
+    setSelectedLeadForDrawer((prev) => (prev ? { ...prev, ...updatedLead } : null));
+  };
+
+  const handleCloseDrawer = () => {
+    setIsDrawerOpen(false);
+    setSelectedLeadForDrawer(null);
+    refreshLocalLeads();
+  };
+
+  const getStatusBadge = (status?: string) => {
+    const st = status || 'New';
+    if (st === 'New') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FF5500]/10 text-[#FF5500] border border-[#FF5500]/30">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
+          {st}
+        </span>
+      );
+    }
+    if (st === 'Meeting Scheduled' || st === 'Scheduled' || st === 'Confirmed') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          {st}
+        </span>
+      );
+    }
+    if (st.includes('Lost')) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/30">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+          {st}
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+        <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 dark:bg-zinc-500" />
+        {st}
+      </span>
+    );
+  };
+
+
+ // Edit Lead Modal State
+ const [editingLead, setEditingLead] = useState<NewLeadRecord | null>(null);
+ const [editFormData, setEditFormData] = useState({
+ clientName: '',
+ clientPhone: '',
+ clientEmail: '',
+ address: '',
+ serviceNeeded: '',
+ leadSource: '',
+ status: 'New',
+ leadFee: '',
+ notes: '',
+ });
+ const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+ const refreshLocalLeads = () => {
+ setLeads(getNewLeads());
+ };
+
+ const handleOpenEditModal = (lead: NewLeadRecord) => {
+ setEditingLead(lead);
+ setEditFormData({
+ clientName: lead.clientName || '',
+ clientPhone: lead.clientPhone || '',
+ clientEmail: lead.clientEmail || '',
+ address: lead.address || '',
+ serviceNeeded: lead.serviceNeeded || '',
+ leadSource: lead.leadSource || 'Angi',
+ status: lead.status || 'New',
+ leadFee: lead.leadFee || '',
+ notes: lead.notes || '',
+ });
+ };
+
+ const handleSaveEditSubmit = async (e: React.FormEvent) => {
+ e.preventDefault();
+ if (!editingLead) return;
+
+ if (!editFormData.clientName.trim()) {
+ alert('Client Name is required.');
+ return;
+ }
+
+ setIsSavingEdit(true);
+ const config = loadAppConfig();
+
+ try {
+ // 1. Update in Google Sheets if spreadsheet is connected
+ if (config.spreadsheetId) {
+ await updateLeadInSpreadsheet(undefined, config.spreadsheetId, {
+ tabName: editFormData.leadSource || editingLead.leadSource || 'Angi',
+ rowIndex: editingLead.rowIndex,
+ clientName: editFormData.clientName.trim(),
+ clientPhone: editFormData.clientPhone.trim(),
+ clientEmail: editFormData.clientEmail.trim(),
+ address: editFormData.address.trim(),
+ serviceNeeded: editFormData.serviceNeeded.trim(),
+ leadFee: editFormData.leadFee.trim(),
+ status: editFormData.status,
+ notes: editFormData.notes.trim(),
+ });
+ }
+
+ // 2. Update in local storage / webhook state
+ updateNewLeadInfo(editingLead.id, {
+ clientName: editFormData.clientName.trim(),
+ clientPhone: editFormData.clientPhone.trim(),
+ clientEmail: editFormData.clientEmail.trim(),
+ address: editFormData.address.trim(),
+ serviceNeeded: editFormData.serviceNeeded.trim(),
+ leadSource: editFormData.leadSource.trim(),
+ status: editFormData.status,
+ leadFee: editFormData.leadFee.trim(),
+ notes: editFormData.notes.trim(),
+ });
+
+ // 3. Log audit activity
+ logAuditActivity({
+ actionType: 'update_lead',
+ clientName: editFormData.clientName.trim(),
+ clientPhone: editFormData.clientPhone.trim(),
+ tabName: editFormData.leadSource || 'New Leads',
+ details: `Updated client details for"${editFormData.clientName.trim()}"(Status: ${editFormData.status})`,
+ });
+
+ refreshLocalLeads();
+ setSyncMsg("Client info saved");
+ setTimeout(() => setSyncMsg(null), 3500);
+ setEditingLead(null);
+ } catch (err: any) {
+ console.error('Failed to update lead:', err);
+ alert(`Error saving changes: ${err.message || 'Unknown error'}`);
+ } finally {
+ setIsSavingEdit(false);
+ }
+ };
+
+ const handleStatusChange = async (lead: NewLeadRecord, newStatus: string) => {
+ setUpdatingId(lead.id);
+ const config = loadAppConfig();
+ try {
+ if (config.spreadsheetId) {
+ await updateLeadStatusInSpreadsheet(
+ undefined,
+ config.spreadsheetId!,
+ {
+ clientName: lead.clientName,
+ clientPhone: lead.clientPhone,
+ clientEmail: lead.clientEmail,
+ tabName: lead.leadSource,
+ rowIndex: lead.rowIndex,
+ statusColIndex: lead.statusColIndex,
+ },
+ newStatus
+ );
+ }
+
+ if (newStatus !== 'New') {
+ deleteNewLead(lead.id);
+ } else {
+ const current = getNewLeads();
+ const updated = current.map((item) => (item.id === lead.id ? { ...item, status: newStatus } : item));
+ localStorage.setItem('mrcontract_new_leads', JSON.stringify(updated));
+ }
+ setLeads(getNewLeads());
+
+ logAuditActivity({
+ actionType: 'status_change',
+ clientName: lead.clientName,
+ clientPhone: lead.clientPhone,
+ tabName: lead.leadSource || 'New Leads',
+ details: `Updated status of"${lead.clientName}"from"${lead.status || 'New'}"to"${newStatus}"`,
+ oldValue: lead.status,
+ newValue: newStatus,
+ });
+
+ setSyncMsg("Status saved");
+ setTimeout(() => setSyncMsg(null), 3500);
+ } catch (err: any) {
+ console.error('Failed to update status in sheet:', err);
+ setSyncMsg(`Failed to update status: ${err.message || 'Error updating cell'}`);
+ setTimeout(() => setSyncMsg(null), 4000);
+ } finally {
+ setUpdatingId(null);
+ }
+ };
+
+ useEffect(() => {
+ // Initial fetch of webhook leads from server
+ syncIncomingWebhookLeads().catch(() => {});
+
+ const handleUpdate = (e: any) => {
+ if (e.detail && Array.isArray(e.detail)) {
+ setLeads(e.detail);
+ } else {
+ refreshLocalLeads();
+ }
+ };
+ window.addEventListener('new_leads_updated', handleUpdate);
+ window.addEventListener('mrcontract_data_synced', refreshLocalLeads);
+ window.addEventListener('storage', refreshLocalLeads);
+
+ // Periodically sync webhook leads every 25 seconds
+ const interval = setInterval(() => {
+ syncIncomingWebhookLeads().catch(() => {});
+ }, 25000);
+
+ return () => {
+ clearInterval(interval);
+ window.removeEventListener('new_leads_updated', handleUpdate);
+ window.removeEventListener('mrcontract_data_synced', refreshLocalLeads);
+ window.removeEventListener('storage', refreshLocalLeads);
+ };
+ }, []);
+
+ // Monitor for sync issues needing attention
+ useEffect(() => {
+ const unsyncedLeads = leads.filter((l) => l.sheetSynced === false);
+ if (unsyncedLeads.length > 0) {
+ setSyncIssue({
+ message: `${unsyncedLeads.length} new ${unsyncedLeads.length === 1 ? 'lead has' : 'leads have'} not yet synced to Google Sheets`,
+ details: 'Incoming webhook leads recorded locally but waiting for Google Sheets sync confirmation.',
+ });
+ }
+
+ const config = loadAppConfig();
+ if (config.spreadsheetId) {
+ fetch('/api/sheets/status')
+ .then((res) => res.json())
+ .then((data) => {
+ if (data && data.configured === false) {
+ setSyncIssue({
+ message: 'Google Sheets credentials needed to sync leads',
+ details: data.error || 'Service account credentials required',
+ });
+ }
+ })
+ .catch(() => {});
+ }
+ }, [leads]);
+
+
+
+ const handleDelete = (lead: NewLeadRecord) => {
+ setLeadToDelete(lead);
+ };
+
+ const confirmDeleteLead = async () => {
+ if (!leadToDelete) return;
+ const lead = leadToDelete;
+ setLeadToDelete(null);
+
+ deleteNewLead(lead.id);
+ setLeads(getNewLeads());
+
+ logAuditActivity({
+ actionType: 'delete_lead',
+ clientName: lead.clientName,
+ clientPhone: lead.clientPhone,
+ tabName: lead.leadSource || 'Angi',
+ details: `Deleted lead"${lead.clientName}"`
+ });
+
+ const config = loadAppConfig();
+ try {
+ if (config.spreadsheetId) {
+ const tabName = lead.leadSource || 'Angi';
+ const { rows } = await readSpreadsheetRows(undefined, config.spreadsheetId, tabName, true);
+ const match = rows.find(
+ (r) =>
+ r.clientName?.trim().toLowerCase() === lead.clientName.trim().toLowerCase() &&
+ (!lead.clientPhone || r.clientPhone?.replace(/\D/g, '') === lead.clientPhone.replace(/\D/g, ''))
+ );
+ if (match && match.rowIndex) {
+ await deleteRowFromSheet(undefined, config.spreadsheetId, tabName, match.rowIndex);
+ }
+ }
+ } catch (err) {
+ console.warn('Failed to delete lead from Google Sheet in background:', err);
+ }
+ };
+
+ const handleScheduleLead = (lead: NewLeadRecord) => {
+ const todayStr = new Date().toISOString().split('T')[0];
+ const appointmentData = {
+ clientName: lead.clientName,
+ appointmentDate: todayStr,
+ startTime: '09:00',
+ endTime: '11:00',
+ salespersonCode: '',
+ clientPhone: lead.clientPhone,
+ clientEmail: lead.clientEmail,
+ address: lead.address,
+ leadSource: lead.leadSource || 'Angi',
+ leadType: lead.serviceNeeded || 'Direct',
+ serviceNeeded: lead.serviceNeeded,
+ notes: lead.notes,
+ };
+ sessionStorage.setItem('prefill_schedule_lead', JSON.stringify(appointmentData));
+ navigate('/');
+ setTimeout(() => {
+ window.dispatchEvent(new CustomEvent('open_schedule_modal', { detail: appointmentData }));
+ }, 100);
+ };
+
+ const availableSources = Array.from(
+ new Set([
+ 'Angi',
+ 'Thumbtack',
+ ...leads.map((l) => l.leadSource).filter((s): s is string => Boolean(s)),
+ ])
+ );
+
+ const filteredLeads = leads
+ .filter((lead) => {
+ if (sourceFilter !== 'ALL') {
+ const src = (lead.leadSource || 'Angi').toLowerCase();
+ if (src !== sourceFilter.toLowerCase()) return false;
+ }
+ const query = searchTerm.toLowerCase().trim();
+ if (!query) return true;
+ return (
+ (lead.clientName || '').toLowerCase().includes(query) ||
+ (lead.clientPhone || '').toLowerCase().includes(query) ||
+ (lead.clientEmail || '').toLowerCase().includes(query) ||
+ (lead.serviceNeeded || '').toLowerCase().includes(query) ||
+ (lead.leadSource || '').toLowerCase().includes(query) ||
+ (lead.address || '').toLowerCase().includes(query)
+ );
+ })
+ .sort((a, b) => {
+ const aTime = new Date(a.createdAt || 0).getTime();
+ const bTime = new Date(b.createdAt || 0).getTime();
+ if (!isNaN(aTime) && !isNaN(bTime) && bTime !== aTime && bTime > 0 && aTime > 0) {
+ return bTime - aTime;
+ }
+ return (b.rowIndex || 0) - (a.rowIndex || 0);
+ });
+
+ return (
+ <div className={`p-4 sm:p-6 space-y-5 font-sans transition-all ${viewMode === 'table' ? 'w-full max-w-none px-4 sm:px-6 md:px-8' : 'max-w-7xl mx-auto'}`}>
+
+ {syncMsg && (
+ <div className="bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-semibold p-3.5 rounded-xl flex items-center justify-between shadow-2xs">
+ <span>{syncMsg}</span>
+ <button onClick={() => setSyncMsg(null)} className="text-emerald-600 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-white font-bold ml-2 cursor-pointer">✕</button>
+ </div>
+ )}
+
+ {/* Everyday Controls: Prominent Search & Filter */}
+ <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 sm:p-3.5 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+ <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 max-w-xl">
+ {/* Search Input */}
+ <div className="relative flex-1">
+ <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500"/>
+ <input
+ type="text"
+ value={searchTerm}
+ onChange={(e) => setSearchTerm(e.target.value)}
+ placeholder="Search leads by name, phone, address, service..."
+ className="w-full pl-9 pr-8 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-[#FF5500]/50 transition-all font-medium"
+ />
+ {searchTerm && (
+ <button
+ type="button"
+ onClick={() => setSearchTerm('')}
+ className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 cursor-pointer"
+ >
+ <X className="w-3.5 h-3.5"/>
+ </button>
+ )}
+ </div>
+
+ {/* Filter Dropdown */}
+ <div className="flex items-center gap-1.5 px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-semibold text-zinc-700 dark:text-zinc-200 shrink-0">
+ <Filter className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"/>
+ <select
+ value={sourceFilter}
+ onChange={(e) => setSourceFilter(e.target.value)}
+ className="bg-transparent border-none outline-none text-xs font-semibold text-zinc-800 dark:text-zinc-200 cursor-pointer pr-1"
+ >
+ <option value="ALL">All Sources</option>
+ {availableSources.map((src) => (
+ <option key={src} value={src}>{src}</option>
+ ))}
+ </select>
+ </div>
+ </div>
+
+ <div className="flex items-center gap-3 justify-end shrink-0">
+ {/* View Mode Toggle: Clean View vs Table View */}
+ <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
+ <button
+ onClick={() => setViewMode('clean')}
+ className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+ viewMode === 'clean'
+ ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs'
+ : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+ }`}
+ >
+ <LayoutGrid className="w-3.5 h-3.5"/>
+ <span>Clean View</span>
+ </button>
+ <button
+ onClick={() => setViewMode('table')}
+ className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+ viewMode === 'table'
+ ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs'
+ : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+ }`}
+ >
+ <TableIcon className="w-3.5 h-3.5"/>
+ <span>Table View</span>
+ </button>
+ </div>
+ </div>
+ </div>
+
+ {/* Leads Content */}
+ {filteredLeads.length === 0 ? (
+ <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-12 text-center space-y-4 shadow-sm">
+ <div className="w-16 h-16 mx-auto rounded-3xl bg-[#FF5500]/10 flex items-center justify-center text-[#FF5500]">
+ <UserPlus className="w-8 h-8"/>
+ </div>
+ <div className="space-y-1">
+ <h3 className="text-base font-bold text-zinc-900 dark:text-white">No New Leads Found</h3>
+ {leads.length > 0 && (
+ <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto">
+ No leads match your search query.
+ </p>
+ )}
+ </div>
+ </div>
+ ) : viewMode === 'clean' ? (
+        /* CLEAN VIEW: 1 COLUMN HORIZONTAL ROW CARDS (STANDARDIZED WITH TODAY'S TASKS & SPREADSHEET VIEWS) */
+        <div className="flex flex-col gap-3 w-full">
+          {filteredLeads.map((lead) => {
+            // Check if lead was created/added today
+            const isToday = (() => {
+              if (!lead.createdAt) return false;
+              try {
+                const d = new Date(lead.createdAt);
+                if (isNaN(d.getTime())) return false;
+                const now = new Date();
+                return (
+                  d.getDate() === now.getDate() &&
+                  d.getMonth() === now.getMonth() &&
+                  d.getFullYear() === now.getFullYear()
+                );
+              } catch (_) {
+                return false;
+              }
+            })();
+
+            return (
+              <div
+                key={lead.id}
+                onClick={() => handleOpenLead(lead)}
+                className={`group p-4 bg-white dark:bg-zinc-900 border rounded-2xl shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                  isToday
+                    ? 'border-[#FF5500] hover:border-[#E64D00]'
+                    : 'border-zinc-200 dark:border-zinc-800 hover:border-[#FF5500] dark:hover:border-[#FF5500]'
+                }`}
+              >
+                {/* LEFT: Client Identity & Metadata Badges */}
+                <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                  <div className="w-10 h-10 rounded-xl bg-[#FF5500]/10 border border-[#FF5500]/20 flex items-center justify-center text-[#FF5500] font-black text-sm shrink-0">
+                    {lead.clientName ? lead.clientName.charAt(0).toUpperCase() : 'C'}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm sm:text-base font-extrabold text-zinc-900 dark:text-white group-hover:text-[#FF5500] transition-colors truncate">
+                        {lead.clientName}
+                      </h3>
+                      {isToday && (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-[#FF5500] text-white shadow-xs">
+                          TODAY
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-1 flex-wrap text-xs">
+                      {getStatusBadge(lead.status)}
+                      <span className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-xs font-semibold border border-zinc-200 dark:border-zinc-700">
+                        {lead.leadSource || 'Angi'}
+                      </span>
+                      {lead.serviceNeeded && (
+                        <span className="text-zinc-500 dark:text-zinc-400 text-xs truncate max-w-[200px]" title={lead.serviceNeeded}>
+                          {lead.serviceNeeded}
+                        </span>
+                      )}
+                      {lead.leadFee && (
+                        <span className="px-1.5 py-0.5 text-[10px] font-semibold text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 rounded-md border border-zinc-200 dark:border-zinc-700">
+                          {lead.leadFee.startsWith('$') ? lead.leadFee : `$${lead.leadFee}`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT: Actions */}
+                <div
+                  className="flex items-center gap-2.5 shrink-0 self-end sm:self-center pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800/80 w-full sm:w-auto justify-between sm:justify-end"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Status Dropdown */}
+                  <div className="relative inline-flex items-center">
+                    <select
+                      value={lead.status || 'New'}
+                      onChange={(e) => handleStatusChange(lead, e.target.value)}
+                      disabled={updatingId === lead.id}
+                      className="px-2.5 py-1.5 pr-7 rounded-xl text-xs font-semibold bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer appearance-none disabled:opacity-50"
+                      title="Update lead status"
+                    >
+                      {LEAD_STATUS_OPTIONS.map((st) => (
+                        <option key={st} value={st} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white normal-case font-medium">
+                          {st}
+                        </option>
+                      ))}
+                    </select>
+                    {updatingId === lead.id ? (
+                      <Loader2 className="w-3 h-3 text-zinc-500 animate-spin absolute right-2 pointer-events-none" />
+                    ) : (
+                      <ChevronDown className="w-3 h-3 text-zinc-500 absolute right-2 pointer-events-none" />
+                    )}
+                  </div>
+
+                  {/* Schedule Appointment Action Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleScheduleLead(lead);
+                    }}
+                    className="px-3.5 py-2 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                    title="Schedule client appointment"
+                  >
+                    <CalendarClock className="w-3.5 h-3.5" />
+                    <span>Schedule</span>
+                  </button>
+
+                  {/* Delete Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(lead);
+                    }}
+                    title="Delete lead"
+                    className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+ /* TABLE VIEW (ALL INFO IN 1 ROW PER LEAD) */
+ <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
+ <div className="overflow-x-auto">
+ <table className="w-full text-left border-collapse text-xs">
+ <thead>
+ <tr className="bg-zinc-50 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-800">
+ <th className="py-3 px-4">Client Name</th>
+ <th className="py-3 px-4">Phone</th>
+ <th className="py-3 px-4">Email</th>
+ <th className="py-3 px-4">Address</th>
+ <th className="py-3 px-4">Service Needed</th>
+ <th className="py-3 px-4">Lead Fee</th>
+ <th className="py-3 px-4">Source</th>
+ <th className="py-3 px-4">Status</th>
+ <th className="py-3 px-4 text-right">Actions</th>
+ </tr>
+ </thead>
+ <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium">
+ {filteredLeads.map((lead) => (
+ <tr
+                key={lead.id}
+                onClick={() => handleOpenLead(lead)}
+                className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer"
+              >
+ <td className="py-3 px-4 font-bold text-zinc-900 dark:text-white whitespace-nowrap">
+ <span className="hover:text-[#FF5500] transition-colors">{lead.clientName}</span>
+ </td>
+ <td className="py-3 px-4 whitespace-nowrap">{lead.clientPhone || '—'}</td>
+ <td className="py-3 px-4 whitespace-nowrap">{lead.clientEmail || '—'}</td>
+ <td className="py-3 px-4 max-w-[200px] truncate"title={lead.address}>{lead.address || '—'}</td>
+ <td className="py-3 px-4 font-semibold text-zinc-900 dark:text-white whitespace-nowrap">{lead.serviceNeeded || '—'}</td>
+ <td className="py-3 px-4 whitespace-nowrap font-semibold text-zinc-700 dark:text-zinc-300">
+ {lead.leadFee ? (lead.leadFee.startsWith('$') ? lead.leadFee : `$${lead.leadFee}`) : '—'}
+ </td>
+ <td className="py-3 px-4 whitespace-nowrap">
+ <div className="flex items-center gap-1.5">
+ <span className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+ {lead.leadSource || 'Angi'}
+ </span>
+ </div>
+ </td>
+ <td className="py-3 px-4 whitespace-nowrap">
+ <div className="relative inline-flex items-center">
+ <select
+ value={lead.status || 'New'}
+ onChange={(e) => handleStatusChange(lead, e.target.value)}
+ disabled={updatingId === lead.id}
+ className="px-2.5 py-0.5 pr-6 rounded-full text-xs font-medium bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer appearance-none disabled:opacity-50"
+ title="Click to edit status"
+ >
+ {LEAD_STATUS_OPTIONS.map((st) => (
+ <option key={st} value={st} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white normal-case font-medium">
+ {st}
+ </option>
+ ))}
+ </select>
+ {updatingId === lead.id ? (
+ <Loader2 className="w-2.5 h-2.5 text-zinc-500 animate-spin absolute right-1.5 pointer-events-none"/>
+ ) : (
+ <ChevronDown className="w-2.5 h-2.5 text-zinc-500 absolute right-1.5 pointer-events-none"/>
+ )}
+ </div>
+ </td>
+ <td className="py-3 px-4 text-right whitespace-nowrap space-x-1.5" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => handleScheduleLead(lead)}
+                    className="px-3 py-1.5 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-lg text-xs font-bold transition-all shadow-2xs inline-flex items-center gap-1 cursor-pointer"
+                    title="Schedule Appointment"
+                  >
+                    <CalendarClock className="w-3.5 h-3.5" />
+                    <span>Schedule</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(lead)}
+                    className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors inline-flex items-center cursor-pointer"
+                    title="Delete Lead"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </td>
+ </tr>
+ ))}
+ </tbody>
+ </table>
+ </div>
+ </div>
+ )}
+
+ {/* Edit Client Information Modal */}
+ {editingLead && (
+ <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 overflow-y-auto">
+ <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-5 my-8">
+ <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+ <div className="flex items-center gap-2.5">
+ <div className="w-10 h-10 rounded-xl bg-[#FF5500]/10 text-[#FF5500] flex items-center justify-center">
+ <Edit2 className="w-5 h-5"/>
+ </div>
+ <div>
+ <h3 className="text-base font-black text-zinc-900 dark:text-white">Edit Client Information</h3>
+ <p className="text-xs text-zinc-500 dark:text-zinc-400">Modify lead details across any status</p>
+ </div>
+ </div>
+ <button
+ onClick={() => setEditingLead(null)}
+ className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors cursor-pointer"
+ >
+ <X className="w-5 h-5"/>
+ </button>
+ </div>
+
+ <form onSubmit={handleSaveEditSubmit} className="space-y-4">
+ <div className="space-y-3">
+ {/* Client Name */}
+ <div>
+ <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1">
+ Client Name *
+ </label>
+ <input
+ type="text"
+ required
+ value={editFormData.clientName}
+ onChange={(e) => setEditFormData({ ...editFormData, clientName: e.target.value })}
+ className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white font-medium"
+ placeholder="e.g. John Doe"
+ />
+ </div>
+
+ {/* Phone & Email */}
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+ <div>
+ <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1">
+ Phone Number
+ </label>
+ <input
+ type="text"
+ value={editFormData.clientPhone}
+ onChange={(e) => setEditFormData({ ...editFormData, clientPhone: e.target.value })}
+ className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white"
+ placeholder="e.g. (555) 000-0000"
+ />
+ </div>
+ <div>
+ <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1">
+ Email Address
+ </label>
+ <input
+ type="email"
+ value={editFormData.clientEmail}
+ onChange={(e) => setEditFormData({ ...editFormData, clientEmail: e.target.value })}
+ className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white"
+ placeholder="e.g. client@example.com"
+ />
+ </div>
+ </div>
+
+ {/* Address */}
+ <div>
+ <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1">
+ Street Address / Location
+ </label>
+ <input
+ type="text"
+ value={editFormData.address}
+ onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
+ className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white"
+ placeholder="e.g. 123 Main St, Austin, TX"
+ />
+ </div>
+
+ {/* Service Needed & Lead Fee */}
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+ <div>
+ <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1">
+ Service Needed
+ </label>
+ <input
+ type="text"
+ value={editFormData.serviceNeeded}
+ onChange={(e) => setEditFormData({ ...editFormData, serviceNeeded: e.target.value })}
+ className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white"
+ placeholder="e.g. Roof Inspection, HVAC Repair"
+ />
+ </div>
+ <div>
+ <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1">
+ Lead Fee ($)
+ </label>
+ <input
+ type="text"
+ value={editFormData.leadFee}
+ onChange={(e) => setEditFormData({ ...editFormData, leadFee: e.target.value })}
+ className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white"
+ placeholder="e.g. 45.00"
+ />
+ </div>
+ </div>
+
+ {/* Source & Status */}
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+ <div>
+ <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1">
+ Lead Source / Tab
+ </label>
+ <input
+ type="text"
+ value={editFormData.leadSource}
+ onChange={(e) => setEditFormData({ ...editFormData, leadSource: e.target.value })}
+ className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white"
+ placeholder="e.g. Angi, Thumbtack, Website"
+ />
+ </div>
+ <div>
+ <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1">
+ Status
+ </label>
+ <select
+ value={editFormData.status}
+ onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+ className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white font-bold"
+ >
+ {LEAD_STATUS_OPTIONS.map((st) => (
+ <option key={st} value={st}>
+ {st}
+ </option>
+ ))}
+ </select>
+ </div>
+ </div>
+
+ <div>
+ <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1">
+ Notes & Details
+ </label>
+ <textarea
+ rows={3}
+ value={editFormData.notes}
+ onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+ className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white resize-none"
+ placeholder="Any notes about this lead or project..."
+ />
+ </div>
+ </div>
+
+ {/* Action Buttons */}
+ <div className="flex items-center gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+ <button
+ type="button"
+ onClick={() => setEditingLead(null)}
+ disabled={isSavingEdit}
+ className="flex-1 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50"
+ >
+ Cancel
+ </button>
+ <button
+ type="submit"
+ disabled={isSavingEdit}
+ className="flex-1 py-2.5 rounded-lg bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-black shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+ >
+ {isSavingEdit ? (
+ <>
+ <Loader2 className="w-3.5 h-3.5 animate-spin"/>
+ <span>Saving Changes...</span>
+ </>
+ ) : (
+ <>
+ <Save className="w-3.5 h-3.5"/>
+ <span>Save Changes</span>
+ </>
+ )}
+ </button>
+ </div>
+ </form>
+ </div>
+ </div>
+ )}
+
+ {/* Delete Confirmation Modal */}
+ {leadToDelete && (
+ <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+ <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4">
+ <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
+ <Trash2 className="w-6 h-6"/>
+ </div>
+ <div>
+ <h3 className="text-base font-black text-zinc-900 dark:text-white">Delete Lead</h3>
+ <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+ Are you sure you want to delete lead <span className="font-bold text-zinc-800 dark:text-zinc-200">"{leadToDelete.clientName}"</span>? This will remove it from the app and Google Sheets.
+ </p>
+ </div>
+ <div className="flex items-center gap-2 pt-2">
+ <button
+ type="button"
+ onClick={() => setLeadToDelete(null)}
+ className="flex-1 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+ >
+ Cancel
+ </button>
+ <button
+ type="button"
+ onClick={confirmDeleteLead}
+ className="flex-1 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-black shadow-sm transition-all cursor-pointer"
+ >
+ Delete Lead
+ </button>
+ </div>
+ </div>
+ </div>
+ )}
+
+       {/* Client Information Plate (LeadDrawer) */}
+      <LeadDrawer
+        isOpen={isDrawerOpen}
+        onClose={handleCloseDrawer}
+        lead={selectedLeadForDrawer}
+        onStatusChange={handleDrawerStatusChange}
+        onLeadUpdate={handleDrawerLeadUpdate}
+        statusOptions={LEAD_STATUS_OPTIONS}
+        salespeople={config.salespeople}
+      />
+
+      {/* Webhook Diagnostics Modal */}
+ <WebhookDiagnosticsModal
+ isOpen={isWebhookDiagOpen}
+ onClose={() => setIsWebhookDiagOpen(false)}
+ onLeadCreated={refreshLocalLeads}
+ />
+ </div>
+ );
+};
+

@@ -1,0 +1,31 @@
+{
+  "salespeople": [
+    {
+      "id": "sp_dg",
+      "code": "DG",
+      "name": "Daniel Grider (DG)"
+    }
+  ],
+  "leadSources": [
+    "Angi",
+    "Thumbtack",
+    "Referral",
+    "Big Fish",
+    "Houzz Pro",
+    "Roof R",
+    "Home Launch",
+    "Website",
+    "Yard Sign",
+    "Other"
+  ],
+  "leadTypes": [
+    "Direct",
+    "Other"
+  ],
+  "timeZone": "America/New_York",
+  "theme": "light",
+  "sheetTabName": "ALL",
+  "autoSyncToSheets": true,
+  "houzzWebhookUrl": "https://hooks.zapier.com/hooks/catch/28623037/4hml53j/",
+  "autoSendToHouzz": false
+}

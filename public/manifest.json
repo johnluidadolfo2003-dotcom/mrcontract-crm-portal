@@ -1,0 +1,22 @@
+{
+  "name": "Mr. Contract Lead Portal",
+  "short_name": "Mr Contract",
+  "description": "Lead and Appointment Management Portal for Contractors",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#f97316",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

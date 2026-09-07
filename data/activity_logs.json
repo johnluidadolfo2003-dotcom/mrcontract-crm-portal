@@ -1,0 +1,52 @@
+[
+  {
+    "id": "log_1788471382686_0c3f",
+    "timestamp": "2026-09-03T21:36:22.686Z",
+    "actionType": "delete_lead",
+    "userId": "usr_1788458953162_crg8",
+    "userName": "User 1",
+    "userColor": "#FF5500",
+    "clientName": "",
+    "clientPhone": "",
+    "tabName": "Angi",
+    "details": "Deleted lead \"undefined\"",
+    "oldValue": "",
+    "newValue": ""
+  },
+  {
+    "id": "act_1788471207799_8a74i",
+    "timestamp": "2026-09-03T21:33:27.798Z",
+    "user": {
+      "displayName": "undefined Webhook",
+      "email": "webhook@mrcontract.internal"
+    },
+    "actionType": "add_lead",
+    "details": "Incoming lead auto-created via undefined Webhook: \"undefined\" (Service)"
+  },
+  {
+    "id": "act_1788469438300_li5hd",
+    "timestamp": "2026-09-03T21:03:58.299Z",
+    "user": {
+      "displayName": "Angi Webhook",
+      "email": "webhook@mrcontract.internal"
+    },
+    "actionType": "add_lead",
+    "clientName": "Robert Patterson\nPhone",
+    "clientPhone": "(412) 555-4321",
+    "tabName": "Angi",
+    "details": "Incoming lead auto-created via Angi Webhook: \"Robert Patterson\nPhone\" (Brick Tuckpointing and Mortar Repair)"
+  },
+  {
+    "id": "act_1788468232424_k9b61",
+    "timestamp": "2026-09-03T20:43:52.424Z",
+    "user": {
+      "displayName": "Thumbtack Webhook",
+      "email": "webhook@mrcontract.internal"
+    },
+    "actionType": "add_lead",
+    "clientName": "Test Thumbtack User",
+    "clientPhone": "(412) 555-7766",
+    "tabName": "Thumbtack",
+    "details": "Incoming lead auto-created via Thumbtack Webhook: \"Test Thumbtack User\" (Retaining Wall Repair)"
+  }
+]

@@ -1,0 +1,178 @@
+{
+  "1": {
+    "title": "The app uses spreadsheet row numbers to locate leads.",
+    "body": "We’ll discuss **one weakness at a time**, and stay on it until you’re ready to move on.\n\n**Weakness 1: The app uses spreadsheet row numbers to locate leads.**\n\nFor example:\n\n- A client is in **row 10**.\n- Someone inserts a row above them, moving the client to **row 11**.\n- If your app still uses the old position, it could update the wrong client.\n\nThe proposed fix is a **permanent background Lead ID**, with no visible ID column in your spreadsheet.\n\nWhat would you like to ask about this first?"
+  },
+  "2": {
+    "title": "Workers can see different or outdated information.",
+    "body": "**Weakness 2: Workers can see different or outdated information.**\n\nYour app saves some information in each browser and refreshes spreadsheet data every **45 seconds** on the spreadsheet page. Shared status overrides are checked every **10 seconds**.\n\n**Example:** Your worker changes a client to “Meeting Scheduled,” but your screen still shows “New.” You might call that client again because you haven’t received the update yet.\n\nThe recommended improvement is:\n\n- Use **one shared saved record** that all workers read.\n- Automatically show changes on other workers’ screens.\n- Display **Saving → Saved**, or **Sync failed → Retry**.\n- Calculate dashboard and sidebar counts from the same shared data.\n\nThis would help everyone see consistent statuses, notes, and counts—and know whether their changes actually saved."
+  },
+  "3": {
+    "title": "Follow-ups can count from the wrong date.",
+    "body": "**Weakness 3: Follow-ups can count from the wrong date.**\n\nYour code sometimes uses the lead’s creation date, appointment date, or text in notes to guess when an estimate was sent.\n\n**Example:**\n\n- Lead added: September 1\n- Estimate sent: September 5\n- Follow-up due three days later: **September 8**\n\nIf the app counts from September 1, the reminder will be wrong.\n\n**Solution:** Save a dedicated **Estimate Sent Date** when you mark the estimate as sent. Allow you to correct it if you’re recording an estimate sent earlier.\n\nAll follow-up dates should calculate from that saved date, using your business timezone."
+  },
+  "4": {
+    "title": "Your “3-day follow-up” can appear one day early.",
+    "body": "**Weakness 4: Your “3-day follow-up” can appear one day early.**\n\nYour code counts the day you send the estimate as **Day 1**.\n\nIf you send it on Monday:\n\n| Counting method | Follow-up date |\n|---|---|\n| Current “Day 3” | Wednesday |\n| Three days **after sending** | Thursday |\n\n**The fix:** If you mean “follow up three days after sending,” start counting the next day. Apply the same rule to your other follow-up intervals."
+  },
+  "5": {
+    "title": "Duplicate checking can miss duplicates or block a real new job.",
+    "body": "**Weakness 5: Duplicate checking can miss duplicates or block a real new job.**\n\nYour code checks only spreadsheet rows **5–25** when inserting a lead.\n\nTwo problems:\n\n- **Missed duplicate:** The same lead already exists in row 50, but the check doesn’t find it.\n- **Returning customer:** A previous client requests a different job using the same phone number. The app may mistake it for their old lead.\n\n**The fix:** Check across existing records and distinguish **the same lead received twice** from **the same customer requesting a new job**.\n\nFor uncertain matches, show **“Possible duplicate—review”** instead of automatically combining them."
+  },
+  "6": {
+    "title": "A lead can appear in your app even though sending it to Google Sheets or Houzz failed.",
+    "body": "**Weakness 6: A lead can appear in your app even though sending it to Google Sheets or Houzz failed.**\n\nFor example:\n\n- Lead received in your app ✅\n- Saved to Google Sheets ✅\n- Sent to Houzz ❌\n\nYour team might assume everything succeeded.\n\n**The fix:** Track each destination separately with **Pending, Successful, or Failed**. Automatically retry temporary failures and provide a **Retry** button.\n\nOnly retry the failed step, with duplicate protection so the same lead isn’t created twice."
+  },
+  "7": {
+    "title": "Smart Autofill can stop working after one temporary error.",
+    "body": "**Weakness 7: Smart Autofill can stop working after one temporary error.**\n\nYour code can disable AI extraction for **all workers until the server restarts**, even if the original problem was temporary.\n\n**Example:** One request fails because Google is temporarily unavailable. Later requests keep using the basic text parser, while image extraction stops extracting details.\n\n**The fix:** Let Autofill recover automatically. Retry temporary errors a limited number of times, show a clear message if it still fails, and allow manual entry while waiting."
+  },
+  "8": {
+    "title": "Follow-up reminders need something that runs when nobody has the app open.",
+    "body": "**Weakness 8: Follow-up reminders need something that runs when nobody has the app open.**\n\nYour code shows follow-up information, but I didn’t find a backend scheduler that automatically triggers reminders.\n\n**Example:** A client’s follow-up is due today. Showing “Due today” when you open the app does not automatically notify your worker while the app is closed.\n\n**The fix:** Add a scheduled background task that:\n\n- Checks which follow-ups are due.\n- Creates a reminder for the assigned worker.\n- Records that it was created so it isn’t repeated accidentally.\n\nIf you only want to see due follow-ups when opening the app, you may not need this addition yet."
+  },
+  "9": {
+    "title": "Some history is stored only in a browser, and older incoming leads are automatically removed.",
+    "body": "**Weakness 9: Some history is stored only in a browser, and older incoming leads are automatically removed.**\n\nTwo examples from your code:\n\n- Some client activities are saved in the worker’s browser, so another computer may not see them.\n- The incoming-lead file keeps only the newest **500 records**, even if an older lead hasn’t successfully synced to Google Sheets.\n\n**The fix:** Save important history in shared, lasting storage. Archive older completed records, and never automatically remove leads still waiting to sync.\n\nThis is the last weakness in our original list."
+  },
+  "10": {
+    "title": "The app can say “Email failed” even when the email was already sent.",
+    "body": "**Weakness 10: The app can say “Email failed” even when the email was already sent.**\n\nI found this in your customer-service page:\n\n1. The app sends the email through Gmail.\n2. It then updates the client’s status in Google Sheets.\n3. If that spreadsheet update fails, the app displays **“Send failed.”**\n\n**The problem:** Your worker might click Send again, sending the same email twice.\n\n**The fix:** Separate the results:\n\n- **Email sent successfully.**\n- **Status update failed — Retry status update.**\n\nThe retry should update the spreadsheet only, without sending the email again."
+  },
+  "11": {
+    "title": "Sending an email is recorded as a phone call.",
+    "body": "**Weakness 11: Sending an email is recorded as a phone call.**\n\nIn your customer-service code, a successfully sent email is saved with the activity type **`call`**, even though its description says ��Email Sent.”\n\n**The problem:** Any history filter or report based on activity type could count emails as calls.\n\n**The fix:** Add a separate **Email** activity type and record each action correctly:\n\n- Phone call → **Call**\n- Sent email → **Email**\n- Text message → **SMS**\n\nSending an email should not count as completing a required phone call."
+  },
+  "12": {
+    "title": "The app says “Lead deleted successfully” before confirming the deletion.",
+    "body": "**Weakness 12: The app says “Lead deleted successfully” before confirming the deletion.**\n\nIn your customer-service page, the code removes the lead from the screen and records it as deleted **before Google Sheets confirms**. If deletion fails, it only logs a background warning.\n\n**The problem:** The client remains in Sheets and may reappear when the app refreshes.\n\n**The fix:**\n\n- Show **“Deleting…”** while waiting.\n- Show success and record the deletion only after confirmation.\n- If it fails, keep the lead visible and show **“Delete failed — Retry.”**"
+  },
+  "13": {
+    "title": "Follow-up messages can use the wrong salesperson’s name.",
+    "body": "**Weakness 13: Follow-up messages can use the wrong salesperson’s name.**\n\nIn your customer-service page, the message template takes **the first salesperson in your settings list**, rather than the salesperson assigned to the client.\n\n**Example:** Steve handles the client, but Daniel is first in settings. The prepared message could introduce the sender as Daniel.\n\n**The fix:** Use the assigned salesperson’s name. If nobody is assigned, use **“Mr. Contract Customer Service”** and let the worker review the message before sending."
+  },
+  "14": {
+    "title": "Turning off “Auto-send to Houzz” may not stop incoming leads from being forwarded.",
+    "body": "Number 13 is excluded.\n\n**Weakness 14: Turning off “Auto-send to Houzz” may not stop incoming leads from being forwarded.**\n\nYour settings have an `autoSendToHouzz` switch, but the backend’s incoming-lead process does **not check that setting** before forwarding.\n\n**Example:** You switch automatic sending off, but a new Angi webhook lead can still be forwarded because a Houzz/Zapier URL is configured.\n\n**The fix:** Make the backend check the saved switch before every automatic forwarding attempt. Manual **Send to Houzz** should remain available separately."
+  },
+  "15": {
+    "title": "“Send to Houzz” can report success even when the receiving service rejects the request.",
+    "body": "**Weakness 15: “Send to Houzz” can report success even when the receiving service rejects the request.**\n\nYour backend sends the webhook but **doesn’t check the response status** before saying “Webhook sent successfully.”\n\n**Example:** Zapier returns an error, but your worker sees a success message.\n\n**The fix:** Check the response before confirming success. Show **“Failed — Retry”** when rejected.\n\nAlso, **“Accepted by Zapier”** and **“Created in Houzz”** should be separate results. The app can only confirm creation in Houzz if it receives confirmation from that step."
+  },
+  "16": {
+    "title": "Retrying a failed Houzz send can incorrectly show “Already forwarded.”",
+    "body": "**Weakness 16: Retrying a failed Houzz send can incorrectly show “Already forwarded.”**\n\nYour code marks a lead as recently sent **before the send succeeds**, then blocks another attempt for **20 seconds**.\n\n**Example:** Sending fails. Your worker immediately clicks Retry. The app skips sending and says the lead was already forwarded—even though it wasn’t.\n\n**The fix:** Track **Sending, Failed, and Confirmed** separately. Block duplicate clicks while sending, but allow failed attempts to retry. Only show “Already forwarded” after confirmed acceptance."
+  },
+  "17": {
+    "title": "The app saves an unnecessary extra copy of Angi leads.",
+    "body": "**Number 17: The app saves an unnecessary extra copy of Angi leads.**\n\nEach incoming Angi lead is saved in both:\n\n- The main incoming-leads file.\n- An older Angi-only file.\n\nHowever, the current code retrieves Angi leads from the **main file**. I found no code that reads the older copy for displaying leads.\n\n**Why remove this?** It adds unnecessary file writes and keeps a second copy that can become outdated.\n\n**The fix:** Stop writing the old copy after confirming no external process uses it. Keep one main lead record and filter by **Angi** when needed."
+  },
+  "18": {
+    "title": "Appointments are created without a backend check for overlapping bookings.",
+    "body": "**Weakness 18: Appointments are created without a backend check for overlapping bookings.**\n\nYour Calendar creation function sends the appointment directly to Google Calendar without first checking the salesperson’s availability.\n\n**Example:** Two workers could book the same salesperson for different clients at 10 AM.\n\n**The fix:** Check the assigned salesperson’s schedule before confirming. If appointments overlap, show **“This salesperson already has an appointment at this time.”**\n\nAlso coordinate simultaneous booking requests so two workers cannot both reserve the same available slot. Different salespeople should still be allowed appointments at the same time."
+  },
+  "19": {
+    "title": "There is unused code intended to help the app load offline.",
+    "body": "**Number 19: There is unused code intended to help the app load offline.**\n\nYour project includes `public/sw.js`, but I found no code that activates it in the current app.\n\n**What this means:** Having that file does not make your app work offline. It currently appears to be unfinished or leftover functionality.\n\n**The fix:** If you only need the app online, remove the unused file after checking for older installations. If you want offline support, complete and test it—including clearly marking changes that haven’t synced yet.\n\nThis is a cleanup item, not a confirmed cause of your current sync problems."
+  },
+  "20": {
+    "title": "Leads with a missing source are automatically labeled “Angi.”",
+    "body": "**Weakness 20: Leads with a missing source are automatically labeled “Angi.”**\n\nYour universal incoming-lead endpoint defaults to **Angi** when no source is provided.\n\n**Example:** A website inquiry arrives without a source field. The app records it as an Angi lead, making your source counts inaccurate.\n\n**The fix:** Use the source supplied by the integration. If it’s missing, flag the lead as **“Source needs review”** and let a worker select from your existing lead sources.\n\nThe dedicated Angi endpoint can still automatically label its leads as Angi."
+  },
+  "21": {
+    "title": "Missing service details are automatically filled with “General Masonry.”",
+    "body": "**Weakness 21: Missing service details are automatically filled with “General Masonry.”**\n\nYour incoming-lead parser uses that value when it cannot find the requested service.\n\n**Example:** A customer’s service details fail to import. Instead of showing missing information, the app labels the job “General Masonry,” which could mislead your team.\n\n**The fix:** Leave the service blank and flag **“Service details needed.”** Preserve the original inquiry so a worker can review it and choose the correct service."
+  },
+  "22": {
+    "title": "Removing a scheduled client does not cancel their Google Calendar appointment.",
+    "body": "**Weakness 22: Removing a scheduled client does not cancel their Google Calendar appointment.**\n\nThe removal function updates only the list stored in your browser. It doesn’t delete the linked Calendar event.\n\n**Example:** You remove a client from Scheduled Clients, but the salesperson still sees the appointment in Google Calendar.\n\n**The fix:** Make the actions clear:\n\n- **Remove from list** — leaves the appointment unchanged.\n- **Cancel appointment** — cancels the linked Calendar event and updates the shared appointment record after confirmation.\n\nThis prevents workers from assuming that removing a client also cancels the booking."
+  },
+  "23": {
+    "title": "The app can recommend the 90-day follow-up too early.",
+    "body": "**Weakness 23: The app can recommend the 90-day follow-up too early.**\n\nYour follow-up logic selects **“Past 90 days Follow UP” starting on Day 61**.\n\n**Example:** A client is only on Day 65, but the app recommends the 90-day message.\n\n**The fix:** Match recommendations to the actual due dates. Before Day 90, show **“90-day follow-up upcoming”**, while keeping any unfinished earlier follow-up marked overdue.\n\nThis concerns the recommended follow-up and script; it does not by itself mean the spreadsheet status automatically changes."
+  },
+  "24": {
+    "title": "Smart Autofill can return nothing without explaining why.",
+    "body": "**Weakness 24: Smart Autofill can return nothing without explaining why.**\n\nWhen the AI returns an unreadable response, your parser replaces it with an empty result. The backend then returns that result without an error or warning.\n\n**Example:** You paste a client inquiry and click Autofill, but nothing fills in and you don’t know what failed.\n\n**The fix:** Validate the result. If it cannot be read, try the basic text parser and show **“Couldn’t extract all details—please review.”** Keep anything the worker already entered."
+  },
+  "25": {
+    "title": "Two leads arriving at the same time could overwrite each other.",
+    "body": "**Weakness 25: Two leads arriving at the same time could overwrite each other.**\n\nYour code inserts a blank row at **row 5**, then writes the lead there in a **separate request**.\n\n**Example:** Two incoming leads both insert a row, then both write to row 5. One could replace the other, leaving a blank row behind.\n\n**The fix:** Combine inserting the row and filling its details into one atomic operation—both steps succeed together. Coordinate incoming saves so they cannot compete for the same row.\n\nYou can still keep **newest leads at the top**. Permanent Lead IDs alone won’t fix this insertion problem."
+  },
+  "26": {
+    "title": "New leads are written using fixed spreadsheet column positions.",
+    "body": "**Weakness 26: New leads are written using fixed spreadsheet column positions.**\n\nYour insertion code assumes **Phone is column C, Email is D, and Status is H**.\n\n**Example:** You insert a new column before Phone. The app could still put phone numbers in column C, under the wrong heading.\n\n**The fix:** Match fields to the actual column headings before saving. If a required heading is missing or ambiguous, show a clear error instead of guessing.\n\nYour current layout can stay the same—this makes saving more reliable if columns change."
+  },
+  "27": {
+    "title": "Incoming lead notes are omitted when automatically saving to Google Sheets.",
+    "body": "**Weakness 27: Incoming lead notes are omitted when automatically saving to Google Sheets.**\n\nThe incoming lead can contain notes, but your sheet-insertion function writes only eight fields—**notes aren’t included**.\n\n**Example:** A customer says “Please call after 5 PM.” That instruction may appear in the incoming lead but won’t be included in this automatic Sheets save.\n\n**The fix:** Map notes to your existing Notes column. If you prefer keeping notes only in the app, save them in lasting shared storage linked to the permanent Lead ID."
+  },
+  "28": {
+    "title": "Different parts of the app can use different spreadsheets.",
+    "body": "**Weakness 28: Different parts of the app can use different spreadsheets.**\n\nMost backend operations use `GOOGLE_SPREADSHEET_ID` from Render. But automatic incoming-lead saving uses a separate configuration file or a spreadsheet ID written directly into the code.\n\n**Example:** You change the spreadsheet in Render, but incoming leads could still be saved to the old spreadsheet.\n\n**The fix:** Make every spreadsheet operation use **one central spreadsheet setting**, including automatic imports. Remove the separate selection logic.\n\nThis becomes a problem when those settings differ; it doesn’t mean your current leads are necessarily going to the wrong sheet."
+  },
+  "29": {
+    "title": "Automatically created spreadsheet tabs have no column headings.",
+    "body": "**Weakness 29: Automatically created spreadsheet tabs have no column headings.**\n\nWhen an incoming lead needs a tab that doesn’t exist, your code creates a blank tab, then writes the lead into row 5. It doesn’t add headings such as **Client Name, Phone, Email, and Status**.\n\n**The problem:** Workers see unlabeled information, and functions that identify columns by their headings may struggle to read it correctly.\n\n**The fix:** Create new tabs from a standard template with the correct headings and layout before saving leads. Existing tabs can remain unchanged."
+  },
+  "30": {
+    "title": "Smart Autofill can overwrite details you already corrected.",
+    "body": "Number 29 is excluded.\n\n**Weakness 30: Smart Autofill can overwrite details you already corrected.**\n\nIn your Add Lead form, extracted names, phone numbers, emails, and addresses replace existing values whenever the AI returns them.\n\n**Example:** You correct a client’s phone number, then scan another image for their address. Autofill could replace the corrected phone number with an older one from the image.\n\n**The fix:** Fill empty fields automatically. For fields that already contain different information, let the worker choose whether to keep or replace them."
+  },
+  "31": {
+    "title": "Technical troubleshooting buttons clutter the daily workspace.",
+    "body": "Number 30 is excluded. We’ll continue with **UI improvements, one at a time.**\n\n**Number 31: Technical troubleshooting buttons clutter the daily workspace.**\n\nYour **New Leads** page includes a **“Webhook Diagnostics”** button. Its tools cover testing leads, inspecting logs, and diagnosing integrations—tasks workers don’t normally need while handling clients.\n\nThis makes the interface feel like an unfinished development tool.\n\n**My recommendation:**\n\n- Remove **Webhook Diagnostics** from the New Leads toolbar.\n- Keep it under **Settings → Integrations → Troubleshooting**.\n- Keep everyday actions prominent, such as **Add Lead, Search, and Filter**.\n- Show a small **“Sync issue — View details”** notice only when something needs attention.\n\nThe diagnostic function stays available, but the main screen becomes cleaner and more focused."
+  },
+  "32": {
+    "title": "“Re-sync” buttons make a routine action sound technical.",
+    "body": "**Number 32: “Re-sync” buttons make a routine action sound technical.**\n\nYour New Leads and Customer Service pages use **“Re-sync.”** Workers may wonder whether they must click it after every change.\n\n**My recommendation:**\n\n- Rename it **“Refresh”**, with a small refresh icon.\n- Keep it visually secondary to actions like **Add Lead**.\n- Show **“Updated just now”** quietly beside it.\n- Show **“Update failed — Retry”** when needed.\n\nKeep manual refresh available while improving automatic updates. This makes the interface easier to understand without removing useful functionality."
+  },
+  "33": {
+    "title": "“Google Synced” is an unclear connection label.",
+    "body": "**Number 33: “Google Synced” is an unclear connection label.**\n\nYour header uses **“Google Synced”** when Google is connected. Workers could interpret this as confirmation that every lead and appointment has finished syncing.\n\n**My recommendation:**\n\n- Use **“Google connected”** for account connection status.\n- Keep connection details under **Settings → Integrations**.\n- Show **Saved, Syncing, or Sync failed** beside the relevant action or record.\n- Display a prominent connection notice only when workers need to reconnect.\n\nThis reduces technical clutter and makes each indicator mean something specific."
+  },
+  "34": {
+    "title": "The Smart Autofill toolbar has too much visual emphasis.",
+    "body": "**Number 34: The Smart Autofill toolbar has too much visual emphasis.**\n\nYour Add Lead form uses a separate dark panel, an uppercase heading, and four differently colored icon buttons. This can give it the “AI demo” look you mentioned.\n\n**My recommendation:**\n\n- Rename **“SMART AUTOFILL”** to **“Import details.”**\n- Use compact, labeled buttons: **Paste text** and **Upload image**.\n- Keep **Take photo** available on mobile.\n- Move **Clear form** away from the import buttons.\n- Use your existing brand color consistently.\n\nThe Autofill functionality stays; its presentation becomes simpler and easier to understand."
+  },
+  "35": {
+    "title": "Decorative glows and pulsing effects make the interface feel busy.",
+    "body": "**Number 35: Decorative glows and pulsing effects make the interface feel busy.**\n\nYour Customer Service page includes an orange background glow, gradient highlights, and pulsing elements. These can contribute to the “AI-generated template” feel you mentioned.\n\n**My recommendation:**\n\n- Replace the background glow with a plain surface.\n- Use a subtle solid tint for selected clients.\n- Use solid brand-color buttons.\n- Keep animation for actual loading, rather than decorative attention.\n\nYour orange brand color stays. The page would look calmer and put more emphasis on client information."
+  },
+  "36": {
+    "title": "Important labels are too small and heavily styled.",
+    "body": "**Number 36: Important labels are too small and heavily styled.**\n\nYour Customer Service page uses **9–11px text** for several labels and badges, including **Estimate Sent Date**, with some in bold uppercase.\n\nThis can make information harder to scan, especially on phones.\n\n**My recommendation:**\n\n- Use **14–16px** for everyday information.\n- Use **12–14px** for secondary labels.\n- Change **“ESTIMATE SENT DATE”** to **“Estimate sent date.”**\n- Reserve bold text for client names, key dates, and important actions.\n\nThis would make the page easier to read and visually calmer."
+  },
+  "37": {
+    "title": "Client cards repeat information and use too many badges.",
+    "body": "**Number 37: Client cards repeat information and use too many badges.**\n\nYour follow-up card can display **“Day 3 (Day 3 • Follow-Up Due)”**, followed by another badge saying **“Target: 3-Day Follow-Up.”**\n\nThat repeats the same information and makes the list harder to scan.\n\n**My recommendation:**\n\n- Keep one clear indicator: **Due today**, **2 days overdue**, or **Due September 12**.\n- Display lead source and service as plain secondary text.\n- Move detailed milestone information into the client’s details panel.\n\nThis makes it easier to identify **who needs attention next**."
+  },
+  "38": {
+    "title": "Routine success messages are too wordy.",
+    "body": "**Number 38: Routine success messages are too wordy.**\n\nYour app displays messages such as **“Re-synced spreadsheet data with live statuses!”** These add technical wording and unnecessary excitement to everyday actions.\n\n**My recommendation:**\n\n| Current wording | Cleaner wording |\n|---|---|\n| Successfully connected Google account! | Google connected |\n| Re-synced spreadsheet data with live statuses! | Updated |\n| Status updated to “…” for “…” in Google Sheets! | Status saved |\n\nUse a small, quiet confirmation for successful actions. Keep failures visible with a clear next step, such as **“Couldn’t save — Retry.”**"
+  },
+  "39": {
+    "title": "Follow-up submenu labels repeat unnecessary words.",
+    "body": "**Number 39: Follow-up submenu labels repeat unnecessary words.**\n\nInside your Follow-ups menu, every item repeats **“Follow Up”**—for example, “3 day Follow Up” and “7 day Follow Up.”\n\n**My recommendation:** Shorten the submenu labels to:\n\n- **3 days**\n- **7 days**\n- **15 days**\n- **30 days**\n- **Past 90 days**\n\nThe parent menu already explains what they mean. This makes the sidebar cleaner, especially on smaller screens.\n\nThese are display-label changes only; your saved statuses and workflow stay the same."
+  },
+  "40": {
+    "title": "Email buttons use technical or unclear wording.",
+    "body": "Number 39 is excluded.\n\n**Number 40: Email buttons use technical or unclear wording.**\n\nYour page shows **“Send Email Directly via Gmail”**, **“Sending via Gmail API…”**, and **“Open Draft.”**\n\n**My recommendation:**\n\n| Current label | Replace with |\n|---|---|\n| Send Email Directly via Gmail | **Send email** |\n| Sending via Gmail API… | **Sending…** |\n| Open Draft | **Open in email app** |\n\nKeep **Send email** as the main button and the alternative as a quieter secondary action.\n\n“Open in email app” is more accurate because that button opens a prepared message in the device’s email app; it doesn’t create a saved Gmail draft."
+  },
+  "41": {
+    "title": "Too many nested boxes make the message section look cluttered.",
+    "body": "**Number 41: Too many nested boxes make the message section look cluttered.**\n\nYour Customer Service page puts the email and SMS sections inside rounded cards, then places the message text inside additional bordered, rounded boxes.\n\n**My recommendation:**\n\n- Use one simple section for each communication method.\n- Separate the heading, message, and actions with spacing.\n- Keep borders around editable fields.\n- Reduce extra shadows and rounded containers.\n\nThis would make the messages easier to read and give the page a cleaner business-app appearance."
+  },
+  "42": {
+    "title": "Too many competing accent colors weaken your orange branding.",
+    "body": "**Number 42: Too many competing accent colors weaken your orange branding.**\n\nFrom your code, the app mixes **indigo, purple, blue, amber, and orange** across buttons and follow-up badges. Some communicate status, but others are decorative.\n\n**Keep orange as your main color.** My recommendation is to give the other colors specific purposes:\n\n| Element | Recommended treatment |\n|---|---|\n| Main action and selected navigation | Your existing orange |\n| Backgrounds and cards | White, light gray; charcoal in dark mode |\n| Normal text and icons | Dark gray; light gray in dark mode |\n| Secondary buttons | Neutral background and border |\n| Success | Muted green |\n| Errors or overdue items | Muted red |\n| Warnings | Muted amber, used sparingly |\n| Decorative purple, indigo, and blue | Replace with neutrals unless they identify something meaningful |\n\n**Yes, orange is also used too much in parts of your Customer Service page.** It appears in the background glow, phone numbers, headings, badges, selected cards, and buttons.\n\nKeep strong orange for **the main action and selected item**. Use a pale orange tint for selection backgrounds, and neutral colors for ordinary headings and phone numbers.\n\nThat makes orange stand out more while keeping the rest of the page calm."
+  },
+  "43": {
+    "title": "Dark panels don’t consistently follow the selected theme.",
+    "body": "**Number 43: Dark panels don’t consistently follow the selected theme.**\n\nYour Add Lead form’s Autofill section uses a fixed dark background, while other sections support light and dark themes. In light mode, this can make it look like a separate component from another app.\n\n**My recommendation:**\n\n- **Light mode:** white cards, light-gray borders, dark text.\n- **Dark mode:** charcoal cards, subtle borders, light text.\n- Keep your **orange accents** consistent in both.\n- Make forms, menus, and popups follow the selected theme.\n\nThis would give the app a more unified appearance."
+  },
+  "44": {
+    "title": "Button shapes and effects need a consistent style.",
+    "body": "**Number 44: Button shapes and effects need a consistent style.**\n\nYour code mixes pill-shaped buttons, heavily rounded rectangles, shadows, and hover effects that enlarge or rotate icons.\n\n**My recommendation:**\n\n- Use one standard corner radius for ordinary buttons.\n- Keep similar buttons the same height.\n- Use **solid orange** for the main action.\n- Use neutral outlined buttons for secondary actions.\n- Replace decorative scaling and rotation with a subtle hover-color change.\n\nThis would make the controls feel more consistent and professional without changing what they do."
+  }
+}

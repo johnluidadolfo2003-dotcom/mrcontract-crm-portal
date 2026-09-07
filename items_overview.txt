@@ -1,0 +1,44 @@
+Item 1 [INCLUDE]: The app uses spreadsheet row numbers to locate leads.
+Item 2 [INCLUDE]: Workers can see different or outdated information.
+Item 3 [INCLUDE]: Follow-ups can count from the wrong date.
+Item 4 [INCLUDE]: Your “3-day follow-up” can appear one day early.
+Item 5 [INCLUDE]: Duplicate checking can miss duplicates or block a real new job.
+Item 6 [INCLUDE]: A lead can appear in your app even though sending it to Google Sheets or Houzz failed.
+Item 7 [INCLUDE]: Smart Autofill can stop working after one temporary error.
+Item 8 [INCLUDE]: Follow-up reminders need something that runs when nobody has the app open.
+Item 9 [INCLUDE]: Some history is stored only in a browser, and older incoming leads are automatically removed.
+Item 10 [INCLUDE]: The app can say “Email failed” even when the email was already sent.
+Item 11 [INCLUDE]: Sending an email is recorded as a phone call.
+Item 12 [INCLUDE]: The app says “Lead deleted successfully” before confirming the deletion.
+Item 13 [EXCLUDED]: Follow-up messages can use the wrong salesperson’s name.
+Item 14 [INCLUDE]: Turning off “Auto-send to Houzz” may not stop incoming leads from being forwarded.
+Item 15 [INCLUDE]: “Send to Houzz” can report success even when the receiving service rejects the request.
+Item 16 [INCLUDE]: Retrying a failed Houzz send can incorrectly show “Already forwarded.”
+Item 17 [INCLUDE]: The app saves an unnecessary extra copy of Angi leads.
+Item 18 [INCLUDE]: Appointments are created without a backend check for overlapping bookings.
+Item 19 [INCLUDE]: There is unused code intended to help the app load offline.
+Item 20 [INCLUDE]: Leads with a missing source are automatically labeled “Angi.”
+Item 21 [INCLUDE]: Missing service details are automatically filled with “General Masonry.”
+Item 22 [EXCLUDED]: Removing a scheduled client does not cancel their Google Calendar appointment.
+Item 23 [INCLUDE]: The app can recommend the 90-day follow-up too early.
+Item 24 [INCLUDE]: Smart Autofill can return nothing without explaining why.
+Item 25 [INCLUDE]: Two leads arriving at the same time could overwrite each other.
+Item 26 [INCLUDE]: New leads are written using fixed spreadsheet column positions.
+Item 27 [INCLUDE]: Incoming lead notes are omitted when automatically saving to Google Sheets.
+Item 28 [INCLUDE]: Different parts of the app can use different spreadsheets.
+Item 29 [EXCLUDED]: Automatically created spreadsheet tabs have no column headings.
+Item 30 [EXCLUDED]: Smart Autofill can overwrite details you already corrected.
+Item 31 [INCLUDE]: Technical troubleshooting buttons clutter the daily workspace.
+Item 32 [INCLUDE]: “Re-sync” buttons make a routine action sound technical.
+Item 33 [INCLUDE]: “Google Synced” is an unclear connection label.
+Item 34 [INCLUDE]: The Smart Autofill toolbar has too much visual emphasis.
+Item 35 [INCLUDE]: Decorative glows and pulsing effects make the interface feel busy.
+Item 36 [INCLUDE]: Important labels are too small and heavily styled.
+Item 37 [INCLUDE]: Client cards repeat information and use too many badges.
+Item 38 [INCLUDE]: Routine success messages are too wordy.
+Item 39 [EXCLUDED]: Follow-up submenu labels repeat unnecessary words.
+Item 40 [INCLUDE]: Email buttons use technical or unclear wording.
+Item 41 [INCLUDE]: Too many nested boxes make the message section look cluttered.
+Item 42 [INCLUDE]: Too many competing accent colors weaken your orange branding.
+Item 43 [INCLUDE]: Dark panels don’t consistently follow the selected theme.
+Item 44 [INCLUDE]: Button shapes and effects need a consistent style.
