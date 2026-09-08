@@ -4,6 +4,7 @@ import { GoogleGenAI, Type, ThinkingLevel } from '@google/genai';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
+import { timingSafeEqual } from 'crypto';
 import sharp from 'sharp';
 import * as sheetsService from './server/sheetsService.ts';
 import * as durableStore from './server/durableStore.ts';
@@ -366,15 +367,44 @@ function isWebhookRateLimited(ip: string): boolean {
   return record.count > 60;
 }
 
+function safeSecretEqual(actual: string, expected: string): boolean {
+  const actualBuffer = Buffer.from(actual, 'utf8');
+  const expectedBuffer = Buffer.from(expected, 'utf8');
+  return actualBuffer.length === expectedBuffer.length && timingSafeEqual(actualBuffer, expectedBuffer);
+}
+
 function validateWebhookSecret(req: express.Request): boolean {
-  const expectedSecret = process.env.WEBHOOK_SECRET_KEY;
-  if (!expectedSecret || !expectedSecret.trim()) {
-    return true; // No secret configured in environment; allow open ingestion
+  const expectedSecret = (process.env.WEBHOOK_SECRET_KEY || '').trim();
+  // Fail closed: a missing server secret must never make webhook ingestion public.
+  if (!expectedSecret) return false;
+
+  // Accept the secret only through a header. Query-string secrets leak into logs/history.
+  const headerToken = req.headers['x-webhook-secret'] || req.headers['x-webhook-token'] || req.headers['authorization'];
+  if (!headerToken) return false;
+  const cleanToken = String(headerToken).replace(/^Bearer\s+/i, '').trim();
+  return safeSecretEqual(cleanToken, expectedSecret);
+}
+
+function validateThumbtackBasicAuth(req: express.Request): boolean {
+  const expectedUsername = (process.env.THUMBTACK_WEBHOOK_USERNAME || '').trim();
+  const expectedPassword = process.env.THUMBTACK_WEBHOOK_PASSWORD || '';
+
+  // Fail closed when either dedicated Thumbtack credential is not configured.
+  if (!expectedUsername || !expectedPassword) return false;
+
+  const authorization = String(req.headers.authorization || '');
+  if (!authorization.startsWith('Basic ')) return false;
+
+  try {
+    const decoded = Buffer.from(authorization.slice(6).trim(), 'base64').toString('utf8');
+    const separator = decoded.indexOf(':');
+    if (separator < 0) return false;
+    const username = decoded.slice(0, separator);
+    const password = decoded.slice(separator + 1);
+    return safeSecretEqual(username, expectedUsername) && safeSecretEqual(password, expectedPassword);
+  } catch {
+    return false;
   }
-  const token = req.headers['x-webhook-token'] || req.headers['authorization'] || req.query.token;
-  if (!token) return false;
-  const cleanToken = String(token).replace(/^Bearer\s+/i, '').trim();
-  return cleanToken === expectedSecret.trim();
 }
 
 function maskPhoneNumber(phone?: string): string {
@@ -1521,8 +1551,9 @@ app.post('/api/webhooks/thumbtack', async (req, res) => {
     if (isWebhookRateLimited(clientIp)) {
       return res.status(429).json({ success: false, error: 'Rate limit exceeded. Too many requests.' });
     }
-    if (!validateWebhookSecret(req)) {
-      return res.status(401).json({ success: false, error: 'Unauthorized. Invalid webhook secret token.' });
+    if (!validateThumbtackBasicAuth(req)) {
+      res.setHeader('WWW-Authenticate', 'Basic realm="Thumbtack Webhook"');
+      return res.status(401).json({ success: false, error: 'Unauthorized. Valid Thumbtack Basic Authentication is required.' });
     }
 
     console.log('Incoming Thumbtack Webhook received:', req.body);
