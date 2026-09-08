@@ -253,6 +253,12 @@ export const MainLayout: React.FC = () => {
  // services are slow or unavailable.
  addNewLead(payload);
 
+ // The sidebar page named "New" is the single destination for newly created leads.
+ // Open it immediately; external integrations may continue while the lead is visible.
+ setIsAddLeadModalOpen(false);
+ navigate('/new');
+ window.dispatchEvent(new CustomEvent('new_leads_updated', { detail: getNewLeads() }));
+
  // Always sync to Houzz Pro / Zapier via backend
  try {
  await sendLeadToHouzzPro(config.houzzWebhookUrl, {
@@ -307,10 +313,9 @@ export const MainLayout: React.FC = () => {
  details: `Added new lead "${payload.clientName}" via ${payload.leadSource || 'Direct'} (${payload.serviceNeeded || 'Service'})`,
  });
 
- setIsAddLeadModalOpen(false);
- let msg = `Lead for "${payload.clientName}" created!`;
- if (houzzSent && sheetSent) msg = `Lead for "${payload.clientName}" added to Portal & Houzz Pro!`;
- else if (sheetSent) msg = `Lead for "${payload.clientName}" added to Google Sheets!`;
+ let msg = `Lead for "${payload.clientName}" added to New!`;
+ if (houzzSent && sheetSent) msg = `Lead for "${payload.clientName}" added to New and sent to integrations!`;
+ else if (sheetSent) msg = `Lead for "${payload.clientName}" added to New and Google Sheets!`;
  showToast('success', msg);
  window.dispatchEvent(new CustomEvent('dashboard_data_refresh'));
  } catch (err: any) {
