@@ -22,24 +22,28 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
  // Format Start & End Time for display
  const startDate = new Date(payload.start.dateTime);
  const endDate = new Date(payload.end.dateTime);
+ const eventTimeZone = payload.start.timeZone || payload.end.timeZone || 'America/New_York';
 
  const dateFormatted = startDate.toLocaleDateString(undefined, {
  weekday: 'short',
  month: 'short',
  day: 'numeric',
  year: 'numeric',
+ timeZone: eventTimeZone,
  });
 
  const startTimeFormatted = startDate.toLocaleTimeString(undefined, {
  hour: 'numeric',
  minute: '2-digit',
  hour12: true,
+ timeZone: eventTimeZone,
  });
 
  const endTimeFormatted = endDate.toLocaleTimeString(undefined, {
  hour: 'numeric',
  minute: '2-digit',
  hour12: true,
+ timeZone: eventTimeZone,
  });
 
  return (

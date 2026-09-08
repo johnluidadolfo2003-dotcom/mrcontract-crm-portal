@@ -194,7 +194,7 @@ export const Dashboard: React.FC = () => {
  <Users className="w-5 h-5"/>
  </div>
  <button
- onClick={() => navigate('/leads')}
+ onClick={() => navigate('/new')}
  className="text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white flex items-center gap-1 cursor-pointer transition-colors group"
  >
  <span>View</span>

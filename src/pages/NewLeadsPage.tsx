@@ -274,7 +274,7 @@ export const NewLeadsPage: React.FC = () => {
  }
 
  if (newStatus !== 'New') {
- deleteNewLead(lead.id);
+ await deleteNewLead(lead.id, lead);
  } else {
  const current = getNewLeads();
  const updated = current.map((item) => (item.id === lead.id ? { ...item, status: newStatus } : item));
@@ -368,7 +368,7 @@ export const NewLeadsPage: React.FC = () => {
  const lead = leadToDelete;
  setLeadToDelete(null);
 
- deleteNewLead(lead.id);
+ await deleteNewLead(lead.id, lead);
  setLeads(getNewLeads());
 
  logAuditActivity({

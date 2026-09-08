@@ -34,6 +34,27 @@ export interface NewLeadRecord {
 
 const STORAGE_KEY = 'mr_contract_new_leads_v1';
 const EVENT_KEY = 'new_leads_updated';
+const DISMISSED_KEY = 'mrcontract_dismissed_sync_leads';
+
+function getLeadDismissalKey(lead?: Partial<NewLeadRecord>): string {
+ const phone = (lead?.clientPhone || '').replace(/\D/g, '');
+ if (phone.length >= 7) return `contact_phone_${phone}`;
+ const email = (lead?.clientEmail || '').trim().toLowerCase();
+ if (email.includes('@')) return `contact_email_${email}`;
+ return `contact_name_${(lead?.clientName || '').trim().toLowerCase()}`;
+}
+
+function rememberDeletedLead(id: string, lead?: Partial<NewLeadRecord>): void {
+ try {
+ const parsed = JSON.parse(localStorage.getItem(DISMISSED_KEY) || '[]');
+ const dismissed = Array.isArray(parsed) ? parsed : [];
+ const identityKey = getLeadDismissalKey(lead);
+ for (const value of [id, identityKey]) {
+ if (value && !dismissed.includes(value)) dismissed.push(value);
+ }
+ localStorage.setItem(DISMISSED_KEY, JSON.stringify(dismissed));
+ } catch {}
+}
 
 export function getNewLeads(): NewLeadRecord[] {
  try {
@@ -192,7 +213,7 @@ export function getNewLeads(): NewLeadRecord[] {
  // Load dismissed synced leads list to ensure they don't show up again
  let dismissedSyncLeads: string[] = [];
  try {
- const dismissedRaw = localStorage.getItem('mrcontract_dismissed_sync_leads');
+ const dismissedRaw = localStorage.getItem(DISMISSED_KEY);
  if (dismissedRaw) {
  dismissedSyncLeads = JSON.parse(dismissedRaw);
  }
@@ -204,7 +225,7 @@ export function getNewLeads(): NewLeadRecord[] {
 
  // 1. Webhook incoming leads first (highest freshness)
  webhookLeads.forEach((val) => {
- if (dismissedSyncLeads.includes(val.id)) return;
+ if (dismissedSyncLeads.includes(val.id) || dismissedSyncLeads.includes(getLeadDismissalKey(val))) return;
  if (seenFinalIds.has(val.id)) return;
  if (isExampleWebhookLead(val)) return;
  const stat = (val.status || 'new').toLowerCase();
@@ -221,7 +242,7 @@ export function getNewLeads(): NewLeadRecord[] {
  // 2. Synced spreadsheet leads (reverse so newest bottom rows appear first)
  const sortedSpreadsheetLeads = [...spreadsheetNewLeads].reverse();
  sortedSpreadsheetLeads.forEach((val) => {
- if (dismissedSyncLeads.includes(val.id)) return;
+ if (dismissedSyncLeads.includes(val.id) || dismissedSyncLeads.includes(getLeadDismissalKey(val))) return;
  if (seenFinalIds.has(val.id)) return;
  if (isExampleWebhookLead(val)) return;
  if (isLeadSourceTab(val.leadSource)) {
@@ -300,36 +321,29 @@ export function addNewLead(payload: AddLeadPayload): NewLeadRecord {
  return newRecord;
 }
 
-export function deleteNewLead(id: string): void {
+export async function deleteNewLead(id: string, lead?: Partial<NewLeadRecord>): Promise<void> {
+ rememberDeletedLead(id, lead);
+
  if (id.startsWith('wh_lead_')) {
- deleteIncomingWebhookLead(id);
+ await deleteIncomingWebhookLead(id);
+ window.dispatchEvent(new CustomEvent(EVENT_KEY));
  return;
  }
+
  if (id.startsWith('lead_')) {
  let manualLeads: NewLeadRecord[] = [];
  try {
  const raw = localStorage.getItem(STORAGE_KEY);
  if (raw) manualLeads = JSON.parse(raw);
- } catch (e) {}
+ } catch {}
  if (Array.isArray(manualLeads)) {
- const updated = manualLeads.filter((l) => l.id !== id);
- saveNewLeadsList(updated);
+ saveNewLeadsList(manualLeads.filter((item) => item.id !== id));
  }
- } else {
- try {
- const dismissedRaw = localStorage.getItem('mrcontract_dismissed_sync_leads') || '[]';
- const dismissed = JSON.parse(dismissedRaw);
- if (Array.isArray(dismissed)) {
- if (!dismissed.includes(id)) {
- dismissed.push(id);
- localStorage.setItem('mrcontract_dismissed_sync_leads', JSON.stringify(dismissed));
+ return;
  }
- }
- } catch (e) {}
- window.dispatchEvent(new CustomEvent(EVENT_KEY));
- }
-}
 
+ window.dispatchEvent(new CustomEvent(EVENT_KEY));
+}
 export function updateNewLeadStatus(id: string, status: string): void {
  if (id.startsWith('wh_lead_')) {
  updateIncomingWebhookLead(id, { status });
