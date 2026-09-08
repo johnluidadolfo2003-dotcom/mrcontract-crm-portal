@@ -37,8 +37,6 @@ export function isLeadSourceTab(name: string): boolean {
  return true;
 }
 
-export const DEFAULT_ZAPIER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/28623037/4hml53j/';
-
 export const DEFAULT_CONFIG: AppConfig = {
  salespeople: DEFAULT_SALESPEOPLE,
  leadSources: DEFAULT_LEAD_SOURCES,
@@ -49,7 +47,7 @@ export const DEFAULT_CONFIG: AppConfig = {
  spreadsheetName: 'Lead Master List',
  sheetTabName: 'Angi',
  autoSyncToSheets: true,
- houzzWebhookUrl: DEFAULT_ZAPIER_WEBHOOK_URL,
+ houzzWebhookUrl: '',
 };
 
 const STORAGE_KEY = 'masonry_appointment_config';
@@ -107,7 +105,7 @@ export function loadAppConfig(): AppConfig {
  spreadsheetName: 'Google Sheets (Environment Configured)',
  sheetTabName: parsed.sheetTabName || 'Angi',
  autoSyncToSheets: parsed.autoSyncToSheets !== undefined ? parsed.autoSyncToSheets : true,
- houzzWebhookUrl: (parsed.houzzWebhookUrl && parsed.houzzWebhookUrl.trim()) ? parsed.houzzWebhookUrl.trim() : DEFAULT_CONFIG.houzzWebhookUrl,
+ houzzWebhookUrl: '',
  };
  applyTheme(loaded.theme);
  return loaded;
@@ -126,6 +124,7 @@ export function saveAppConfig(config: AppConfig): void {
  delete (sanitized as any).spreadsheetId;
  delete (sanitized as any).spreadsheetUrl;
  delete (sanitized as any).spreadsheetName;
+ delete (sanitized as any).houzzWebhookUrl;
 
  localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
  applyTheme(config.theme);
@@ -150,9 +149,7 @@ export async function fetchAndSyncServerConfig(): Promise<AppConfig> {
  const merged = {
  ...local,
  ...serverCfg,
- houzzWebhookUrl: (serverCfg.houzzWebhookUrl && serverCfg.houzzWebhookUrl.trim()) 
- || (local.houzzWebhookUrl && local.houzzWebhookUrl.trim()) 
- || DEFAULT_ZAPIER_WEBHOOK_URL,
+ houzzWebhookUrl: '',
  };
  localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
  applyTheme(merged.theme);
