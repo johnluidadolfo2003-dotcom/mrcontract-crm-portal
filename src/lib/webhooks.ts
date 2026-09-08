@@ -22,6 +22,7 @@ export interface IncomingWebhookLead {
  houzzStatus?: string;
  houzzError?: string;
  houzzStatusCode?: number | null;
+ houzzAttemptAt?: string;
  overallStatus?: string;
  rawPayload?: any;
 }
@@ -258,6 +259,33 @@ export async function updateIncomingWebhookLead(
 }
 
 /**
+ * Manually send one Thumbtack webhook lead to Houzz Pro automation.
+ * Source eligibility and the destination URL are enforced by the server.
+ */
+export async function sendThumbtackLeadToHouzz(
+ id: string
+): Promise<{ success: boolean; message: string }> {
+ const res = await fetch(`/api/webhooks/incoming-leads/${encodeURIComponent(id)}/send-to-houzz`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ });
+
+ let data: any = {};
+ try {
+ data = await res.json();
+ } catch {}
+
+ if (!res.ok || !data.success) {
+ throw new Error(data.error || data.message || `Houzz delivery failed (HTTP ${res.status}).`);
+ }
+
+ return {
+ success: true,
+ message: data.message || 'Lead sent to Houzz Pro.',
+ };
+}
+
+/**
  * Sync webhook leads from server into local storage and notify listeners
  */
 export async function syncIncomingWebhookLeads(): Promise<IncomingWebhookLead[]> {
@@ -385,5 +413,4 @@ export async function runFullPipelineTest(params?: {
  return { success: false, error: err.message || 'Pipeline test failed.' };
  }
 }
-
 

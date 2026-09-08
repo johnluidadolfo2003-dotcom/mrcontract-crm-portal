@@ -24,6 +24,11 @@ export interface NewLeadRecord {
  isWebhookLead?: boolean;
  webhookSource?: string;
  sheetSynced?: boolean;
+ houzzResult?: string;
+ houzzStatus?: string;
+ houzzError?: string | null;
+ houzzStatusCode?: number | null;
+ houzzAttemptAt?: string;
  rawPayload?: any;
 }
 
@@ -174,6 +179,11 @@ export function getNewLeads(): NewLeadRecord[] {
  isWebhookLead: true,
  webhookSource: item.webhookSource || item.leadSource || 'Angi',
  sheetSynced: item.sheetSynced,
+ houzzResult: item.houzzResult,
+ houzzStatus: item.houzzStatus,
+ houzzError: item.houzzError,
+ houzzStatusCode: item.houzzStatusCode,
+ houzzAttemptAt: item.houzzAttemptAt,
  rawPayload: item.rawPayload,
  }));
  }
@@ -399,4 +409,3 @@ export function updateNewLeadInfo(id: string, updates: Partial<NewLeadRecord>): 
  window.dispatchEvent(new CustomEvent(EVENT_KEY));
  }
 }
-

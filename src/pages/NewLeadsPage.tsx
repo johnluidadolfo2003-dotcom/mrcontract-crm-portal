@@ -44,7 +44,7 @@ import {
  SheetRowRecord,
 } from '../lib/sheets';
 import { LeadDrawer } from '../components/ui/LeadDrawer';
-import { syncIncomingWebhookLeads } from '../lib/webhooks';
+import { sendThumbtackLeadToHouzz, syncIncomingWebhookLeads } from '../lib/webhooks';
 import { WebhookDiagnosticsModal } from '../components/WebhookDiagnosticsModal';
 
 export const NewLeadsPage: React.FC = () => {
@@ -55,6 +55,7 @@ export const NewLeadsPage: React.FC = () => {
  const [viewMode, setViewMode] = useState<'clean' | 'table'>('clean');
  const [syncMsg, setSyncMsg] = useState<string | null>(null);
  const [updatingId, setUpdatingId] = useState<string | null>(null);
+ const [sendingHouzzId, setSendingHouzzId] = useState<string | null>(null);
  const [leadToDelete, setLeadToDelete] = useState<NewLeadRecord | null>(null);
  const [isWebhookDiagOpen, setIsWebhookDiagOpen] = useState(false);
  const [syncIssue, setSyncIssue] = useState<{ message: string; details: string } | null>(null);
@@ -420,6 +421,75 @@ export const NewLeadsPage: React.FC = () => {
  }, 100);
  };
 
+ const handleSendThumbtackToHouzz = async (lead: NewLeadRecord) => {
+ setSendingHouzzId(lead.id);
+ setSyncMsg(null);
+ try {
+ const result = await sendThumbtackLeadToHouzz(lead.id);
+ await syncIncomingWebhookLeads();
+ setSyncMsg(result.message || 'Lead sent to Houzz Pro.');
+ } catch (err: any) {
+ setSyncMsg(err.message || 'Failed to send lead to Houzz Pro.');
+ } finally {
+ setSendingHouzzId(null);
+ setTimeout(() => setSyncMsg(null), 5000);
+ }
+ };
+
+ const renderHouzzAction = (lead: NewLeadRecord, compact = false) => {
+ if (!lead.isWebhookLead) return null;
+
+ const source = String(lead.leadSource || lead.webhookSource || '').trim().toLowerCase();
+ const status = String(lead.houzzStatus || lead.houzzResult || '').toLowerCase();
+ const sent = status.startsWith('sent to ');
+ const failed = status.startsWith('failed to ');
+ const sending = sendingHouzzId === lead.id || status.startsWith('sending to ');
+ const sizeClass = compact ? 'px-2.5 py-1.5 rounded-lg' : 'px-3.5 py-2 rounded-xl';
+
+ if (source === 'angi') {
+ const label = sent ? 'Sent automatically' : failed ? 'Auto-send failed' : 'Sending automatically';
+ return (
+ <button
+ type="button"
+ disabled
+ title={failed ? (lead.houzzError || 'Automatic Houzz delivery failed.') : 'Angi leads are sent to Houzz Pro automatically.'}
+ className={`${sizeClass} text-xs font-bold inline-flex items-center gap-1.5 border cursor-not-allowed ${
+ sent
+ ? 'bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/30'
+ : failed
+ ? 'bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/30'
+ : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700'
+ }`}
+ >
+ {sent ? <Check className="w-3.5 h-3.5" /> : failed ? <AlertCircle className="w-3.5 h-3.5" /> : <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+ <span>{label}</span>
+ </button>
+ );
+ }
+
+ if (source !== 'thumbtack') return null;
+
+ return (
+ <button
+ type="button"
+ disabled={sending || sent}
+ onClick={(event) => {
+ event.stopPropagation();
+ handleSendThumbtackToHouzz(lead);
+ }}
+ title={sent ? 'This Thumbtack lead was sent to Houzz Pro.' : 'Send this Thumbtack lead to Houzz Pro.'}
+ className={`${sizeClass} text-xs font-bold inline-flex items-center gap-1.5 transition-colors border ${
+ sent
+ ? 'bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/30 cursor-not-allowed'
+ : 'bg-[#FF5500] hover:bg-[#E64D00] text-white border-[#FF5500] cursor-pointer disabled:opacity-60 disabled:cursor-wait'
+ }`}
+ >
+ {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : sent ? <Check className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
+ <span>{sending ? 'Sending...' : sent ? 'Sent to Houzz Pro' : failed ? 'Retry Houzz Pro' : 'Send to Houzz Pro'}</span>
+ </button>
+ );
+ };
+
  
   const formatLeadDate = (dateStr?: string) => {
     if (!dateStr) return '—';
@@ -654,6 +724,8 @@ export const NewLeadsPage: React.FC = () => {
                     )}
                   </div>
 
+                  {renderHouzzAction(lead)}
+
                   {/* Schedule Appointment Action Button */}
                   <button
                     type="button"
@@ -756,6 +828,7 @@ export const NewLeadsPage: React.FC = () => {
  </div>
  </td>
  <td className="py-3 px-4 text-right whitespace-nowrap space-x-1.5" onClick={(e) => e.stopPropagation()}>
+                  {renderHouzzAction(lead, true)}
                   <button
                     type="button"
                     onClick={() => handleScheduleLead(lead)}
@@ -1023,4 +1096,3 @@ export const NewLeadsPage: React.FC = () => {
  </div>
  );
 };
-
