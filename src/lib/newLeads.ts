@@ -239,11 +239,22 @@ export function getNewLeads(): NewLeadRecord[] {
  syncedClientKeys.add(altK);
  });
 
+ const webhookClientKeys = new Set(syncedClientKeys);
+ const manualClientKeys = new Set<string>();
+ manualLeads.forEach((lead) => {
+ manualClientKeys.add(normalizeLeadKey(lead.clientName, lead.clientPhone, lead.clientEmail));
+ manualClientKeys.add(`name_${(lead.clientName || '').trim().toLowerCase()}`);
+ });
+
  // 2. Synced spreadsheet leads (reverse so newest bottom rows appear first)
+ // A matching form-created lead is authoritative until its status changes.
  const sortedSpreadsheetLeads = [...spreadsheetNewLeads].reverse();
  sortedSpreadsheetLeads.forEach((val) => {
  if (dismissedSyncLeads.includes(val.id) || dismissedSyncLeads.includes(getLeadDismissalKey(val))) return;
  if (seenFinalIds.has(val.id)) return;
+ const spreadsheetKey = normalizeLeadKey(val.clientName, val.clientPhone, val.clientEmail);
+ const spreadsheetNameKey = `name_${(val.clientName || '').trim().toLowerCase()}`;
+ if (manualClientKeys.has(spreadsheetKey) || manualClientKeys.has(spreadsheetNameKey)) return;
  if (isExampleWebhookLead(val)) return;
  if (isLeadSourceTab(val.leadSource)) {
  seenFinalIds.add(val.id);
@@ -261,7 +272,7 @@ export function getNewLeads(): NewLeadRecord[] {
  if (isExampleWebhookLead(val)) return;
  const k = normalizeLeadKey(val.clientName, val.clientPhone, val.clientEmail);
  const altK = `name_${(val.clientName || '').trim().toLowerCase()}`;
- if (!nonNewKeys.has(k) && !nonNewKeys.has(altK) && !syncedClientKeys.has(k) && !syncedClientKeys.has(altK) && isLeadSourceTab(val.leadSource)) {
+ if (!webhookClientKeys.has(k) && !webhookClientKeys.has(altK) && isLeadSourceTab(val.leadSource)) {
  seenFinalIds.add(val.id);
  finalLeads.push(val);
  }
@@ -289,7 +300,7 @@ export function getNewLeads(): NewLeadRecord[] {
 export function saveNewLeadsList(list: NewLeadRecord[]): void {
  try {
  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
- window.dispatchEvent(new CustomEvent(EVENT_KEY, { detail: list }));
+ window.dispatchEvent(new CustomEvent(EVENT_KEY, { detail: getNewLeads() }));
  } catch (e) {
  console.error('Error saving new leads:', e);
  }
