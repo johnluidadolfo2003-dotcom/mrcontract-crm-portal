@@ -161,7 +161,7 @@ export function markLeadAsSentToHouzzPro(lead: {
  * share the centralized backend webhook without needing to enter it manually.
  */
 export async function sendLeadToHouzzPro(
-  webhookUrl?: string,
+  _webhookUrl?: string,
   data: Partial<AppointmentFormData> & {
     id?: string;
     tabName?: string;
@@ -248,7 +248,6 @@ export async function sendLeadToHouzzPro(
       },
       body: JSON.stringify({
         leadId,
-        webhookUrl: (webhookUrl || '').trim(),
         payload,
       }),
     });
