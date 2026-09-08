@@ -32,7 +32,6 @@ import { AppointmentForm } from './AppointmentForm';
 import { AddLeadForm } from './AddLeadForm';
 import { ConfirmationModal } from './ConfirmationModal';
 import { AddLeadPayload } from './AddLeadConfirmModal';
-import { SwitchUserModal } from './SwitchUserModal';
 import { ActivityLogModal } from './ActivityLogModal';
 import { useUser } from '../lib/userContext';
 import { logAuditActivity } from '../lib/activityLogger';
@@ -45,7 +44,7 @@ import { addNewLead, getNewLeads } from '../lib/newLeads';
 export const MainLayout: React.FC = () => {
  const navigate = useNavigate();
  const location = useLocation();
- const { currentUser, setIsSwitchUserModalOpen, setIsActivityLogModalOpen } = useUser();
+ const { currentUser, setIsActivityLogModalOpen } = useUser();
  const [config, setConfig] = useState<AppConfig>(loadAppConfig);
  const [calendarStatus, setCalendarStatus] = useState<BackendCalendarStatus | null>(null);
  const [isCheckingCalendar, setIsCheckingCalendar] = useState<boolean>(true);
@@ -251,7 +250,7 @@ export const MainLayout: React.FC = () => {
 
  // Always sync to Houzz Pro / Zapier via backend
  try {
- await sendLeadToHouzzPro(config.houzzWebhookUrl, {
+ await sendLeadToHouzzPro(undefined, {
  clientName: payload.clientName,
  clientPhone: payload.clientPhone,
  clientEmail: payload.clientEmail,
@@ -672,7 +671,6 @@ export const MainLayout: React.FC = () => {
  />
 
  {/* Switch User & Activity Log Modals */}
- <SwitchUserModal />
  <ActivityLogModal />
  </div>
  );

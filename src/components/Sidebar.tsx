@@ -1,26 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
- LayoutGrid,
- Users,
- Clock,
- CalendarClock,
- CalendarCheck,
- Settings,
- ChevronLeft,
- ChevronRight,
- PlusCircle,
- UserPlus,
- CheckCircle,
- ShieldAlert,
- Trash2,
- ChevronDown,
- ChevronUp,
- History,
- UserCheck,
- User,
- ListTodo,
- Activity,
+  LayoutGrid,
+  Users,
+  Clock,
+  CalendarClock,
+  CalendarCheck,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  PlusCircle,
+  UserPlus,
+  CheckCircle,
+  ShieldAlert,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  History,
+  UserCheck,
+  User,
+  ListTodo,
+  Activity,
+  ShieldCheck,
+  LogOut,
 } from 'lucide-react';
 import { useUser } from '../lib/userContext';
 import { getNewLeads } from '../lib/newLeads';
@@ -48,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
  const navigate = useNavigate();
  const location = useLocation();
- const { currentUser, setIsSwitchUserModalOpen, setIsActivityLogModalOpen } = useUser();
+ const { currentUser, logoutUser, setIsActivityLogModalOpen } = useUser();
  const [newLeadsCount, setNewLeadsCount] = useState(() => getNewLeads().length);
  const [leadsCount, setLeadsCount] = useState(0);
  const [isFollowUpsOpen, setIsFollowUpsOpen] = useState(false);
@@ -718,35 +720,50 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
  {/* Bottom Section: Worker Profile & History & Settings */}
  <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 mt-auto pb-safe space-y-1 bg-white dark:bg-black">
- {/* Worker Profile Card */}
+ {/* Authenticated User Card & Actions */}
  {currentUser && (
- <button
- type="button"
- onClick={() => {
- setIsSwitchUserModalOpen(true);
- if (isMobileView) setIsMobileOpen && setIsMobileOpen(false);
- }}
- className={`flex items-center ${
- showExpanded ? 'w-full px-3 py-2.5 gap-3' : 'w-11 h-11 mx-auto justify-center'
- } bg-zinc-50 dark:bg-zinc-900/80 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl transition-all font-semibold text-xs cursor-pointer group`}
- title={!showExpanded ? `Worker: ${currentUser.name} (Click to switch)` : undefined}
- >
- <div
- className="w-7 h-7 rounded-xl flex items-center justify-center text-white font-black text-xs shrink-0 shadow-xs bg-[#FF5500]"
- >
- {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+ <div className={`p-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-800/80 transition-all ${showExpanded ? 'space-y-2' : 'flex flex-col items-center gap-2'}`}>
+ <div className={`flex items-center ${showExpanded ? 'justify-between gap-2' : 'justify-center'}`}>
+ <div className="flex items-center gap-2.5 min-w-0">
+ <div className="w-7 h-7 rounded-xl flex items-center justify-center text-white font-black text-xs shrink-0 shadow-xs bg-[#FF5500]">
+ {(currentUser.displayName || currentUser.name || currentUser.email).charAt(0).toUpperCase()}
  </div>
  {showExpanded && (
- <div className="flex-1 text-left min-w-0">
- <div className="text-zinc-900 dark:text-white font-bold truncate">
- {currentUser.name}
+ <div className="min-w-0 text-left">
+ <div className="text-zinc-900 dark:text-white font-bold text-xs truncate">
+ {currentUser.displayName || currentUser.name || currentUser.email.split('@')[0]}
  </div>
- <div className="text-[10px] text-[#FF5500] font-semibold tracking-tight">
- Switch Profile
+ <div className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase font-black tracking-wider flex items-center gap-1">
+ <span>{currentUser.role}</span>
  </div>
  </div>
  )}
+ </div>
+
+ {showExpanded && (
+ <button
+ type="button"
+ onClick={logoutUser}
+ className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+ title="Sign out of CRM"
+ >
+ <LogOut className="w-4 h-4" />
  </button>
+ )}
+ </div>
+
+
+ {!showExpanded && (
+ <button
+ type="button"
+ onClick={logoutUser}
+ className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+ title="Sign Out"
+ >
+ <LogOut className="w-4 h-4" />
+ </button>
+ )}
+ </div>
  )}
 
  {/* Activity Log Audit Trail */}

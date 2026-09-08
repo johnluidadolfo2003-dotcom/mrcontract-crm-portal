@@ -239,7 +239,7 @@ export const ScheduleClientPage: React.FC = () => {
   const handleSendToHouzz = async (lead: NewLeadItem) => {
     setSendingHouzzId(lead.id);
     try {
-      const result = await sendLeadToHouzzPro(config.houzzWebhookUrl, lead);
+      const result = await sendLeadToHouzzPro(undefined, lead);
       if (result.success) {
         const uniqueKey = getLeadUniqueKey(lead);
         setHouzzSyncedKeys((prev) => new Set([...prev, uniqueKey]));

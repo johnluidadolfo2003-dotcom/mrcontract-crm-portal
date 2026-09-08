@@ -636,7 +636,7 @@ export const AddLeadForm: React.FC<AddLeadFormProps> = ({
  onConfirm={handleConfirmAddLead}
  lead={pendingLead}
  isSubmitting={isSubmitting}
- hasHouzzWebhook={Boolean(config.houzzWebhookUrl?.trim())}
+ hasHouzzWebhook={true}
  />
  </div>
  );

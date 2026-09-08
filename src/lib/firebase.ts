@@ -36,7 +36,7 @@ export const initAuth = (
  };
 };
 
-export const googleSignIn = async (_force?: boolean): Promise<{ user: User; accessToken: string | null }> => {
+export const googleSignIn = async (_force?: boolean): Promise<{ user: User; idToken: string; accessToken: string | null }> => {
  if (activeSignInPromise) {
  return activeSignInPromise as any;
  }
@@ -44,12 +44,14 @@ export const googleSignIn = async (_force?: boolean): Promise<{ user: User; acce
  activeSignInPromise = (async () => {
  try {
  const result = await signInWithPopup(auth, googleProvider);
- return { user: result.user, accessToken: null };
+ const idToken = await result.user.getIdToken();
+ return { user: result.user, idToken, accessToken: null };
  } catch (error: any) {
  console.warn('Sign in handled:', error?.code || error?.message || error);
  if (error?.code === 'auth/cancelled-popup-request') {
  if (auth.currentUser) {
- return { user: auth.currentUser, accessToken: null };
+ const idToken = await auth.currentUser.getIdToken();
+ return { user: auth.currentUser, idToken, accessToken: null };
  }
  throw new Error('A sign-in request is already in progress.');
  }
@@ -65,7 +67,7 @@ export const googleSignIn = async (_force?: boolean): Promise<{ user: User; acce
  }
  })();
 
- return activeSignInPromise;
+ return activeSignInPromise as any;
 };
 
 export const signOutUser = async (): Promise<void> => {

@@ -37,7 +37,7 @@ export const AngiEmailActivityPage: React.FC = () => {
       setLeads(data || []);
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
-      console.error('Failed to load Angi email activity:', err);
+      console.error('Failed to load lead hook activity:', err);
     } finally {
       setLoading(false);
     }
@@ -154,10 +154,10 @@ export const AngiEmailActivityPage: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
-                Angi Email Activity
+                Lead Hook Activity
               </h1>
               <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
-                Track incoming Angi lead emails, parsing results, CRM lead creation, Google Sheets sync, and Houzz Pro automation delivery.
+                Track incoming Angi & Thumbtack leads, parsing results, CRM lead creation, Google Sheets sync, and Houzz Pro automation delivery.
               </p>
             </div>
           </div>
@@ -176,17 +176,6 @@ export const AngiEmailActivityPage: React.FC = () => {
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </button>
-        </div>
-      </div>
-
-      {/* Notice / Setup Reminder */}
-      <div className="bg-orange-500/5 dark:bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4 mb-6 text-xs text-zinc-700 dark:text-zinc-300 flex items-start gap-3">
-        <div className="w-6 h-6 rounded-full bg-orange-500/20 flex items-center justify-center text-[#FF5500] shrink-0 mt-0.5">
-          <AlertCircle className="w-4 h-4" />
-        </div>
-        <div>
-          <strong className="text-zinc-900 dark:text-white block mb-0.5 font-bold">Inbound Automation Status</strong>
-          Waiting for an Angi email automation (via Zapier, Make, or email forwarding) to send real leads to this CRM.
         </div>
       </div>
 
@@ -249,8 +238,8 @@ export const AngiEmailActivityPage: React.FC = () => {
                       <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400">
                         <Activity className="w-6 h-6" />
                       </div>
-                      <p className="font-bold text-zinc-800 dark:text-zinc-200">No Angi lead emails have reached the CRM yet.</p>
-                      <p className="text-xs text-zinc-400">Waiting for an Angi email automation to send leads to this CRM.</p>
+                      <p className="font-bold text-zinc-800 dark:text-zinc-200">No Angi or Thumbtack leads have reached the CRM yet.</p>
+                      <p className="text-xs text-zinc-400">Waiting for an Angi or Thumbtack automation to send leads to this CRM.</p>
                     </div>
                   </td>
                 </tr>

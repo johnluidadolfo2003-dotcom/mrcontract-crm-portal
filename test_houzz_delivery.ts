@@ -56,6 +56,10 @@ async function runTests() {
   }
   console.log('✓ Secret sanitization verified:', sanitized);
 
+  // In-memory state tracking to test state transitions without touching application data files
+  const mockStateStore = new Map<string, any>();
+  const testStateUpdater = (id: string, st: any) => mockStateStore.set(id, st);
+
   // 4. Test 201 Accepted Response -> Success Activity (Requirement 10)
   console.log('\n[Test 4] 201 Accepted Response -> Success Activity');
   const mockFetch201 = async () => new Response(JSON.stringify({ result: 'accepted' }), { status: 201 });
@@ -64,6 +68,8 @@ async function runTests() {
     payload: testPayload,
     webhookUrl: webhookUrlHouzz,
     customFetch: mockFetch201 as any,
+    skipPersistence: true,
+    onStateUpdate: testStateUpdater,
   });
 
   if (!res201.success || res201.activityStatus !== 'Sent to Houzz Pro' || res201.statusCode !== 201) {
@@ -79,6 +85,8 @@ async function runTests() {
     payload: testPayload,
     webhookUrl: webhookUrlAutomation,
     customFetch: mockFetch200Error as any,
+    skipPersistence: true,
+    onStateUpdate: testStateUpdater,
   });
 
   if (res200Err.success || res200Err.activityStatus !== 'Failed to send to Houzz Automation' || !res200Err.error?.includes('Duplicate lead')) {
@@ -94,6 +102,8 @@ async function runTests() {
     payload: testPayload,
     webhookUrl: webhookUrlHouzz,
     customFetch: mockFetch400 as any,
+    skipPersistence: true,
+    onStateUpdate: testStateUpdater,
   });
 
   if (res400.success || res400.activityStatus !== 'Failed to send to Houzz Pro' || res400.statusCode !== 400 || !res400.error?.includes('Invalid client phone number')) {
@@ -109,6 +119,8 @@ async function runTests() {
     payload: testPayload,
     webhookUrl: webhookUrlHouzz,
     customFetch: mockFetch500 as any,
+    skipPersistence: true,
+    onStateUpdate: testStateUpdater,
   });
 
   if (res500.success || res500.activityStatus !== 'Failed to send to Houzz Pro' || res500.statusCode !== 500) {
@@ -134,6 +146,8 @@ async function runTests() {
     webhookUrl: webhookUrlHouzz,
     customFetch: mockFetchTimeout as any,
     timeoutMs: 100, // Short timeout for unit test speed
+    skipPersistence: true,
+    onStateUpdate: testStateUpdater,
   });
 
   if (resTimeout.success || resTimeout.activityStatus !== 'Failed to send to Houzz Pro' || !resTimeout.error?.includes('timed out')) {
@@ -152,6 +166,8 @@ async function runTests() {
     payload: testPayload,
     webhookUrl: webhookUrlHouzz,
     customFetch: mockFetchNetworkError as any,
+    skipPersistence: true,
+    onStateUpdate: testStateUpdater,
   });
 
   if (resNetErr.success || resNetErr.activityStatus !== 'Failed to send to Houzz Pro' || !resNetErr.error?.includes('Failed to fetch')) {
@@ -165,6 +181,8 @@ async function runTests() {
     leadId: 'test_lead_no_url',
     payload: testPayload,
     webhookUrl: '',
+    skipPersistence: true,
+    onStateUpdate: testStateUpdater,
   });
 
   if (resNoUrl.success || !resNoUrl.error?.includes('not configured')) {

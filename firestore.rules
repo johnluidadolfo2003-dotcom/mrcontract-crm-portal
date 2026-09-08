@@ -1,24 +1,47 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /pendingAppointments/{appointmentId} {
-      // Allow read/write for authenticated users, or validate public booking payload
-      allow read: if request.auth != null;
-      allow create: if request.auth != null || (
-        request.resource.data.clientName is string &&
-        request.resource.data.clientName.size() > 0 &&
-        request.resource.data.clientPhone is string
-      );
-      allow update, delete: if request.auth != null;
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+    function isSoleAuthorized() {
+      return isSignedIn() &&
+        request.auth.token.email_verified == true &&
+        request.auth.token.email != null &&
+        exists(/databases/$(database)/documents/security/soleAccess) &&
+        request.auth.token.email.lower() == get(/databases/$(database)/documents/security/soleAccess).data.email;
     }
 
+    // Default deny rule
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Security collection - Protected soleAccess document
+    // Read allowed for sole authorized user; writes forbidden to client apps
+    match /security/soleAccess {
+      allow read: if isSoleAuthorized();
+      allow write: if false;
+    }
+
+    // Users Collection - Read allowed only for sole authorized user; client writes forbidden
+    match /users/{userEmail} {
+      allow read: if isSoleAuthorized();
+      allow write: if false;
+    }
+
+    // Leads Collection - Read and write restricted to the sole authorized user
     match /leads/{leadId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isSoleAuthorized();
+    }
+
+    // Pending Appointments Collection - Read and write restricted to the sole authorized user
+    match /pendingAppointments/{appointmentId} {
+      allow read, write: if isSoleAuthorized();
     }
   }
 }
+
