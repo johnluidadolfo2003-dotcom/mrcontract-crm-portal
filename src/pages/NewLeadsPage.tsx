@@ -437,14 +437,14 @@ export const NewLeadsPage: React.FC = () => {
  };
 
  const renderHouzzAction = (lead: NewLeadRecord, compact = false) => {
- if (!lead.isWebhookLead) return null;
+ if (!lead.isWebhookLead) return <span aria-hidden="true" className={compact ? 'inline-block w-[148px]' : 'inline-block w-[160px]'} />;
 
  const source = String(lead.leadSource || lead.webhookSource || '').trim().toLowerCase();
  const status = String(lead.houzzStatus || lead.houzzResult || '').toLowerCase();
  const sent = status.startsWith('sent to ');
  const failed = status.startsWith('failed to ');
  const sending = sendingHouzzId === lead.id || status.startsWith('sending to ');
- const sizeClass = compact ? 'px-2.5 py-1.5 rounded-lg' : 'px-3.5 py-2 rounded-xl';
+ const sizeClass = compact ? 'w-[148px] px-2.5 py-1.5 rounded-lg justify-center whitespace-nowrap' : 'w-[160px] px-3.5 py-2 rounded-xl justify-center whitespace-nowrap';
 
  if (source === 'angi') {
  const label = sent ? 'Sent automatically' : failed ? 'Auto-send failed' : 'Sending automatically';
@@ -467,7 +467,7 @@ export const NewLeadsPage: React.FC = () => {
  );
  }
 
- if (source !== 'thumbtack') return null;
+ if (source !== 'thumbtack') return <span aria-hidden="true" className={compact ? 'inline-block w-[148px]' : 'inline-block w-[160px]'} />;
 
  return (
  <button
@@ -703,12 +703,12 @@ export const NewLeadsPage: React.FC = () => {
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Status Dropdown */}
-                  <div className="relative inline-flex items-center">
+                  <div className="relative inline-flex items-center w-[120px] shrink-0">
                     <select
                       value={lead.status || 'New'}
                       onChange={(e) => handleStatusChange(lead, e.target.value)}
                       disabled={updatingId === lead.id}
-                      className="px-2.5 py-1.5 pr-7 rounded-xl text-xs font-semibold bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer appearance-none disabled:opacity-50"
+                      className="w-full px-2.5 py-1.5 pr-7 rounded-xl text-xs font-semibold bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer appearance-none disabled:opacity-50"
                       title="Update lead status"
                     >
                       {LEAD_STATUS_OPTIONS.map((st) => (
@@ -733,7 +733,7 @@ export const NewLeadsPage: React.FC = () => {
                       e.stopPropagation();
                       handleScheduleLead(lead);
                     }}
-                    className="px-3.5 py-2 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                    className="w-[104px] justify-center px-3.5 py-2 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                     title="Schedule client appointment"
                   >
                     <CalendarClock className="w-3.5 h-3.5" />
@@ -761,19 +761,19 @@ export const NewLeadsPage: React.FC = () => {
  /* TABLE VIEW (ALL INFO IN 1 ROW PER LEAD) */
  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
  <div className="overflow-x-auto">
- <table className="w-full text-left border-collapse text-xs">
+ <table className="w-full min-w-[1420px] table-fixed text-left border-collapse text-xs">
  <thead>
  <tr className="bg-zinc-50 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-800">
- <th className="py-3 px-4">Client Name</th>
- <th className="py-3 px-4">Phone</th>
- <th className="py-3 px-4">Email</th>
- <th className="py-3 px-4">Address</th>
- <th className="py-3 px-4">Service Needed</th>
- <th className="py-3 px-4">Lead Fee</th>
- <th className="py-3 px-4">Source</th>
- <th className="py-3 px-4">Created Date</th>
-  <th className="py-3 px-4">Status</th>
- <th className="py-3 px-4 text-right">Actions</th>
+ <th className="w-[180px] py-3 px-4">Client Name</th>
+ <th className="w-[145px] py-3 px-4">Phone</th>
+ <th className="w-[210px] py-3 px-4">Email</th>
+ <th className="w-[220px] py-3 px-4">Address</th>
+ <th className="w-[190px] py-3 px-4">Service Needed</th>
+ <th className="w-[90px] py-3 px-4">Lead Fee</th>
+ <th className="w-[105px] py-3 px-4">Source</th>
+ <th className="w-[165px] py-3 px-4">Created Date</th>
+ <th className="w-[125px] py-3 px-4">Status</th>
+ <th className="w-[330px] py-3 px-4 text-right">Actions</th>
  </tr>
  </thead>
  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium">
@@ -805,13 +805,16 @@ export const NewLeadsPage: React.FC = () => {
  </span>
  </div>
  </td>
+ <td className="py-3 px-4 whitespace-nowrap text-zinc-500 dark:text-zinc-400">
+ {formatLeadDate(lead.createdAt)}
+ </td>
  <td className="py-3 px-4 whitespace-nowrap">
- <div className="relative inline-flex items-center">
+ <div className="relative inline-flex items-center w-full">
  <select
  value={lead.status || 'New'}
  onChange={(e) => handleStatusChange(lead, e.target.value)}
  disabled={updatingId === lead.id}
- className="px-2.5 py-0.5 pr-6 rounded-full text-xs font-medium bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer appearance-none disabled:opacity-50"
+ className="w-full px-2.5 py-0.5 pr-6 rounded-full text-xs font-medium bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer appearance-none disabled:opacity-50"
  title="Click to edit status"
  >
  {LEAD_STATUS_OPTIONS.map((st) => (
@@ -827,7 +830,8 @@ export const NewLeadsPage: React.FC = () => {
  )}
  </div>
  </td>
- <td className="py-3 px-4 text-right whitespace-nowrap space-x-1.5" onClick={(e) => e.stopPropagation()}>
+ <td className="py-3 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-end gap-2">
                   {renderHouzzAction(lead, true)}
                   <button
                     type="button"
@@ -846,6 +850,7 @@ export const NewLeadsPage: React.FC = () => {
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
+                  </div>
                 </td>
  </tr>
  ))}
