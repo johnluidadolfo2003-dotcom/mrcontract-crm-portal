@@ -55,9 +55,6 @@ export const UserGatekeeper: React.FC<{ children: React.ReactNode }> = ({ childr
             <span className="text-zinc-900 dark:text-white">Mr.</span>
             <span className="text-[#FF5500]">Contract</span>
           </div>
-          <p className="text-zinc-500 dark:text-zinc-400 text-xs sm:text-sm font-medium mt-1.5 tracking-wide">
-            Contractor Lead & CRM Portal
-          </p>
         </div>
 
         {/* Login Card */}
