@@ -1,6 +1,4 @@
 import express from 'express';
-import cookieParser from 'cookie-parser';
-import crypto from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type, ThinkingLevel } from '@google/genai';
 import multer from 'multer';
@@ -11,54 +9,13 @@ import * as sheetsService from './server/sheetsService.ts';
 import * as durableStore from './server/durableStore.ts';
 import * as calendarService from './server/calendarService.ts';
 import * as houzzDelivery from './server/houzzDelivery.ts';
-import {
-  adminAuth,
-  adminDb,
-  requireAuthMiddleware,
-  requireAdminMiddleware,
-  sameOriginMiddleware,
-  validateSameOrigin,
-  syncOrCheckUser,
-  syncSoleAccessDocument,
-  countActiveAdmins,
-  AuthenticatedRequest,
-  AuthenticatedUser,
-} from './server/auth.ts';
-import {
-  validateWebhookSecret,
-  validateThumbtackAuth,
-  getBackendWebhookUrl,
-  isWebhookRateLimited,
-  safeTimingCompare,
-} from './server/webhookSecurity.ts';
 
 const app = express();
-// Render assigns the public service port through process.env.PORT.
-// Use 10000 only as the local/default fallback.
-const PORT = Number(process.env.PORT) || 10000;
+const PORT = 3000;
 
-app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.text({ type: ['text/*', 'application/text', 'text/plain', 'text/html'], limit: '10mb' }));
-
-// Public, non-sensitive health check used by Render during deployment.
-app.get('/health', (_req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
-
-// Enforce same-origin validation across all state-changing /api/* requests,
-// excluding inbound third-party server-to-server webhook endpoints.
-app.use('/api', (req, res, next) => {
-  if (
-    req.path === '/webhooks/angi' ||
-    req.path === '/webhooks/thumbtack' ||
-    req.path === '/webhooks/incoming-lead'
-  ) {
-    return next();
-  }
-  sameOriginMiddleware(req, res, next);
-});
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -212,7 +169,7 @@ function heuristicExtractText(text: string): any {
 }
 
 // Extract from text
-app.post('/api/extract-text', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.post('/api/extract-text', async (req, res) => {
   try {
     const { text } = req.body;
     if (Date.now() < aiDeniedUntil) {
@@ -249,7 +206,7 @@ app.post('/api/extract-text', requireAuthMiddleware, async (req: AuthenticatedRe
 });
 
 // Extract from image
-app.post('/api/extract-image', requireAuthMiddleware, upload.single('image') as any, async (req: AuthenticatedRequest, res: express.Response) => {
+app.post('/api/extract-image', upload.single('image') as any, async (req: express.Request, res: express.Response) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
     
@@ -324,7 +281,22 @@ app.post('/api/extract-image', requireAuthMiddleware, upload.single('image') as 
   }
 });
 
-app.get('/api/config', async (req: AuthenticatedRequest, res: express.Response) => {
+const DEFAULT_ZAPIER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/28623037/4hml53j/';
+
+function getBackendWebhookUrl(): string {
+  const CONFIG_FILE = path.join(process.cwd(), 'data', 'config.json');
+  if (fs.existsSync(CONFIG_FILE)) {
+    try {
+      const cfg = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
+      if (cfg && typeof cfg.houzzWebhookUrl === 'string' && cfg.houzzWebhookUrl.trim()) {
+        return cfg.houzzWebhookUrl.trim();
+      }
+    } catch {}
+  }
+  return (process.env.ZAPIER_WEBHOOK_URL || process.env.HOUZZ_WEBHOOK_URL || DEFAULT_ZAPIER_WEBHOOK_URL).trim();
+}
+
+app.get('/api/config', (req, res) => {
   try {
     const CONFIG_FILE = path.join(process.cwd(), 'data', 'config.json');
     let configData: any = {};
@@ -334,66 +306,17 @@ app.get('/api/config', async (req: AuthenticatedRequest, res: express.Response) 
         configData = JSON.parse(data);
       } catch {}
     }
-
-    // Never return webhook URLs, spreadsheet IDs or private configuration keys
-    delete configData.houzzWebhookUrl;
-    delete configData.webhookUrl;
-    delete configData.spreadsheetId;
-    delete configData.spreadsheetUrl;
-    delete configData.spreadsheetName;
-
-    const backendUrl = getBackendWebhookUrl();
-    const destInfo = houzzDelivery.getHouzzDestinationInfo(backendUrl);
-
-    // Check if request has an active authenticated CRM user session
-    let authUser: AuthenticatedUser | null = null;
-    let sessionCookie = req.cookies?.__session;
-    if (sessionCookie) {
-      try {
-        const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
-        if (decodedToken.email) {
-          const userDoc = await adminDb.collection('users').doc(decodedToken.email.trim().toLowerCase()).get();
-          if (userDoc.exists && userDoc.data()?.active === true) {
-            authUser = userDoc.data() as AuthenticatedUser;
-          }
-        }
-      } catch {}
+    // Always supply shared team-wide backend webhook URL
+    if (!configData.houzzWebhookUrl || !configData.houzzWebhookUrl.trim()) {
+      configData.houzzWebhookUrl = getBackendWebhookUrl();
     }
-    if (!authUser && req.headers.authorization?.startsWith('Bearer ')) {
-      const idToken = req.headers.authorization.split('Bearer ')[1];
-      try {
-        const decodedToken = await adminAuth.verifyIdToken(idToken);
-        if (decodedToken.email) {
-          const userDoc = await adminDb.collection('users').doc(decodedToken.email.trim().toLowerCase()).get();
-          if (userDoc.exists && userDoc.data()?.active === true) {
-            authUser = userDoc.data() as AuthenticatedUser;
-          }
-        }
-      } catch {}
-    }
-
-    if (authUser) {
-      return res.json({
-        ...configData,
-        webhookStatus: {
-          configured: Boolean(backendUrl),
-          destination: backendUrl ? destInfo.displayName : 'Zapier / Houzz Automation',
-        },
-      });
-    }
-
-    // Public response: strictly approved branding properties ONLY
-    return res.json({
-      companyName: configData.companyName || 'Mr. Contract CRM',
-      theme: configData.theme || 'dark',
-      logoUrl: configData.logoUrl || '',
-    });
+    return res.json(configData);
   } catch (err: any) {
-    res.status(500).json({ error: 'Failed to retrieve configuration' });
+    res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/config', requireAuthMiddleware, requireAdminMiddleware, (req: AuthenticatedRequest, res) => {
+app.post('/api/config', (req, res) => {
   try {
     const CONFIG_FILE = path.join(process.cwd(), 'data', 'config.json');
     const dir = path.dirname(CONFIG_FILE);
@@ -410,37 +333,74 @@ app.post('/api/config', requireAuthMiddleware, requireAdminMiddleware, (req: Aut
     delete incoming.spreadsheetId;
     delete incoming.spreadsheetUrl;
     delete incoming.spreadsheetName;
-    delete incoming.houzzWebhookUrl;
-    delete incoming.webhookUrl;
 
     const mergedData = {
       ...existingData,
       ...incoming,
     };
-    delete mergedData.houzzWebhookUrl;
-    delete mergedData.webhookUrl;
-
+    if (!mergedData.houzzWebhookUrl || !mergedData.houzzWebhookUrl.trim()) {
+      mergedData.houzzWebhookUrl = getBackendWebhookUrl();
+    }
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(mergedData, null, 2), 'utf-8');
     res.json({ success: true, config: mergedData });
   } catch (err: any) {
-    res.status(500).json({ error: 'Failed to save configuration' });
+    res.status(500).json({ error: err.message });
   }
 });
 
-app.get('/api/webhook-url', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
-  const backendUrl = getBackendWebhookUrl();
-  const destInfo = houzzDelivery.getHouzzDestinationInfo(backendUrl);
-  return res.json({
-    configured: Boolean(backendUrl),
-    destination: backendUrl ? destInfo.displayName : 'Zapier / Houzz Automation',
+app.get('/api/webhook-url', (req, res) => {
+  res.json({
+    webhookUrl: getBackendWebhookUrl(),
+    isConfigured: Boolean(getBackendWebhookUrl()),
   });
 });
 
-app.post('/api/webhook-url', requireAuthMiddleware, requireAdminMiddleware, (req: AuthenticatedRequest, res) => {
-  return res.status(400).json({
-    error: 'Webhook destination URLs cannot be modified via API. Configure ZAPIER_WEBHOOK_URL or HOUZZ_WEBHOOK_URL securely in Render Environment Variables.',
-  });
+app.post('/api/webhook-url', (req, res) => {
+  try {
+    const { webhookUrl } = req.body;
+    const CONFIG_FILE = path.join(process.cwd(), 'data', 'config.json');
+    const dir = path.dirname(CONFIG_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    let configData: any = {};
+    if (fs.existsSync(CONFIG_FILE)) {
+      try {
+        configData = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
+      } catch {}
+    }
+    configData.houzzWebhookUrl = (webhookUrl || '').trim() || DEFAULT_ZAPIER_WEBHOOK_URL;
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(configData, null, 2), 'utf-8');
+    res.json({ success: true, webhookUrl: configData.houzzWebhookUrl });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
+
+// Rate limiter: Max 60 requests per minute per IP for webhook ingest (Weakness 8)
+const webhookRateLimits = new Map<string, { count: number; resetTime: number }>();
+
+function isWebhookRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const record = webhookRateLimits.get(ip);
+  if (!record || now > record.resetTime) {
+    webhookRateLimits.set(ip, { count: 1, resetTime: now + 60000 });
+    return false;
+  }
+  record.count++;
+  return record.count > 60;
+}
+
+function validateWebhookSecret(req: express.Request): boolean {
+  const expectedSecret = process.env.WEBHOOK_SECRET_KEY;
+  if (!expectedSecret || !expectedSecret.trim()) {
+    return true; // No secret configured in environment; allow open ingestion
+  }
+  const token = req.headers['x-webhook-token'] || req.headers['authorization'] || req.query.token;
+  if (!token) return false;
+  const cleanToken = String(token).replace(/^Bearer\s+/i, '').trim();
+  return cleanToken === expectedSecret.trim();
+}
 
 function maskPhoneNumber(phone?: string): string {
   if (!phone) return '';
@@ -516,19 +476,11 @@ function setHouzzDispatchFailed(phone: string, name: string, errorMsg?: string):
   recentHouzzDispatches.set(key, { status: 'failed', timestamp: Date.now(), error: errorMsg });
 }
 
-app.post('/api/send-houzz-webhook', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.post('/api/send-houzz-webhook', async (req, res) => {
   try {
-    const { payload, leadId } = req.body;
-
-    // Reject / ignore any browser-provided webhook URL; exclusively use server environment variable
-    const destinationUrl = getBackendWebhookUrl();
-    if (!destinationUrl) {
-      return res.status(503).json({
-        success: false,
-        message: 'Webhook destination is not configured on server',
-        error: 'Neither ZAPIER_WEBHOOK_URL nor HOUZZ_WEBHOOK_URL is configured on the server.',
-        destination: 'Zapier / Houzz Automation',
-      });
+    let { webhookUrl, payload, leadId } = req.body;
+    if (!webhookUrl || !webhookUrl.trim()) {
+      webhookUrl = getBackendWebhookUrl();
     }
 
     const resolvedLeadId = leadId || payload?.leadId || payload?.id || payload?.submissionId || `lead_${Date.now()}`;
@@ -536,7 +488,7 @@ app.post('/api/send-houzz-webhook', requireAuthMiddleware, async (req: Authentic
     const result = await houzzDelivery.dispatchLeadToHouzz({
       leadId: resolvedLeadId,
       payload: payload || {},
-      webhookUrl: destinationUrl,
+      webhookUrl,
     });
 
     if (result.success) {
@@ -556,32 +508,22 @@ app.post('/api/send-houzz-webhook', requireAuthMiddleware, async (req: Authentic
       });
     }
   } catch (error: any) {
+    const destInfo = houzzDelivery.getHouzzDestinationInfo(req.body?.webhookUrl || getBackendWebhookUrl());
     const safeErr = houzzDelivery.sanitizeErrorMessage(error.message || 'Server error');
     return res.status(500).json({
       success: false,
-      message: 'Failed to send to Houzz Automation',
+      message: destInfo.failedLabel,
       error: safeErr,
-      destination: 'Zapier / Houzz Automation',
+      destination: destInfo.displayName,
     });
   }
 });
 
-app.post('/api/webhooks/retry-houzz', requireAuthMiddleware, requireAdminMiddleware, async (req: AuthenticatedRequest, res) => {
+app.post('/api/webhooks/retry-houzz', async (req, res) => {
   try {
-    const { leadId } = req.body;
+    const { leadId, webhookUrl } = req.body;
     if (!leadId) {
       return res.status(400).json({ success: false, error: 'leadId is required for retry.' });
-    }
-
-    // Exclusively use server-managed webhook destination; ignore any client-supplied webhookUrl
-    const destinationUrl = getBackendWebhookUrl();
-    if (!destinationUrl) {
-      return res.status(503).json({
-        success: false,
-        message: 'Webhook destination is not configured on server',
-        error: 'Neither ZAPIER_WEBHOOK_URL nor HOUZZ_WEBHOOK_URL is configured on the server.',
-        destination: 'Zapier / Houzz Automation',
-      });
     }
 
     const incomingFile = path.join(process.cwd(), 'data', 'incoming_leads.json');
@@ -610,10 +552,12 @@ app.post('/api/webhooks/retry-houzz', requireAuthMiddleware, requireAdminMiddlew
       return res.status(404).json({ success: false, error: `Lead with ID ${leadId} not found.` });
     }
 
+    const resolvedUrl = webhookUrl || getBackendWebhookUrl();
+
     const result = await houzzDelivery.dispatchLeadToHouzz({
       leadId,
       payload: leadData,
-      webhookUrl: destinationUrl,
+      webhookUrl: resolvedUrl,
     });
 
     if (result.success) {
@@ -1593,15 +1537,15 @@ app.post('/api/webhooks/angi', async (req, res) => {
   }
 });
 
-// 2. Dedicated Thumbtack Webhook (Thumbtack for Pros via HTTP Basic Auth or Webhook Secret)
+// 2. Dedicated Thumbtack Webhook (Thumbtack for Pros via Zapier or Webhook)
 app.post('/api/webhooks/thumbtack', async (req, res) => {
   try {
     const clientIp = (req.ip || req.headers['x-forwarded-for'] || 'unknown') as string;
     if (isWebhookRateLimited(clientIp)) {
       return res.status(429).json({ success: false, error: 'Rate limit exceeded. Too many requests.' });
     }
-    if (!validateThumbtackAuth(req)) {
-      return res.status(401).json({ success: false, error: 'Unauthorized. Invalid webhook credentials.' });
+    if (!validateWebhookSecret(req)) {
+      return res.status(401).json({ success: false, error: 'Unauthorized. Invalid webhook secret token.' });
     }
 
     console.log('Incoming Thumbtack Webhook received:', req.body);
@@ -1649,7 +1593,7 @@ app.post('/api/webhooks/incoming-lead', async (req, res) => {
 });
 
 // 3.5 Test Email Parser endpoint (inspect extraction results from email text without committing or optionally creating)
-app.post('/api/webhooks/parse-email', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.post('/api/webhooks/parse-email', async (req, res) => {
   try {
     const { emailText, createLead, source } = req.body;
     if (!emailText || typeof emailText !== 'string') {
@@ -1716,7 +1660,7 @@ function isExampleOrTestLead(lead: any): boolean {
 }
 
 // 4. Fetch all Incoming Webhook Leads (for UI consumption)
-app.get('/api/webhooks/incoming-leads', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
+app.get('/api/webhooks/incoming-leads', (req, res) => {
   try {
     const incomingFile = path.join(process.cwd(), 'data', 'incoming_leads.json');
     if (fs.existsSync(incomingFile)) {
@@ -1735,7 +1679,7 @@ app.get('/api/webhooks/incoming-leads', requireAuthMiddleware, (req: Authenticat
 });
 
 // 5. Update an incoming lead status or client information (Name, Phone, Email, Address, etc.)
-app.patch('/api/webhooks/incoming-leads/:id', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
+app.patch('/api/webhooks/incoming-leads/:id', (req, res) => {
   try {
     const { id } = req.params;
     const { clientName, clientPhone, clientEmail, address, serviceNeeded, leadSource, leadFee, status, notes, sheetSynced } = req.body;
@@ -1766,7 +1710,7 @@ app.patch('/api/webhooks/incoming-leads/:id', requireAuthMiddleware, (req: Authe
 });
 
 // 6. Delete all incoming webhook leads or a single lead
-app.delete('/api/webhooks/incoming-leads', requireAuthMiddleware, requireAdminMiddleware, (req: AuthenticatedRequest, res) => {
+app.delete('/api/webhooks/incoming-leads', (req, res) => {
   try {
     const incomingFile = path.join(process.cwd(), 'data', 'incoming_leads.json');
     fs.writeFileSync(incomingFile, JSON.stringify([], null, 2), 'utf-8');
@@ -1776,7 +1720,7 @@ app.delete('/api/webhooks/incoming-leads', requireAuthMiddleware, requireAdminMi
   }
 });
 
-app.delete('/api/webhooks/incoming-leads/:id', requireAuthMiddleware, requireAdminMiddleware, (req: AuthenticatedRequest, res) => {
+app.delete('/api/webhooks/incoming-leads/:id', (req, res) => {
   try {
     const { id } = req.params;
     const incomingFile = path.join(process.cwd(), 'data', 'incoming_leads.json');
@@ -1792,7 +1736,7 @@ app.delete('/api/webhooks/incoming-leads/:id', requireAuthMiddleware, requireAdm
 });
 
 // 7. Get Webhook Logs (recent activity and payloads for debugging)
-app.get('/api/webhooks/logs', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
+app.get('/api/webhooks/logs', (req, res) => {
   try {
     const logsFile = path.join(process.cwd(), 'data', 'webhook_logs.json');
     if (fs.existsSync(logsFile)) {
@@ -1864,7 +1808,7 @@ async function getCalendarAuthDetails(req: any) {
 }
 
 // Calendar Diagnostics & Health Endpoint
-app.get('/api/calendar/status', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.get('/api/calendar/status', async (req, res) => {
   try {
     const health = await calendarService.getCalendarHealthStatus(req.query.calendarId as string);
     res.json({
@@ -1877,7 +1821,7 @@ app.get('/api/calendar/status', requireAuthMiddleware, async (req: Authenticated
   }
 });
 
-app.get('/api/calendar/events', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.get('/api/calendar/events', async (req, res) => {
   try {
     const result = await calendarService.listCalendarEvents({
       calendarId: req.query.calendarId as string,
@@ -1893,7 +1837,7 @@ app.get('/api/calendar/events', requireAuthMiddleware, async (req: Authenticated
   }
 });
 
-app.post('/api/calendar/events', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.post('/api/calendar/events', async (req, res) => {
   try {
     const result = await calendarService.createCalendarEvent(req.body, req.query.calendarId as string);
     if (!result.success && result.status) {
@@ -1905,7 +1849,7 @@ app.post('/api/calendar/events', requireAuthMiddleware, async (req: Authenticate
   }
 });
 
-app.put('/api/calendar/events/:eventId', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.put('/api/calendar/events/:eventId', async (req, res) => {
   try {
     const result = await calendarService.updateCalendarEvent(req.params.eventId, req.body, req.query.calendarId as string);
     if (!result.success && result.status) {
@@ -1917,7 +1861,7 @@ app.put('/api/calendar/events/:eventId', requireAuthMiddleware, async (req: Auth
   }
 });
 
-app.delete('/api/calendar/events/:eventId', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.delete('/api/calendar/events/:eventId', async (req, res) => {
   try {
     const result = await calendarService.deleteCalendarEvent(req.params.eventId, req.query.calendarId as string);
     if (!result.success && result.status) {
@@ -1929,7 +1873,7 @@ app.delete('/api/calendar/events/:eventId', requireAuthMiddleware, async (req: A
   }
 });
 
-app.post('/api/webhooks/test', requireAuthMiddleware, requireAdminMiddleware, async (req: AuthenticatedRequest, res) => {
+app.post('/api/webhooks/test', async (req, res) => {
   try {
     const { source = 'Angi' } = req.body;
     const isThumbtack = /thumbtack/i.test(source);
@@ -1970,7 +1914,7 @@ app.post('/api/webhooks/test', requireAuthMiddleware, requireAdminMiddleware, as
 });
 
 // Full End-to-End Pipeline Test endpoint
-app.post('/api/webhooks/test-pipeline', requireAuthMiddleware, requireAdminMiddleware, async (req: AuthenticatedRequest, res) => {
+app.post('/api/webhooks/test-pipeline', async (req, res) => {
   try {
     const { rawEmail, source = 'Angi', syncToSheets = true, sendToHouzz = true } = req.body;
     const testSample = rawEmail || `Angi
@@ -2053,7 +1997,7 @@ Lead Fee: $45.00`;
 });
 
 // Full Webhook Diagnostics Overview endpoint
-app.get('/api/webhooks/diagnostics', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
+app.get('/api/webhooks/diagnostics', (req, res) => {
   try {
     const dataDir = path.join(process.cwd(), 'data');
     const incomingFile = path.join(dataDir, 'incoming_leads.json');
@@ -2120,7 +2064,7 @@ app.get('/api/webhooks/diagnostics', requireAuthMiddleware, (req: AuthenticatedR
 });
 
 // Interactive Webhook Dry-Run Parser Diagnostics
-app.post('/api/webhooks/diagnose', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.post('/api/webhooks/diagnose', async (req, res) => {
   try {
     const { payload, rawEmail, source = 'Angi', saveLead = false } = req.body;
     const bodyToParse = rawEmail ? { rawEmail, leadSource: source } : (payload || {});
@@ -2154,7 +2098,7 @@ app.post('/api/webhooks/diagnose', requireAuthMiddleware, async (req: Authentica
 });
 
 // Clear Webhook Logs endpoint
-app.delete('/api/webhooks/logs', requireAuthMiddleware, requireAdminMiddleware, (req: AuthenticatedRequest, res) => {
+app.delete('/api/webhooks/logs', (req, res) => {
   try {
     const logsFile = path.join(process.cwd(), 'data', 'webhook_logs.json');
     if (fs.existsSync(logsFile)) {
@@ -2167,7 +2111,7 @@ app.delete('/api/webhooks/logs', requireAuthMiddleware, requireAdminMiddleware, 
 });
 
 // Backwards compatibility endpoint & ping check
-app.get('/api/webhooks/angi', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
+app.get('/api/webhooks/angi', (req, res) => {
   try {
     const incomingFile = path.join(process.cwd(), 'data', 'incoming_leads.json');
     if (fs.existsSync(incomingFile)) {
@@ -2181,100 +2125,147 @@ app.get('/api/webhooks/angi', requireAuthMiddleware, (req: AuthenticatedRequest,
   }
 });
 
-app.get('/api/webhooks/thumbtack', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
+app.get('/api/webhooks/thumbtack', (req, res) => {
   return res.json({ success: true, status: 'operational', endpoint: '/api/webhooks/thumbtack' });
 });
 
-app.get('/api/webhooks/incoming-lead', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
+app.get('/api/webhooks/incoming-lead', (req, res) => {
   return res.json({ success: true, status: 'operational', endpoint: '/api/webhooks/incoming-lead' });
 });
 
-// --- Firebase Auth & Session Endpoints ---
-app.post('/api/auth/session', async (req, res) => {
+// Users API (Multi-computer user management)
+app.get('/api/users', (req, res) => {
   try {
-    const { idToken } = req.body;
-    if (!idToken) {
-      return res.status(400).json({ error: 'Missing ID token' });
+    const usersFile = path.join(process.cwd(), 'data', 'users.json');
+    if (fs.existsSync(usersFile)) {
+      const data = JSON.parse(fs.readFileSync(usersFile, 'utf-8'));
+      return res.json({ success: true, users: data });
     }
-
-    const rawInitialAdminEmail = process.env.CRM_INITIAL_ADMIN_EMAIL;
-    if (!rawInitialAdminEmail || !rawInitialAdminEmail.trim()) {
-      console.error('[Auth] CRM_INITIAL_ADMIN_EMAIL is not configured on the server');
-      return res.status(500).json({
-        error: 'Server authentication configuration is incomplete: CRM_INITIAL_ADMIN_EMAIL is missing or empty.',
-      });
-    }
-
-    // Verify Google ID Token via Firebase Admin
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
-    
-    // Enforce email_verified === true (Requirement 4)
-    if (decodedToken.email_verified !== true) {
-      return res.status(403).json({ error: 'Forbidden: Email address must be verified.' });
-    }
-
-    const email = (decodedToken.email || '').trim().toLowerCase();
-    if (!email) {
-      return res.status(400).json({ error: 'Token missing verified email' });
-    }
-
-    const initialAdminEmail = rawInitialAdminEmail.trim().toLowerCase();
-    if (email !== initialAdminEmail) {
-      return res.status(403).json({
-        error: `Your Google account (${email}) is not authorized to access this CRM. Contact an administrator.`,
-      });
-    }
-
-    // Check authorization & ensure sole administrator role and soleAccess sync
-    const user = await syncOrCheckUser({
-      email,
-      name: decodedToken.name || email.split('@')[0],
-      uid: decodedToken.uid,
-    });
-
-    if (!user) {
-      return res.status(403).json({
-        error: `Your Google account (${email}) is not authorized to access this CRM. Contact an administrator.`,
-      });
-    }
-
-    // Create Firebase Session Cookie (5 days)
-    const expiresIn = 5 * 24 * 60 * 60 * 1000;
-    const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
-
-    const isProduction = process.env.NODE_ENV === 'production';
-    res.cookie('__session', sessionCookie, {
-      maxAge: expiresIn,
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax',
-      path: '/',
-    });
-
-    return res.json({ success: true, user });
+    // Default seed user (empty by default)
+    const defaultUsers: any[] = [];
+    const dataDir = path.join(process.cwd(), 'data');
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(usersFile, JSON.stringify(defaultUsers, null, 2), 'utf-8');
+    return res.json({ success: true, users: defaultUsers });
   } catch (err: any) {
-    console.error('Session creation failed:', err?.message || err);
-    return res.status(401).json({ error: err?.message || 'Authentication failed. Please check credentials or contact administrator.' });
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 
-app.get('/api/auth/me', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
-  return res.json({ success: true, user: req.user });
+app.post('/api/users', (req, res) => {
+  try {
+    const { name, color } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, error: 'User name is required.' });
+    }
+    const cleanName = name.trim();
+    const usersFile = path.join(process.cwd(), 'data', 'users.json');
+    const dataDir = path.join(process.cwd(), 'data');
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+
+    let users: any[] = [];
+    if (fs.existsSync(usersFile)) {
+      try {
+        users = JSON.parse(fs.readFileSync(usersFile, 'utf-8'));
+      } catch {}
+    }
+
+    // Check if user with same name already exists (case-insensitive)
+    let existingIndex = users.findIndex((u: any) => u.name.trim().toLowerCase() === cleanName.toLowerCase());
+    let userObj;
+    const colors = ['#FF5500', '#3B82F6', '#10B981', '#8B5CF6', '#EC4899', '#F59E0B', '#06B6D4', '#14B8A6'];
+
+    if (existingIndex >= 0) {
+      userObj = {
+        ...users[existingIndex],
+        lastActiveAt: new Date().toISOString(),
+        color: color || users[existingIndex].color || colors[existingIndex % colors.length]
+      };
+      users[existingIndex] = userObj;
+    } else {
+      userObj = {
+        id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        name: cleanName,
+        color: color || colors[users.length % colors.length],
+        createdAt: new Date().toISOString(),
+        lastActiveAt: new Date().toISOString()
+      };
+      users.push(userObj);
+    }
+
+    fs.writeFileSync(usersFile, JSON.stringify(users, null, 2), 'utf-8');
+    return res.json({ success: true, user: userObj, users });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
 });
 
-app.post('/api/auth/logout', (req, res) => {
-  res.clearCookie('__session', { path: '/' });
-  res.cookie('__session', '', { maxAge: 0, path: '/' });
-  return res.json({ success: true });
+app.delete('/api/users/:id', (req, res) => {
+  try {
+    const rawId = req.params.id;
+    const id = decodeURIComponent(rawId);
+    const usersFile = path.join(process.cwd(), 'data', 'users.json');
+    if (!fs.existsSync(usersFile)) return res.json({ success: true, users: [] });
+    
+    let users = JSON.parse(fs.readFileSync(usersFile, 'utf-8'));
+    users = users.filter((u: any) => u.id !== id && u.id !== rawId && u.name.toLowerCase() !== id.toLowerCase() && u.name.toLowerCase() !== rawId.toLowerCase());
+    fs.writeFileSync(usersFile, JSON.stringify(users, null, 2), 'utf-8');
+    return res.json({ success: true, users });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
 });
 
-// Returns ONLY the sole authorized user
-app.get('/api/users', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
-  return res.json({ success: true, users: req.user ? [req.user] : [] });
+app.put('/api/users/:id', (req, res) => {
+  try {
+    const rawId = req.params.id;
+    const id = decodeURIComponent(rawId);
+    const { name, color } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, error: 'User name is required.' });
+    }
+    const cleanName = name.trim();
+    const usersFile = path.join(process.cwd(), 'data', 'users.json');
+    const dataDir = path.join(process.cwd(), 'data');
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+
+    let users: any[] = [];
+    if (fs.existsSync(usersFile)) {
+      try {
+        users = JSON.parse(fs.readFileSync(usersFile, 'utf-8'));
+      } catch {}
+    }
+
+    const idx = users.findIndex((u: any) => u.id === id || u.id === rawId || u.name.toLowerCase() === id.toLowerCase() || u.name.toLowerCase() === rawId.toLowerCase());
+    let updatedUser: any;
+    if (idx >= 0) {
+      updatedUser = {
+        ...users[idx],
+        name: cleanName,
+        ...(color ? { color } : {}),
+        lastActiveAt: new Date().toISOString()
+      };
+      users[idx] = updatedUser;
+    } else {
+      updatedUser = {
+        id: id.startsWith('usr_') ? id : `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        name: cleanName,
+        color: color || '#FF5500',
+        createdAt: new Date().toISOString(),
+        lastActiveAt: new Date().toISOString()
+      };
+      users.push(updatedUser);
+    }
+
+    fs.writeFileSync(usersFile, JSON.stringify(users, null, 2), 'utf-8');
+    return res.json({ success: true, user: updatedUser, users });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Activity Logs API (Track changes across all team workers & computers)
-app.get('/api/activity-logs', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
+app.get('/api/activity-logs', (req, res) => {
   try {
     const { clientName, userName, limit = '100' } = req.query;
     const logsFile = path.join(process.cwd(), 'data', 'activity_logs.json');
@@ -2300,9 +2291,9 @@ app.get('/api/activity-logs', requireAuthMiddleware, (req: AuthenticatedRequest,
   }
 });
 
-app.post('/api/activity-logs', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
+app.post('/api/activity-logs', (req, res) => {
   try {
-    const { actionType, userColor, clientName, clientPhone, tabName, details, oldValue, newValue } = req.body;
+    const { actionType, userId, userName, userColor, clientName, clientPhone, tabName, details, oldValue, newValue } = req.body;
     if (!details) {
       return res.status(400).json({ success: false, error: 'Details are required.' });
     }
@@ -2318,25 +2309,17 @@ app.post('/api/activity-logs', requireAuthMiddleware, (req: AuthenticatedRequest
       } catch {}
     }
 
-    const authUser = req.user;
-    const authorId = authUser?.id || authUser?.email || 'unknown';
-    const authorName = authUser?.displayName || authUser?.name || authUser?.email || 'CRM User';
-    const authorEmail = authUser?.email || '';
-    const authorRole = authUser?.role || 'staff';
-
     const newLog = {
       id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       timestamp: new Date().toISOString(),
       actionType: actionType || 'general',
-      userId: authorId,
-      userName: authorName,
-      userEmail: authorEmail,
-      userRole: authorRole,
+      userId: userId || 'anonymous',
+      userName: userName || 'Worker',
       userColor: userColor || '#FF5500',
       clientName: clientName || '',
       clientPhone: clientPhone || '',
       tabName: tabName || '',
-      details: String(details).trim(),
+      details: details.trim(),
       oldValue: oldValue || '',
       newValue: newValue || ''
     };
@@ -2350,12 +2333,12 @@ app.post('/api/activity-logs', requireAuthMiddleware, (req: AuthenticatedRequest
     fs.writeFileSync(logsFile, JSON.stringify(logs, null, 2), 'utf-8');
     return res.json({ success: true, log: newLog });
   } catch (err: any) {
-    return res.status(500).json({ success: false, error: 'Failed to record activity log' });
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 
 // Shared Team Google Authentication API (Allows single-account sign-in across all coworkers/devices securely without token leakage)
-app.get('/api/google-auth', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
+app.get('/api/google-auth', (req, res) => {
   try {
     const authFile = path.join(process.cwd(), 'data', 'google_auth.json');
     if (fs.existsSync(authFile)) {
@@ -2383,7 +2366,7 @@ app.get('/api/google-auth', requireAuthMiddleware, (req: AuthenticatedRequest, r
   }
 });
 
-app.post('/api/google-auth', requireAuthMiddleware, requireAdminMiddleware, (req: AuthenticatedRequest, res) => {
+app.post('/api/google-auth', (req, res) => {
   try {
     const { accessToken, user } = req.body;
     if (!accessToken) {
@@ -2417,7 +2400,7 @@ app.post('/api/google-auth', requireAuthMiddleware, requireAdminMiddleware, (req
   }
 });
 
-app.delete('/api/google-auth', requireAuthMiddleware, requireAdminMiddleware, (req: AuthenticatedRequest, res) => {
+app.delete('/api/google-auth', (req, res) => {
   try {
     const authFile = path.join(process.cwd(), 'data', 'google_auth.json');
     if (fs.existsSync(authFile)) {
@@ -2430,7 +2413,7 @@ app.delete('/api/google-auth', requireAuthMiddleware, requireAdminMiddleware, (r
 });
 
 // Shared Status Overrides API (Sync status changes across all users and computers in real-time)
-app.get('/api/status-overrides', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
+app.get('/api/status-overrides', (req, res) => {
   try {
     const overridesFile = path.join(process.cwd(), 'data', 'status_overrides.json');
     if (fs.existsSync(overridesFile)) {
@@ -2443,7 +2426,7 @@ app.get('/api/status-overrides', requireAuthMiddleware, (req: AuthenticatedReque
   }
 });
 
-app.post('/api/status-overrides', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
+app.post('/api/status-overrides', (req, res) => {
   try {
     const { key, sheetTab, rowIndex, clientName, newStatus, updatedBy } = req.body;
     if (!newStatus) {
@@ -2487,7 +2470,7 @@ app.post('/api/status-overrides', requireAuthMiddleware, (req: AuthenticatedRequ
 });
 
 // Shared Representative / Salesperson Overrides API (Sync representative assignments across all users and computers in real-time)
-app.get('/api/representative-overrides', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
+app.get('/api/representative-overrides', (req, res) => {
   try {
     const overridesFile = path.join(process.cwd(), 'data', 'representative_overrides.json');
     if (fs.existsSync(overridesFile)) {
@@ -2500,7 +2483,7 @@ app.get('/api/representative-overrides', requireAuthMiddleware, (req: Authentica
   }
 });
 
-app.post('/api/representative-overrides', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
+app.post('/api/representative-overrides', (req, res) => {
   try {
     const { key, clientId, sheetTab, rowIndex, clientName, salespersonCode, salespersonName, updatedBy } = req.body;
     const dataDir = path.join(process.cwd(), 'data');
@@ -2548,7 +2531,7 @@ app.post('/api/representative-overrides', requireAuthMiddleware, (req: Authentic
 // Google Sheets Service Account API Endpoints
 // ==========================================
 
-app.get('/api/sheets/status', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.get('/api/sheets/status', async (req, res) => {
   try {
     const status = await sheetsService.getServiceAccountStatus();
     return res.json(status);
@@ -2557,7 +2540,7 @@ app.get('/api/sheets/status', requireAuthMiddleware, async (req: AuthenticatedRe
   }
 });
 
-app.get('/api/sheets/details', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.get('/api/sheets/details', async (req, res) => {
   try {
     const spreadsheetId = sheetsService.getDefaultSpreadsheetId();
     const forceFresh = req.query.forceFresh === 'true';
@@ -2572,7 +2555,7 @@ app.get('/api/sheets/details', requireAuthMiddleware, async (req: AuthenticatedR
   }
 });
 
-app.get('/api/sheets/rows', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.get('/api/sheets/rows', async (req, res) => {
   try {
     const spreadsheetId = sheetsService.getDefaultSpreadsheetId();
     const tab = (req.query.tab as string) || 'Angi';
@@ -2588,7 +2571,7 @@ app.get('/api/sheets/rows', requireAuthMiddleware, async (req: AuthenticatedRequ
   }
 });
 
-app.post('/api/sheets/batch-rows', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.post('/api/sheets/batch-rows', async (req, res) => {
   try {
     const { tabs, forceFresh } = req.body;
     const targetId = sheetsService.getDefaultSpreadsheetId();
@@ -2604,7 +2587,7 @@ app.post('/api/sheets/batch-rows', requireAuthMiddleware, async (req: Authentica
   }
 });
 
-app.post('/api/sheets/update-status', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.post('/api/sheets/update-status', async (req, res) => {
   try {
     const { sheetTab, rowIndex, newStatus, statusColIndex, clientName, clientPhone, updatedBy } = req.body;
     const targetId = sheetsService.getDefaultSpreadsheetId();
@@ -2646,7 +2629,7 @@ app.post('/api/sheets/update-status', requireAuthMiddleware, async (req: Authent
   }
 });
 
-app.post('/api/sheets/update-lead', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.post('/api/sheets/update-lead', async (req, res) => {
   try {
     const { sheetTab, rowIndex, leadData, updatedBy } = req.body;
     const targetId = sheetsService.getDefaultSpreadsheetId();
@@ -2699,7 +2682,7 @@ app.post('/api/sheets/update-lead', requireAuthMiddleware, async (req: Authentic
   }
 });
 
-app.post('/api/sheets/update-cell', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.post('/api/sheets/update-cell', async (req, res) => {
   try {
     const { sheetTab, rowIndex, columnIndex, value } = req.body;
     const targetId = sheetsService.getDefaultSpreadsheetId();
@@ -2715,7 +2698,7 @@ app.post('/api/sheets/update-cell', requireAuthMiddleware, async (req: Authentic
   }
 });
 
-app.post('/api/sheets/append-lead', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.post('/api/sheets/append-lead', async (req, res) => {
   try {
     const { sheetTab, leadData, status } = req.body;
     const targetId = sheetsService.getDefaultSpreadsheetId();
@@ -2730,7 +2713,7 @@ app.post('/api/sheets/append-lead', requireAuthMiddleware, async (req: Authentic
   }
 });
 
-app.post('/api/sheets/delete-row', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.post('/api/sheets/delete-row', async (req, res) => {
   try {
     const { sheetTab, rowIndex } = req.body;
     const targetId = sheetsService.getDefaultSpreadsheetId();
@@ -2745,7 +2728,7 @@ app.post('/api/sheets/delete-row', requireAuthMiddleware, async (req: Authentica
   }
 });
 
-app.post('/api/sheets/create-tab', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.post('/api/sheets/create-tab', async (req, res) => {
   try {
     const { tabTitle } = req.body;
     const targetId = sheetsService.getDefaultSpreadsheetId();
@@ -2760,7 +2743,7 @@ app.post('/api/sheets/create-tab', requireAuthMiddleware, async (req: Authentica
   }
 });
 
-app.post('/api/sheets/credentials', requireAuthMiddleware, requireAdminMiddleware, async (req: AuthenticatedRequest, res) => {
+app.post('/api/sheets/credentials', async (req, res) => {
   try {
     const { credentialsJson, clientEmail, privateKey } = req.body;
     const dataDir = path.join(process.cwd(), 'data');
@@ -2817,7 +2800,7 @@ function safeWriteJsonFile(filePath: string, data: any): void {
 // ==========================================
 // 2. TRASH & RESTORE SYSTEM (Soft-Delete)
 // ==========================================
-app.get('/api/trash', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
+app.get('/api/trash', (req, res) => {
   try {
     const trashFile = path.join(process.cwd(), 'data', 'trash.json');
     let items: any[] = [];
@@ -2830,7 +2813,7 @@ app.get('/api/trash', requireAuthMiddleware, (req: AuthenticatedRequest, res) =>
   }
 });
 
-app.post('/api/trash/soft-delete', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
+app.post('/api/trash/soft-delete', (req, res) => {
   try {
     const { lead, deletedBy, reason } = req.body;
     if (!lead || !lead.clientName) {
@@ -2893,7 +2876,7 @@ app.post('/api/trash/soft-delete', requireAuthMiddleware, (req: AuthenticatedReq
   }
 });
 
-app.post('/api/trash/restore', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
+app.post('/api/trash/restore', (req, res) => {
   try {
     const { leadId, clientName, restoredBy } = req.body;
     const trashFile = path.join(process.cwd(), 'data', 'trash.json');
@@ -2959,7 +2942,7 @@ app.post('/api/trash/restore', requireAuthMiddleware, (req: AuthenticatedRequest
   }
 });
 
-app.delete('/api/trash/empty', requireAuthMiddleware, requireAdminMiddleware, (req: AuthenticatedRequest, res) => {
+app.delete('/api/trash/empty', (req, res) => {
   try {
     const trashFile = path.join(process.cwd(), 'data', 'trash.json');
     safeWriteJsonFile(trashFile, []);
@@ -2972,7 +2955,7 @@ app.delete('/api/trash/empty', requireAuthMiddleware, requireAdminMiddleware, (r
 // ==========================================
 // 3. WEBHOOK DELIVERY QUEUE & RETRIES
 // ==========================================
-app.get('/api/webhooks/queue', requireAuthMiddleware, (req: AuthenticatedRequest, res) => {
+app.get('/api/webhooks/queue', (req, res) => {
   try {
     const queueFile = path.join(process.cwd(), 'data', 'webhook_queue.json');
     let queue: any[] = [];
@@ -2985,7 +2968,7 @@ app.get('/api/webhooks/queue', requireAuthMiddleware, (req: AuthenticatedRequest
   }
 });
 
-app.post('/api/webhooks/retry', requireAuthMiddleware, requireAdminMiddleware, async (req: AuthenticatedRequest, res) => {
+app.post('/api/webhooks/retry', async (req, res) => {
   try {
     const { queueId } = req.body;
     if (!queueId) {
@@ -3080,7 +3063,7 @@ app.post('/api/webhooks/retry', requireAuthMiddleware, requireAdminMiddleware, a
 // ==========================================
 // 4. TODAY / MY TASKS API
 // ==========================================
-app.get('/api/tasks/today', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+app.get('/api/tasks/today', async (req, res) => {
   try {
     const now = new Date();
     const todayIso = now.toISOString().split('T')[0];
@@ -3228,11 +3211,6 @@ app.get('/api/tasks/today', requireAuthMiddleware, async (req: AuthenticatedRequ
   }
 });
 
-// Default-deny catch-all safety fallback for any unhandled or missing /api/* endpoints
-app.all('/api/*', (req, res) => {
-  return res.status(401).json({ error: 'Unauthorized: Endpoint is protected or invalid.' });
-});
-
 // 5. BACKGROUND QUEUE RETRY WORKER (Runs every 2 minutes for resilient delivery)
 setInterval(async () => {
   try {
@@ -3367,13 +3345,8 @@ async function startServer() {
     });
   }
 
-  // Ensure security/soleAccess is synchronized with CRM_INITIAL_ADMIN_EMAIL on startup
-  syncSoleAccessDocument().catch((err: any) => {
-    console.warn('[Startup] syncSoleAccessDocument non-blocking error:', err?.message || err);
-  });
-
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
   });
 }
 

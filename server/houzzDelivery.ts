@@ -291,10 +291,9 @@ export function updateLeadHouzzState(
     error?: string;
     attemptAt?: string;
     success?: boolean;
-  },
-  skipPersistence: boolean = false
+  }
 ): void {
-  if (!leadId || skipPersistence) return;
+  if (!leadId) return;
 
   const dataDir = path.join(process.cwd(), 'data');
   const incomingFile = path.join(dataDir, 'incoming_leads.json');
@@ -346,20 +345,10 @@ export async function dispatchLeadToHouzz(params: {
   webhookUrl?: string;
   customFetch?: typeof fetch;
   timeoutMs?: number;
-  skipPersistence?: boolean;
-  onStateUpdate?: (leadId: string, state: any) => void;
 }): Promise<DispatchResult> {
   const attemptAt = new Date().toISOString();
   const url = (params.webhookUrl || '').trim();
   const destInfo = getHouzzDestinationInfo(url);
-  const skipPersist = params.skipPersistence ?? false;
-
-  const notifyState = (state: any) => {
-    updateLeadHouzzState(params.leadId, state, skipPersist);
-    if (params.onStateUpdate) {
-      params.onStateUpdate(params.leadId, state);
-    }
-  };
 
   // Requirement 9: Show clear error if URL is missing
   if (!url) {
@@ -379,7 +368,7 @@ export async function dispatchLeadToHouzz(params: {
       `[Houzz Dispatch] Lead ID: ${params.leadId} | Destination: ${destInfo.displayName} | Status: N/A | Result: ${result.safeSummary}`
     );
 
-    notifyState(result);
+    updateLeadHouzzState(params.leadId, result);
     return result;
   }
 
@@ -402,7 +391,7 @@ export async function dispatchLeadToHouzz(params: {
   }
 
   // Requirement 4: Intermediate activity state "Sending to..."
-  notifyState({
+  updateLeadHouzzState(params.leadId, {
     activityStatus: destInfo.sendingLabel,
     destinationLabel: destInfo.displayName,
     attemptAt,
@@ -452,7 +441,7 @@ export async function dispatchLeadToHouzz(params: {
       `[Houzz Dispatch] Lead ID: ${params.leadId} | Destination: ${destInfo.displayName} | Status: ${response.status} | Result: ${result.safeSummary}`
     );
 
-    notifyState(result);
+    updateLeadHouzzState(params.leadId, result);
     return result;
   } catch (err: any) {
     clearTimeout(timeoutId);
@@ -481,7 +470,7 @@ export async function dispatchLeadToHouzz(params: {
       `[Houzz Dispatch] Lead ID: ${params.leadId} | Destination: ${destInfo.displayName} | Status: Failed | Result: ${result.safeSummary}`
     );
 
-    notifyState(result);
+    updateLeadHouzzState(params.leadId, result);
     return result;
   }
 }

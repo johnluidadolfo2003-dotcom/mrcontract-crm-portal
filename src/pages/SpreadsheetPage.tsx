@@ -957,7 +957,7 @@ export const SpreadsheetPage: React.FC = () => {
 
  setSendingHouzzKey(row.rowIndex);
  try {
- await sendLeadToHouzzPro(undefined, {
+ await sendLeadToHouzzPro(config.houzzWebhookUrl, {
  clientName: row.clientName || '',
  clientPhone: row.clientPhone || '',
  clientEmail: row.clientEmail || '',

@@ -56,7 +56,7 @@ export interface AppConfig {
  spreadsheetName?: string;
  sheetTabName?: string;
  autoSyncToSheets?: boolean;
- webhookStatus?: { configured: boolean; destination: string };
+ houzzWebhookUrl?: string;
  autoSendToHouzz?: boolean;
 }
 
@@ -84,20 +84,13 @@ export interface CreatedCalendarEvent {
 }
 
 export interface AppUser {
-  id: string;
-  email: string;
-  displayName: string;
-  name: string;
-  code?: string;
-  color?: string;
-  role: 'admin' | 'manager' | 'staff';
-  active: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-  lastLoginAt?: string;
-  lastActiveAt?: string;
-  createdBy?: string;
-  uid?: string;
+ id: string;
+ name: string;
+ code?: string;
+ color?: string;
+ role?: 'admin' | 'manager' | 'staff' | string;
+ createdAt: string;
+ lastActiveAt?: string;
 }
 
 export interface SyncStatusInfo {

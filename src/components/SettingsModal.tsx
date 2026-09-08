@@ -27,7 +27,7 @@ import { getWebhookUrls, sendTestWebhookLead, runFullPipelineTest } from '../lib
 import { WebhookDiagnosticsModal } from './WebhookDiagnosticsModal';
 import { checkBackendCalendarStatus, BackendCalendarStatus } from '../lib/calendar';
 import { useUser } from '../lib/userContext';
-import { User, Pencil, ShieldCheck } from 'lucide-react';
+import { User, Pencil } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -72,7 +72,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [salespeople, setSalespeople] = useState<SalespersonOption[]>(config.salespeople);
   const [leadSources, setLeadSources] = useState<string[]>((config.leadSources || []).filter(isLeadSourceTab));
   const [leadTypes, setLeadTypes] = useState<string[]>(config.leadTypes || []);
-  const { currentUser } = useUser();
+  const { currentUser, updateUser, setIsSwitchUserModalOpen } = useUser();
+  const [editingUserName, setEditingUserName] = useState(currentUser?.name || '');
+  const [isUpdatingUserName, setIsUpdatingUserName] = useState(false);
+  const [userNameUpdatedMessage, setUserNameUpdatedMessage] = useState(false);
+
+  useEffect(() => {
+    if (currentUser?.name) {
+      setEditingUserName(currentUser.name);
+    }
+  }, [currentUser?.name]);
+
+  const handleUpdateCurrentUserName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser || !editingUserName.trim()) return;
+    setIsUpdatingUserName(true);
+    try {
+      await updateUser(currentUser.id, editingUserName.trim(), currentUser.color);
+      setUserNameUpdatedMessage(true);
+      setTimeout(() => setUserNameUpdatedMessage(false), 3000);
+    } finally {
+      setIsUpdatingUserName(false);
+    }
+  };
 
 
   useEffect(() => {
@@ -133,8 +155,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
-  // Houzz Pro / Zapier Webhook settings
-  const [webhookStatus, setWebhookStatus] = useState<{ configured: boolean; destination: string } | null>(null);
+  // Houzz Pro Webhook settings
+  const [houzzWebhookUrl, setHouzzWebhookUrl] = useState(config.houzzWebhookUrl || '');
   const [autoSendToHouzz, setAutoSendToHouzz] = useState(config.autoSendToHouzz || false);
   const [testingHouzz, setTestingHouzz] = useState(false);
   const [houzzTestStatus, setHouzzTestStatus] = useState<string | null>(null);
@@ -175,14 +197,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setSalespeople(config.salespeople || []);
       setLeadSources((config.leadSources || []).filter(isLeadSourceTab));
       setLeadTypes(config.leadTypes || []);
+      setHouzzWebhookUrl(config.houzzWebhookUrl || '');
       setAutoSendToHouzz(config.autoSendToHouzz || false);
       setAutoSyncToSheets(config.autoSyncToSheets !== undefined ? config.autoSyncToSheets : true);
-
-      // Check backend Webhook status
-      fetch('/api/webhook-url')
-        .then((res) => res.json())
-        .then((data) => setWebhookStatus(data))
-        .catch(() => setWebhookStatus({ configured: false, destination: 'Zapier / Houzz Automation' }));
 
       // Check backend Service Account status
       fetch('/api/sheets/status')
@@ -300,6 +317,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       leadSources,
       leadTypes,
       autoSyncToSheets,
+      houzzWebhookUrl: houzzWebhookUrl.trim(),
       autoSendToHouzz,
     });
     onClose();
@@ -361,29 +379,50 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {activeTab === 'general' ? (
             <div className="space-y-6">
                             {/* Active Worker Profile / Edit Name */}
-              {/* Authenticated User & Access Management */}
               {currentUser && (
                 <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
                       <User className="w-3.5 h-3.5 text-[#FF5500]" />
-                      Authenticated User Account
+                      Active Worker Profile
                     </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        setIsSwitchUserModalOpen(true);
+                      }}
+                      className="text-xs text-[#FF5500] hover:underline font-bold cursor-pointer"
+                    >
+                      Switch Profile
+                    </button>
                   </div>
 
-                  <div className="flex items-center justify-between bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/60 rounded-xl p-3">
-                    <div>
-                      <div className="text-xs font-bold text-zinc-900 dark:text-white">
-                        {currentUser.displayName || currentUser.name}
-                      </div>
-                      <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                        {currentUser.email}
-                      </div>
+                  <form onSubmit={handleUpdateCurrentUserName} className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={editingUserName}
+                        onChange={(e) => setEditingUserName(e.target.value)}
+                        placeholder="Your worker name"
+                        className={inputStyle}
+                      />
                     </div>
-                    <span className="px-2.5 py-1 rounded-lg bg-[#FF5500]/10 text-[#FF5500] text-[10px] font-black uppercase tracking-wider">
-                      {currentUser.role}
-                    </span>
-                  </div>
+                    <button
+                      type="submit"
+                      disabled={isUpdatingUserName || !editingUserName.trim() || editingUserName.trim() === currentUser.name}
+                      className="px-4 py-2 bg-[#FF5500] hover:bg-[#e04b00] disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      <span>{isUpdatingUserName ? 'Saving...' : 'Update Name'}</span>
+                    </button>
+                  </form>
+                  {userNameUpdatedMessage && (
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      Name updated successfully
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -755,41 +794,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Houzz Pro / Zapier Webhook Integration Setting (Server Managed) */}
+                  {/* Houzz Pro / Zapier Webhook Integration Setting */}
                   <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-[#FF5500]/40 rounded-xl p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <label className="block text-xs font-semibold uppercase tracking-wider text-[#FF5500] flex items-center gap-1.5">
                           <Send className="w-3.5 h-3.5 text-[#FF5500]" />
-                          Zapier / Houzz Pro Automation (Server Managed)
+                          Zapier / Houzz Pro Webhook (Backend Shared)
                         </label>
                       </div>
-                      {webhookStatus?.configured ? (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                          Active: {webhookStatus.destination}
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-500/20 text-zinc-600 dark:text-zinc-400 border border-zinc-500/30">
-                          Not Configured
-                        </span>
-                      )}
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                        Shared with Team
+                      </span>
                     </div>
 
-                    <div className="space-y-3">
-                      <div className="p-3 bg-zinc-100 dark:bg-zinc-900/60 rounded-xl border border-zinc-200 dark:border-zinc-700/60 space-y-2">
-                        <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                          <strong>Centralized Server Configuration:</strong> Outbound webhook forwarding to Zapier or Houzz Pro is configured securely via server environment variables.
-                        </p>
-                        <div className="text-[10px] font-mono bg-zinc-200/80 dark:bg-black/60 p-2 rounded-lg text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-800 space-y-0.5">
-                          <div>ZAPIER_WEBHOOK_URL=https://hooks.zapier.com/hooks/catch/...</div>
-                          <div className="text-zinc-500 dark:text-zinc-400">or HOUZZ_WEBHOOK_URL=https://...</div>
-                        </div>
-                        <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                          Set in your Render dashboard under <em>Environment Variables</em> to enable automated dispatch for all team devices.
-                        </p>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-[11px] font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">
+                          Zapier / Catch Webhook URL
+                        </label>
+                        <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                          Shared across all team devices
+                        </span>
                       </div>
-
-                      <div className="flex items-center justify-between pt-1">
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          value={houzzWebhookUrl}
+                          onChange={(e) => setHouzzWebhookUrl(e.target.value)}
+                          placeholder="https://hooks.zapier.com/hooks/catch/..."
+                          className={`${inputStyle} flex-1 text-[11px] font-sans`}
+                        />
                         <button
                           type="button"
                           disabled={testingHouzz}
@@ -797,14 +832,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             setTestingHouzz(true);
                             setHouzzTestStatus(null);
                             try {
-                              const res = await sendLeadToHouzzPro(undefined, {
+                              const res = await sendLeadToHouzzPro(houzzWebhookUrl || undefined, {
                                 clientName: 'Test Client',
                                 clientPhone: '(412) 555-0123',
                                 clientEmail: 'testlead@example.com',
                                 address: '123 Main St, Pittsburgh, PA',
                                 serviceNeeded: 'Masonry Tuck-Pointing',
                                 leadSource: 'Web App',
-                                notes: 'Test lead push via Centralized Backend Webhook',
+                                notes: 'Test lead push via Centralized Backend Zapier Webhook',
                               });
                               setHouzzTestStatus(res.message || 'Test lead sent');
                             } catch (err: any) {
@@ -816,13 +851,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           className="px-3 py-2 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5 shrink-0"
                         >
                           <Send className={`w-3.5 h-3.5 ${testingHouzz ? 'animate-spin' : ''}`} />
-                          <span>{testingHouzz ? 'Testing...' : 'Test Outbound Webhook'}</span>
+                          <span>{testingHouzz ? 'Testing...' : 'Test Webhook'}</span>
                         </button>
                       </div>
 
+                      <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                        <strong>Backend Managed:</strong> This webhook is saved on the server. Whenever you share your Render link, all coworkers automatically use this webhook—no manual input required on their phones or laptops.
+                      </p>
+
                       {houzzTestStatus && (
                         <div className={`text-[11px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-medium ${
-                          houzzTestStatus.includes('sent') || houzzTestStatus.includes('delivered') || houzzTestStatus.includes('success')
+                          houzzTestStatus.includes('sent')
                             ? 'text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800'
                             : 'text-rose-800 dark:text-rose-300 bg-rose-100 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800'
                         }`}>
@@ -838,7 +877,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             onChange={(e) => setAutoSendToHouzz(e.target.checked)}
                             className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#FF5500] focus:ring-0 focus:outline-none cursor-pointer"
                           />
-                          <span>Auto-send to Zapier / Houzz whenever an appointment is scheduled</span>
+                          <span>Auto-send to Houzz Pro whenever an appointment is scheduled</span>
                         </label>
                       </div>
                     </div>

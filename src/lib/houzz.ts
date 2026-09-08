@@ -156,13 +156,12 @@ export function markLeadAsSentToHouzzPro(lead: {
 }
 
 /**
- * Sends lead data directly to the configured Houzz Pro / Zapier Webhook.
- * Exclusively uses server environment variables (ZAPIER_WEBHOOK_URL or HOUZZ_WEBHOOK_URL).
- *
- * @deprecated The `_deprecatedWebhookUrl` parameter is ignored. Destination is strictly server-managed.
+ * Sends lead data directly to the configured Houzz Pro / Zapier Webhook
+ * Uses the backend server to dispatch the webhook, ensuring all team members
+ * share the centralized backend webhook without needing to enter it manually.
  */
 export async function sendLeadToHouzzPro(
-  _deprecatedWebhookUrl?: string,
+  webhookUrl?: string,
   data: Partial<AppointmentFormData> & {
     id?: string;
     tabName?: string;
@@ -249,6 +248,7 @@ export async function sendLeadToHouzzPro(
       },
       body: JSON.stringify({
         leadId,
+        webhookUrl: (webhookUrl || '').trim(),
         payload,
       }),
     });
