@@ -43,6 +43,8 @@ export const Dashboard: React.FC = () => {
  const [refreshing, setRefreshing] = useState(false);
  const [scheduledList, setScheduledList] = useState<ScheduledClientRecord[]>(() => getScheduledClients());
  const [sheetRecords, setSheetRecords] = useState<SheetRowRecord[]>([]);
+ // Use the exact same canonical list as Sidebar → New.
+ const [newLeadsCount, setNewLeadsCount] = useState(() => getNewLeads().length);
 
  // Open modal handlers
  const handleOpenSchedule = () => {
@@ -71,6 +73,7 @@ export const Dashboard: React.FC = () => {
  const spreadsheetId = extractSpreadsheetId(config.spreadsheetId || '');
 
  if (!spreadsheetId) {
+ setNewLeadsCount(getNewLeads().length);
  setRefreshing(false);
  setLoading(false);
  return;
@@ -88,6 +91,7 @@ export const Dashboard: React.FC = () => {
  (r) => isLeadSourceTab(r.tabName) && isLeadSourceTab(r.leadSource)
  );
  setSheetRecords(cleanRows);
+ setNewLeadsCount(getNewLeads().length);
  }
  } catch (err) {
  console.warn('Dashboard live sheet sync fallback:', err);
@@ -104,12 +108,19 @@ export const Dashboard: React.FC = () => {
  loadDashboardData();
  };
 
+ const handleNewLeadsUpdate = (event: Event) => {
+ const detail = (event as CustomEvent).detail;
+ setNewLeadsCount(Array.isArray(detail) ? detail.length : getNewLeads().length);
+ };
+
  window.addEventListener('dashboard_data_refresh', handleDataRefresh);
  window.addEventListener('scheduled_clients_updated', handleDataRefresh);
+ window.addEventListener('new_leads_updated', handleNewLeadsUpdate);
 
  return () => {
  window.removeEventListener('dashboard_data_refresh', handleDataRefresh);
  window.removeEventListener('scheduled_clients_updated', handleDataRefresh);
+ window.removeEventListener('new_leads_updated', handleNewLeadsUpdate);
  };
  }, [loadDashboardData]);
 
@@ -140,17 +151,6 @@ export const Dashboard: React.FC = () => {
  return normalizedDate === todayStr;
  });
  }, [scheduledList, todayStr]);
-
- // Derive New Leads Count
- const newLeadsCount = useMemo(() => {
- if (sheetRecords.length > 0) {
- return sheetRecords.filter((r) => {
- const s = (r.status || '').toLowerCase().trim();
- return s === 'new' || s === 'new inquiry' || s === 'uncontacted' || s === 'pending';
- }).length;
- }
- return getNewLeads().length;
- }, [sheetRecords]);
 
  // Derive Appointments Today Count
  const appointmentsTodayCount = todayAppointments.length;
