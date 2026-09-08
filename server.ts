@@ -281,8 +281,6 @@ app.post('/api/extract-image', upload.single('image') as any, async (req: expres
   }
 });
 
-const DEFAULT_ZAPIER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/28623037/4hml53j/';
-
 function getBackendWebhookUrl(): string {
   const CONFIG_FILE = path.join(process.cwd(), 'data', 'config.json');
   if (fs.existsSync(CONFIG_FILE)) {
@@ -293,7 +291,7 @@ function getBackendWebhookUrl(): string {
       }
     } catch {}
   }
-  return (process.env.ZAPIER_WEBHOOK_URL || process.env.HOUZZ_WEBHOOK_URL || DEFAULT_ZAPIER_WEBHOOK_URL).trim();
+  return (process.env.ZAPIER_WEBHOOK_URL || process.env.HOUZZ_WEBHOOK_URL || '').trim();
 }
 
 app.get('/api/config', (req, res) => {
@@ -307,10 +305,8 @@ app.get('/api/config', (req, res) => {
       } catch {}
     }
     // Always supply shared team-wide backend webhook URL
-    if (!configData.houzzWebhookUrl || !configData.houzzWebhookUrl.trim()) {
-      configData.houzzWebhookUrl = getBackendWebhookUrl();
-    }
-    return res.json(configData);
+    delete configData.houzzWebhookUrl;
+    return res.json({ ...configData, houzzWebhookConfigured: Boolean(getBackendWebhookUrl()) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -333,16 +329,15 @@ app.post('/api/config', (req, res) => {
     delete incoming.spreadsheetId;
     delete incoming.spreadsheetUrl;
     delete incoming.spreadsheetName;
+    delete incoming.houzzWebhookUrl;
+    delete existingData.houzzWebhookUrl;
 
     const mergedData = {
       ...existingData,
       ...incoming,
     };
-    if (!mergedData.houzzWebhookUrl || !mergedData.houzzWebhookUrl.trim()) {
-      mergedData.houzzWebhookUrl = getBackendWebhookUrl();
-    }
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(mergedData, null, 2), 'utf-8');
-    res.json({ success: true, config: mergedData });
+    res.json({ success: true, config: { ...mergedData, houzzWebhookConfigured: Boolean(getBackendWebhookUrl()) } });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -350,32 +345,12 @@ app.post('/api/config', (req, res) => {
 
 app.get('/api/webhook-url', (req, res) => {
   res.json({
-    webhookUrl: getBackendWebhookUrl(),
     isConfigured: Boolean(getBackendWebhookUrl()),
+    destination: 'Zapier / Houzz Automation',
   });
 });
 
-app.post('/api/webhook-url', (req, res) => {
-  try {
-    const { webhookUrl } = req.body;
-    const CONFIG_FILE = path.join(process.cwd(), 'data', 'config.json');
-    const dir = path.dirname(CONFIG_FILE);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    let configData: any = {};
-    if (fs.existsSync(CONFIG_FILE)) {
-      try {
-        configData = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
-      } catch {}
-    }
-    configData.houzzWebhookUrl = (webhookUrl || '').trim() || DEFAULT_ZAPIER_WEBHOOK_URL;
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(configData, null, 2), 'utf-8');
-    res.json({ success: true, webhookUrl: configData.houzzWebhookUrl });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+app.post('/api/webhook-url', (_req, res) => res.status(403).json({ success: false, error: 'Configure ZAPIER_WEBHOOK_URL in Render.' }));
 
 // Rate limiter: Max 60 requests per minute per IP for webhook ingest (Weakness 8)
 const webhookRateLimits = new Map<string, { count: number; resetTime: number }>();
@@ -478,10 +453,8 @@ function setHouzzDispatchFailed(phone: string, name: string, errorMsg?: string):
 
 app.post('/api/send-houzz-webhook', async (req, res) => {
   try {
-    let { webhookUrl, payload, leadId } = req.body;
-    if (!webhookUrl || !webhookUrl.trim()) {
-      webhookUrl = getBackendWebhookUrl();
-    }
+    const { payload, leadId } = req.body;
+    const webhookUrl = getBackendWebhookUrl();
 
     const resolvedLeadId = leadId || payload?.leadId || payload?.id || payload?.submissionId || `lead_${Date.now()}`;
 
@@ -508,7 +481,7 @@ app.post('/api/send-houzz-webhook', async (req, res) => {
       });
     }
   } catch (error: any) {
-    const destInfo = houzzDelivery.getHouzzDestinationInfo(req.body?.webhookUrl || getBackendWebhookUrl());
+    const destInfo = houzzDelivery.getHouzzDestinationInfo(getBackendWebhookUrl());
     const safeErr = houzzDelivery.sanitizeErrorMessage(error.message || 'Server error');
     return res.status(500).json({
       success: false,
@@ -521,7 +494,7 @@ app.post('/api/send-houzz-webhook', async (req, res) => {
 
 app.post('/api/webhooks/retry-houzz', async (req, res) => {
   try {
-    const { leadId, webhookUrl } = req.body;
+    const { leadId } = req.body;
     if (!leadId) {
       return res.status(400).json({ success: false, error: 'leadId is required for retry.' });
     }
@@ -552,7 +525,7 @@ app.post('/api/webhooks/retry-houzz', async (req, res) => {
       return res.status(404).json({ success: false, error: `Lead with ID ${leadId} not found.` });
     }
 
-    const resolvedUrl = webhookUrl || getBackendWebhookUrl();
+    const resolvedUrl = getBackendWebhookUrl();
 
     const result = await houzzDelivery.dispatchLeadToHouzz({
       leadId,
@@ -1494,7 +1467,9 @@ function saveIncomingLeadAndLog(
   }
 
   // Attempt automatic background forward to Houzz Pro / Zapier webhook without clicking anything (unless skipped)
-  if (!options.skipAutoHouzz && isAutoSendToHouzzEnabled()) {
+  const normalizedSource = String(newLeadRecord.leadSource || '').trim().toLowerCase();
+  const shouldAutoSendToHouzz = !options.skipAutoHouzz && normalizedSource !== 'thumbtack' && (normalizedSource === 'angi' || isAutoSendToHouzzEnabled());
+  if (shouldAutoSendToHouzz) {
     try {
       const houzzUrl = getBackendWebhookUrl();
       houzzDelivery.dispatchLeadToHouzz({
@@ -1523,13 +1498,15 @@ app.post('/api/webhooks/angi', async (req, res) => {
 
     console.log('Incoming Angi Webhook received:', req.body);
     const parsed = await parseIncomingLeadPayload(req.body, 'Angi');
-    const lead = saveIncomingLeadAndLog(parsed, req);
+    const lead = saveIncomingLeadAndLog(parsed, req, { skipAutoHouzz: true });
+    const houzzResult = await houzzDelivery.dispatchLeadToHouzz({ leadId: lead.id, payload: lead, webhookUrl: getBackendWebhookUrl() });
 
     return res.status(200).json({
       success: true,
-      message: 'Angi lead received and recorded successfully.',
+      message: houzzResult.success ? 'Angi lead received and sent to Houzz Pro automation.' : 'Angi lead saved, but Houzz Pro delivery failed.',
       leadId: lead.id,
       lead,
+      houzzDelivery: houzzResult,
     });
   } catch (err: any) {
     console.error('Error processing Angi webhook:', err);
@@ -1550,7 +1527,7 @@ app.post('/api/webhooks/thumbtack', async (req, res) => {
 
     console.log('Incoming Thumbtack Webhook received:', req.body);
     const parsed = await parseIncomingLeadPayload(req.body, 'Thumbtack');
-    const lead = saveIncomingLeadAndLog(parsed, req);
+    const lead = saveIncomingLeadAndLog(parsed, req, { skipAutoHouzz: true });
 
     return res.status(200).json({
       success: true,
@@ -1675,6 +1652,24 @@ app.get('/api/webhooks/incoming-leads', (req, res) => {
     return res.json({ success: true, leads: [] });
   } catch (err: any) {
     return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/webhooks/incoming-leads/:id/send-to-houzz', async (req, res) => {
+  try {
+    const incomingFile = path.join(process.cwd(), 'data', 'incoming_leads.json');
+    if (!fs.existsSync(incomingFile)) return res.status(404).json({ success: false, error: 'Lead not found.' });
+    const leads = JSON.parse(fs.readFileSync(incomingFile, 'utf-8'));
+    const lead = Array.isArray(leads) ? leads.find((item: any) => item.id === req.params.id) : null;
+    if (!lead) return res.status(404).json({ success: false, error: 'Lead not found.' });
+    const source = String(lead.leadSource || lead.webhookSource || '').trim().toLowerCase();
+    if (source !== 'thumbtack') return res.status(403).json({ success: false, error: 'Only Thumbtack leads can be sent manually. Angi leads are sent automatically.' });
+    const existingStatus = String(lead.houzzStatus || lead.houzzResult || '').toLowerCase();
+    if (existingStatus.startsWith('sent to ')) return res.status(409).json({ success: false, error: 'This lead has already been sent to Houzz Pro.' });
+    const result = await houzzDelivery.dispatchLeadToHouzz({ leadId: lead.id, payload: lead, webhookUrl: getBackendWebhookUrl() });
+    return res.status(result.success ? 200 : 502).json({ success: result.success, message: result.safeSummary, delivery: result });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message || 'Houzz delivery failed.' });
   }
 });
 
