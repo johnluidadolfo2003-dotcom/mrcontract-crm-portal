@@ -249,6 +249,10 @@ export const MainLayout: React.FC = () => {
  let houzzSent = false;
  let sheetSent = false;
 
+ // Save immediately so the lead appears in New Leads even while external
+ // services are slow or unavailable.
+ addNewLead(payload);
+
  // Always sync to Houzz Pro / Zapier via backend
  try {
  await sendLeadToHouzzPro(config.houzzWebhookUrl, {
@@ -293,9 +297,6 @@ export const MainLayout: React.FC = () => {
  console.warn('Google Sheet append error:', sErr);
  }
  }
-
- // Save to New Leads store as well
- addNewLead(payload);
 
  // Log action to Team Audit Trail
  logAuditActivity({

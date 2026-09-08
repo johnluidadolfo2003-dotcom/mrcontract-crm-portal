@@ -3,7 +3,7 @@ import path from 'path';
 import * as durableStore from './durableStore.ts';
 
 export interface HouzzDestinationInfo {
-  displayName: 'Houzz Automation' | 'Houzz Pro';
+  displayName: 'Zapier' | 'Houzz Pro';
   sendingLabel: string;
   sentLabel: string;
   failedLabel: string;
@@ -12,7 +12,9 @@ export interface HouzzDestinationInfo {
 export function getHouzzDestinationInfo(webhookUrl?: string): HouzzDestinationInfo {
   const urlLower = (webhookUrl || '').toLowerCase();
   const isAutomation = /zapier|make\.com|integromat|hook|n8n/i.test(urlLower);
-  const displayName = isAutomation ? 'Houzz Automation' : 'Houzz Pro';
+  // A successful Zapier Catch Hook response only confirms that Zapier accepted
+  // the payload. It does not prove that the downstream Houzz action succeeded.
+  const displayName = isAutomation ? 'Zapier' : 'Houzz Pro';
   return {
     displayName,
     sendingLabel: `Sending to ${displayName}`,
@@ -331,7 +333,7 @@ export function updateLeadHouzzState(
 
 export interface DispatchResult {
   success: boolean;
-  destinationLabel: 'Houzz Automation' | 'Houzz Pro';
+  destinationLabel: 'Zapier' | 'Houzz Pro';
   activityStatus: string;
   statusCode: number | null;
   error?: string;

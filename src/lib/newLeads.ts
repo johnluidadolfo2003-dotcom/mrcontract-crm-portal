@@ -139,9 +139,8 @@ export function getNewLeads(): NewLeadRecord[] {
  return false;
  }
  if (item.leadSource && !isLeadSourceTab(item.leadSource)) return false;
- const k = normalizeLeadKey(item.clientName, item.clientPhone, item.clientEmail);
- const altK = `name_${(item.clientName || '').trim().toLowerCase()}`;
- if (nonNewKeys.has(k) || nonNewKeys.has(altK)) return false;
+ // A lead explicitly added through the form remains authoritative in New
+ // Leads until its own status is changed. Cached sheet history must not hide it.
  return true;
  });
  if (cleanedItems.length !== items.length) {
