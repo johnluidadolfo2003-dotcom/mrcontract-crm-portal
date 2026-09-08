@@ -33,12 +33,19 @@ import {
 } from './server/webhookSecurity.ts';
 
 const app = express();
-const PORT = 3000;
+// Render assigns the public service port through process.env.PORT.
+// Use 10000 only as the local/default fallback.
+const PORT = Number(process.env.PORT) || 10000;
 
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.text({ type: ['text/*', 'application/text', 'text/plain', 'text/html'], limit: '10mb' }));
+
+// Public, non-sensitive health check used by Render during deployment.
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
 
 // Enforce same-origin validation across all state-changing /api/* requests,
 // excluding inbound third-party server-to-server webhook endpoints.
@@ -3366,7 +3373,7 @@ async function startServer() {
   });
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
   });
 }
 
