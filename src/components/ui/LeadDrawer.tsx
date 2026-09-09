@@ -12,6 +12,7 @@ import {
   Send,
   Edit2,
   Check,
+  CheckCircle2,
   Loader2,
   Save,
 } from 'lucide-react';
@@ -255,6 +256,8 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
   };
 
   const inputClass = "w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#FF5500] dark:focus:border-[#FF5500] rounded-xl px-3.5 py-2 text-sm text-zinc-900 dark:text-white font-medium outline-none transition-colors placeholder-zinc-400";
+  const houzzState = String((lead as any).houzzStatus || (lead as any).houzzResult || '').trim().toLowerCase();
+  const isConfirmedInHouzz = houzzState.includes('created in houzz pro');
 
   return (
     <>
@@ -286,6 +289,16 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                 {saveSuccess && (
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                     <Check className="w-3 h-3" /> Saved
+                  </span>
+                )}
+                {isConfirmedInHouzz && (
+                  <span
+                    className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 shrink-0"
+                    title="Houzz Pro confirmed that this lead was created."
+                    aria-label="Created in Houzz Pro"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span>Houzz Pro</span>
                   </span>
                 )}
               </div>
