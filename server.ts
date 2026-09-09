@@ -1667,6 +1667,158 @@ function isExampleOrTestLead(lead: any): boolean {
   return false;
 }
 
+// Canonical lead API: Google Sheets is the source of truth for Sidebar -> New.
+function canonicalContactKey(lead: any): string {
+  const phone = String(lead?.clientPhone || '').replace(/\D/g, '');
+  if (phone.length >= 7) return `phone_${phone.slice(-10)}`;
+  const email = String(lead?.clientEmail || '').trim().toLowerCase();
+  if (email.includes('@')) return `email_${email}`;
+  return `name_${String(lead?.clientName || '').trim().toLowerCase()}`;
+}
+
+function configuredLeadSourceTabs(): string[] {
+  const fallback = ['Angi', 'Thumbtack', 'Referral', 'Big Fish', 'Houzz Pro', 'Roof R', 'Home Launch', 'Website', 'Yard Sign', 'Other'];
+  try {
+    const cfg = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'config.json'), 'utf8'));
+    const values = Array.isArray(cfg.leadSources) ? cfg.leadSources : fallback;
+    return values.filter((name: any) => {
+      const clean = String(name || '').trim().toLowerCase();
+      return clean && !clean.includes('summary') && !clean.includes('zapier');
+    });
+  } catch {
+    return fallback;
+  }
+}
+
+async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
+  const spreadsheetId = sheetsService.getDefaultSpreadsheetId();
+  const configured = new Set(configuredLeadSourceTabs().map((name) => name.toLowerCase()));
+  const details = await sheetsService.getSpreadsheetDetails(spreadsheetId, forceFresh);
+  const tabs = details.sheets
+    .map((sheet) => sheet.title)
+    .filter((title) => configured.has(title.trim().toLowerCase()));
+  const result = tabs.length
+    ? await sheetsService.readAllTabs(spreadsheetId, tabs, forceFresh)
+    : { headers: sheetsService.DEFAULT_SHEET_HEADERS, rows: [] };
+  let transient: any[] = [];
+  try {
+    const raw = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'incoming_leads.json'), 'utf8'));
+    if (Array.isArray(raw)) transient = raw;
+  } catch {}
+
+  const transientByContact = new Map(transient.map((lead) => [canonicalContactKey(lead), lead]));
+  const seen = new Set<string>();
+  const leads: any[] = [];
+
+  for (const row of result.rows || []) {
+    const status = String(row.status || 'New').trim().toLowerCase();
+    if (!['new', 'new lead', 'active', 'uncontacted', 'pending', 'new inquiry'].includes(status)) continue;
+    const sheetLead = {
+      id: `sheet_${encodeURIComponent(row.tabName || row.leadSource || 'Other')}_${row.rowIndex}`,
+      createdAt: row.timestamp || new Date(0).toISOString(),
+      clientName: row.clientName || 'Unnamed Client',
+      clientPhone: row.clientPhone || '',
+      clientEmail: row.clientEmail || '',
+      address: row.address || '',
+      leadSource: row.leadSource || row.tabName || 'Other',
+      serviceNeeded: row.leadType || '',
+      leadFee: row.rawValues?.[6] || '',
+      notes: '',
+      status: 'New',
+      rowIndex: row.rowIndex,
+      statusColIndex: row.statusColIndex,
+      sheetSynced: true,
+    };
+    const key = canonicalContactKey(sheetLead);
+    const metadata = transientByContact.get(key);
+    const merged = metadata ? { ...sheetLead, ...metadata, rowIndex: row.rowIndex, statusColIndex: row.statusColIndex, sheetSynced: true } : sheetLead;
+    if (!seen.has(key) && !isExampleOrTestLead(merged)) {
+      seen.add(key);
+      leads.push(merged);
+    }
+  }
+
+  // Show a newly received webhook immediately while its background Sheet append is pending.
+  for (const lead of transient) {
+    const key = canonicalContactKey(lead);
+    const status = String(lead.status || 'New').trim().toLowerCase();
+    if (!seen.has(key) && ['new', 'new lead', 'active'].includes(status) && !isExampleOrTestLead(lead)) {
+      seen.add(key);
+      leads.push({ ...lead, sheetSynced: false });
+    }
+  }
+
+  return leads.sort((a, b) => {
+    const at = new Date(a.createdAt || 0).getTime();
+    const bt = new Date(b.createdAt || 0).getTime();
+    if (at !== bt) return bt - at;
+    return Number(b.rowIndex || 0) - Number(a.rowIndex || 0);
+  });
+}
+
+app.get('/api/leads', async (req, res) => {
+  try {
+    const requestedStatus = String(req.query.status || 'New').trim().toLowerCase();
+    if (requestedStatus !== 'new') return res.status(400).json({ success: false, error: 'Only status=New is supported by this endpoint.' });
+    const leads = await readCanonicalNewLeads(req.query.force === '1');
+    return res.json({ success: true, status: 'New', count: leads.length, leads });
+  } catch (err: any) {
+    return res.status(err.status || 500).json({ success: false, error: err.message || 'Unable to load leads.' });
+  }
+});
+
+app.post('/api/leads/manual', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const clientName = String(body.clientName || '').trim();
+    const leadSource = String(body.leadSource || 'Other').trim();
+    if (!clientName) return res.status(400).json({ success: false, error: 'Client name is required.' });
+    const lead = {
+      id: `manual_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      createdAt: new Date().toISOString(),
+      clientName,
+      clientPhone: String(body.clientPhone || '').trim(),
+      clientEmail: String(body.clientEmail || '').trim(),
+      address: String(body.address || '').trim(),
+      leadSource,
+      serviceNeeded: String(body.serviceNeeded || '').trim(),
+      leadFee: String(body.leadFee || '').trim(),
+      notes: String(body.notes || '').trim(),
+      status: 'New',
+      sourceEventId: String(body.id || ''),
+    };
+    const result = await sheetsService.appendLeadRow(sheetsService.getDefaultSpreadsheetId(), leadSource, lead, 'New');
+    sheetsService.invalidateServerCache();
+    return res.status(201).json({ success: true, lead: { ...lead, sheetSynced: true }, sheet: result });
+  } catch (err: any) {
+    return res.status(err.status || 500).json({ success: false, error: err.message || 'Unable to save lead.' });
+  }
+});
+
+app.post('/api/leads/migrate', async (req, res) => {
+  try {
+    const leads = Array.isArray(req.body?.leads) ? req.body.leads.slice(0, 250) : [];
+    let migrated = 0;
+    let skipped = 0;
+    for (const item of leads) {
+      const clientName = String(item?.clientName || '').trim();
+      if (!clientName || isExampleOrTestLead(item)) { skipped++; continue; }
+      const leadSource = String(item.leadSource || 'Other').trim();
+      await sheetsService.appendLeadRow(
+        sheetsService.getDefaultSpreadsheetId(),
+        leadSource,
+        { ...item, clientName, leadSource, sourceEventId: item.id || '' },
+        'New'
+      );
+      migrated++;
+    }
+    sheetsService.invalidateServerCache();
+    return res.json({ success: true, migrated, skipped });
+  } catch (err: any) {
+    return res.status(err.status || 500).json({ success: false, error: err.message || 'Lead migration failed.' });
+  }
+});
+
 // 4. Fetch all Incoming Webhook Leads (for UI consumption)
 app.get('/api/webhooks/incoming-leads', (req, res) => {
   try {

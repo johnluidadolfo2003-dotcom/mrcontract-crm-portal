@@ -29,7 +29,7 @@ import {
  Filter,
  AlertCircle,
 } from 'lucide-react';
-import { getNewLeads, deleteNewLead, updateNewLeadInfo, NewLeadRecord } from '../lib/newLeads';
+import { getNewLeads, fetchNewLeads, migrateLegacyNewLeads, deleteNewLead, updateNewLeadStatus, updateNewLeadInfo, NewLeadRecord } from '../lib/newLeads';
 import { logAuditActivity } from '../lib/activityLogger';
 import { loadAppConfig, isLeadSourceTab, DEFAULT_LEAD_SOURCES } from '../config';
 import { LEAD_STATUS_OPTIONS } from '../types';
@@ -44,7 +44,7 @@ import {
  SheetRowRecord,
 } from '../lib/sheets';
 import { LeadDrawer } from '../components/ui/LeadDrawer';
-import { sendThumbtackLeadToHouzz, syncIncomingWebhookLeads } from '../lib/webhooks';
+import { sendThumbtackLeadToHouzz } from '../lib/webhooks';
 import { WebhookDiagnosticsModal } from '../components/WebhookDiagnosticsModal';
 
 export const NewLeadsPage: React.FC = () => {
@@ -171,8 +171,13 @@ export const NewLeadsPage: React.FC = () => {
  });
  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
- const refreshLocalLeads = () => {
- setLeads(getNewLeads());
+ const refreshLocalLeads = async (forceFresh = false) => {
+ try {
+  const canonical = await fetchNewLeads(forceFresh);
+  setLeads(canonical);
+ } catch (err) {
+  console.warn('Unable to refresh canonical New leads:', err);
+ }
  };
 
  const handleOpenEditModal = (lead: NewLeadRecord) => {
@@ -273,14 +278,15 @@ export const NewLeadsPage: React.FC = () => {
  );
  }
 
- if (newStatus !== 'New') {
- await deleteNewLead(lead.id, lead);
- } else {
- const current = getNewLeads();
- const updated = current.map((item) => (item.id === lead.id ? { ...item, status: newStatus } : item));
- localStorage.setItem('mrcontract_new_leads', JSON.stringify(updated));
- }
+ updateNewLeadStatus(lead.id, newStatus);
  setLeads(getNewLeads());
+ if (newStatus !== 'New' && lead.id.startsWith('wh_lead_')) {
+  await fetch(`/api/webhooks/incoming-leads/${encodeURIComponent(lead.id)}`, {
+   method: 'PATCH',
+   headers: { 'Content-Type': 'application/json' },
+   body: JSON.stringify({ status: newStatus }),
+  });
+ }
 
  logAuditActivity({
  actionType: 'status_change',
@@ -304,30 +310,36 @@ export const NewLeadsPage: React.FC = () => {
  };
 
  useEffect(() => {
- // Initial fetch of webhook leads from server
- syncIncomingWebhookLeads().catch(() => {});
+ let active = true;
+ const initialize = async () => {
+  try {
+   await migrateLegacyNewLeads();
+   if (active) await refreshLocalLeads(true);
+  } catch (err) {
+   console.warn('New lead migration/initial load notice:', err);
+   if (active) await refreshLocalLeads();
+  }
+ };
+ initialize();
 
  const handleUpdate = (e: any) => {
- if (e.detail && Array.isArray(e.detail)) {
- setLeads(e.detail);
- } else {
- refreshLocalLeads();
- }
+  if (Array.isArray(e.detail)) setLeads(e.detail);
+  else refreshLocalLeads(true);
  };
+ const handleDataSync = () => refreshLocalLeads(true);
  window.addEventListener('new_leads_updated', handleUpdate);
- window.addEventListener('mrcontract_data_synced', refreshLocalLeads);
- window.addEventListener('storage', refreshLocalLeads);
+ window.addEventListener('mrcontract_data_synced', handleDataSync);
 
- // Periodically sync webhook leads every 25 seconds
+ // Cross-device refresh, paused while this browser tab is hidden.
  const interval = setInterval(() => {
- syncIncomingWebhookLeads().catch(() => {});
- }, 25000);
+  if (document.visibilityState === 'visible') refreshLocalLeads(true);
+ }, 15000);
 
  return () => {
- clearInterval(interval);
- window.removeEventListener('new_leads_updated', handleUpdate);
- window.removeEventListener('mrcontract_data_synced', refreshLocalLeads);
- window.removeEventListener('storage', refreshLocalLeads);
+  active = false;
+  clearInterval(interval);
+  window.removeEventListener('new_leads_updated', handleUpdate);
+  window.removeEventListener('mrcontract_data_synced', handleDataSync);
  };
  }, []);
 
@@ -367,34 +379,41 @@ export const NewLeadsPage: React.FC = () => {
  if (!leadToDelete) return;
  const lead = leadToDelete;
  setLeadToDelete(null);
+ setUpdatingId(lead.id);
 
- await deleteNewLead(lead.id, lead);
- setLeads(getNewLeads());
-
- logAuditActivity({
- actionType: 'delete_lead',
- clientName: lead.clientName,
- clientPhone: lead.clientPhone,
- tabName: lead.leadSource || 'Angi',
- details: `Deleted lead"${lead.clientName}"`
- });
-
- const config = loadAppConfig();
  try {
- if (config.spreadsheetId) {
- const tabName = lead.leadSource || 'Angi';
- const { rows } = await readSpreadsheetRows(undefined, config.spreadsheetId, tabName, true);
- const match = rows.find(
- (r) =>
- r.clientName?.trim().toLowerCase() === lead.clientName.trim().toLowerCase() &&
- (!lead.clientPhone || r.clientPhone?.replace(/\D/g, '') === lead.clientPhone.replace(/\D/g, ''))
- );
- if (match && match.rowIndex) {
- await deleteRowFromSheet(undefined, config.spreadsheetId, tabName, match.rowIndex);
- }
- }
- } catch (err) {
- console.warn('Failed to delete lead from Google Sheet in background:', err);
+  const config = loadAppConfig();
+  await updateLeadStatusInSpreadsheet(
+   undefined,
+   config.spreadsheetId!,
+   {
+    clientName: lead.clientName,
+    clientPhone: lead.clientPhone,
+    clientEmail: lead.clientEmail,
+    tabName: lead.leadSource,
+    rowIndex: lead.rowIndex,
+    statusColIndex: lead.statusColIndex,
+   },
+   'Deleted'
+  );
+  await deleteNewLead(lead.id, lead);
+  setLeads(getNewLeads());
+
+  logAuditActivity({
+   actionType: 'delete_lead',
+   clientName: lead.clientName,
+   clientPhone: lead.clientPhone,
+   tabName: lead.leadSource || 'New Leads',
+   details: `Moved lead "${lead.clientName}" out of New with status Deleted`,
+  });
+  setSyncMsg('Lead removed from New');
+ } catch (err: any) {
+  console.error('Failed to remove lead:', err);
+  setSyncMsg(err.message || 'Failed to remove lead');
+  await refreshLocalLeads(true);
+ } finally {
+  setUpdatingId(null);
+  setTimeout(() => setSyncMsg(null), 3500);
  }
  };
 
@@ -426,7 +445,7 @@ export const NewLeadsPage: React.FC = () => {
  setSyncMsg(null);
  try {
  const result = await sendThumbtackLeadToHouzz(lead.id);
- await syncIncomingWebhookLeads();
+ await refreshLocalLeads(true);
  setSyncMsg(result.message || 'Lead sent to Houzz Pro.');
  } catch (err: any) {
  setSyncMsg(err.message || 'Failed to send lead to Houzz Pro.');
@@ -1058,7 +1077,7 @@ export const NewLeadsPage: React.FC = () => {
  <div>
  <h3 className="text-base font-black text-zinc-900 dark:text-white">Delete Lead</h3>
  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
- Are you sure you want to delete lead <span className="font-bold text-zinc-800 dark:text-zinc-200">"{leadToDelete.clientName}"</span>? This will remove it from the app and Google Sheets.
+ Are you sure you want to remove lead <span className="font-bold text-zinc-800 dark:text-zinc-200">"{leadToDelete.clientName}"</span> from New? Its spreadsheet record will be kept with status Deleted.
  </p>
  </div>
  <div className="flex items-center gap-2 pt-2">

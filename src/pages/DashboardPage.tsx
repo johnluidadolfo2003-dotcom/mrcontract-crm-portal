@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { AppConfig } from '../types';
 import { loadAppConfig } from '../config';
-import { getNewLeads } from '../lib/newLeads';
+import { getNewLeads, fetchNewLeads } from '../lib/newLeads';
 import { getScheduledClients, ScheduledClientRecord } from '../lib/scheduledClients';
 import { extractSpreadsheetId, readAllSpreadsheetTabs, SheetRowRecord } from '../lib/sheets';
 import { DEFAULT_LEAD_SOURCES, isLeadSourceTab } from '../config';
@@ -68,6 +68,14 @@ export const Dashboard: React.FC = () => {
  // 1. Load Local Scheduled Clients
  const localScheduled = getScheduledClients();
  setScheduledList(localScheduled);
+
+ // The Overview count comes from the exact same canonical API as Sidebar -> New.
+ try {
+  const canonical = await fetchNewLeads();
+  setNewLeadsCount(canonical.length);
+ } catch (err) {
+  console.warn('Dashboard New lead count notice:', err);
+ }
 
  // 2. Load from Google Sheets via Service Account backend
  const spreadsheetId = extractSpreadsheetId(config.spreadsheetId || '');

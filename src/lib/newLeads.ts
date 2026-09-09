@@ -1,11 +1,4 @@
 import { AddLeadPayload } from '../components/AddLeadConfirmModal';
-import { AppointmentFormData } from '../types';
-import { isLeadSourceTab } from '../config';
-import {
- deleteIncomingWebhookLead,
- updateIncomingWebhookLead,
- isExampleWebhookLead,
-} from './webhooks';
 
 export interface NewLeadRecord {
  id: string;
@@ -16,7 +9,7 @@ export interface NewLeadRecord {
  address: string;
  leadSource: string;
  serviceNeeded: string;
- status: string; // 'New'
+ status: string;
  notes: string;
  leadFee?: string;
  rowIndex?: number;
@@ -32,404 +25,94 @@ export interface NewLeadRecord {
  rawPayload?: any;
 }
 
-const STORAGE_KEY = 'mr_contract_new_leads_v1';
 const EVENT_KEY = 'new_leads_updated';
-const DISMISSED_KEY = 'mrcontract_dismissed_sync_leads';
+const LEGACY_STORAGE_KEY = 'mr_contract_new_leads_v1';
+const MIGRATION_KEY = 'mrcontract_new_leads_sheet_migration_v1';
+let canonicalLeads: NewLeadRecord[] = [];
+let requestInFlight: Promise<NewLeadRecord[]> | null = null;
 
-function getLeadDismissalKey(lead?: Partial<NewLeadRecord>): string {
- const phone = (lead?.clientPhone || '').replace(/\D/g, '');
- if (phone.length >= 7) return `contact_phone_${phone}`;
- const email = (lead?.clientEmail || '').trim().toLowerCase();
- if (email.includes('@')) return `contact_email_${email}`;
- return `contact_name_${(lead?.clientName || '').trim().toLowerCase()}`;
-}
-
-function rememberDeletedLead(id: string, lead?: Partial<NewLeadRecord>): void {
- try {
- const parsed = JSON.parse(localStorage.getItem(DISMISSED_KEY) || '[]');
- const dismissed = Array.isArray(parsed) ? parsed : [];
- const identityKey = getLeadDismissalKey(lead);
- for (const value of [id, identityKey]) {
- if (value && !dismissed.includes(value)) dismissed.push(value);
- }
- localStorage.setItem(DISMISSED_KEY, JSON.stringify(dismissed));
- } catch {}
+function publish(list: NewLeadRecord[]): NewLeadRecord[] {
+ canonicalLeads = [...list].sort((a, b) =>
+  new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+ );
+ window.dispatchEvent(new CustomEvent(EVENT_KEY, { detail: canonicalLeads }));
+ return canonicalLeads;
 }
 
 export function getNewLeads(): NewLeadRecord[] {
+ return canonicalLeads;
+}
+
+export async function fetchNewLeads(forceFresh = false): Promise<NewLeadRecord[]> {
+ if (requestInFlight && !forceFresh) return requestInFlight;
+ requestInFlight = (async () => {
+  const res = await fetch(`/api/leads?status=New${forceFresh ? '&force=1' : ''}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success || !Array.isArray(data.leads)) {
+   throw new Error(data.error || `Unable to load new leads (HTTP ${res.status}).`);
+  }
+  return publish(data.leads);
+ })();
  try {
- const nonNewKeys = new Set<string>();
- const spreadsheetNewLeads: NewLeadRecord[] = [];
-
- const normalizeLeadKey = (name?: string, phone?: string, email?: string) => {
- const cleanPhone = (phone || '').replace(/\D/g, '');
- if (cleanPhone.length >= 7) return `phone_${cleanPhone}`;
- const cleanEmail = (email || '').trim().toLowerCase();
- if (cleanEmail.includes('@')) return `email_${cleanEmail}`;
- return `name_${(name || '').trim().toLowerCase()}`;
- };
-
- const seenNewLeadIds = new Set<string>();
- for (let i = 0; i < localStorage.length; i++) {
- const key = localStorage.key(i);
- if (key && key.startsWith('mrcontract_cache_')) {
- const lowerKey = key.toLowerCase();
- if (lowerKey.includes('summary') || lowerKey.includes('zapier')) {
- continue;
- }
-
- try {
- const cacheRaw = localStorage.getItem(key);
- if (cacheRaw) {
- const data = JSON.parse(cacheRaw);
- if (data && Array.isArray(data.rows)) {
- data.rows.forEach((r: any) => {
- if (r && r.clientName && !r.clientName.toLowerCase().startsWith('unnamed')) {
- const tabSource = r.tabName || r.leadSource || '';
- if (tabSource && !isLeadSourceTab(tabSource)) {
- return;
- }
-
- const stat = (r.status || '').trim().toLowerCase();
- const rKey = normalizeLeadKey(r.clientName, r.clientPhone, r.clientEmail);
- const altNameKey = `name_${(r.clientName || '').trim().toLowerCase()}`;
- 
- const isNew = !stat || stat === 'new' || stat === 'new lead' || stat === 'active' || stat === 'interested' || stat === 'uncontacted';
- if (!isNew) {
- nonNewKeys.add(rKey);
- nonNewKeys.add(altNameKey);
- } else {
- const resolvedSource = isLeadSourceTab(r.leadSource)
- ? r.leadSource
- : isLeadSourceTab(r.tabName)
- ? r.tabName
- : 'Angi';
-
- const leadId = `sync_new_${r.rowIndex || Date.now()}_${r.clientName.replace(/\s+/g, '')}`;
- if (seenNewLeadIds.has(leadId)) {
- return;
- }
- seenNewLeadIds.add(leadId);
-
- const leadRecord: NewLeadRecord = {
- id: leadId,
- createdAt: r.timestamp || new Date().toISOString(),
- clientName: r.clientName,
- clientPhone: r.clientPhone || '',
- clientEmail: r.clientEmail || '',
- address: r.address || '',
- leadSource: resolvedSource,
- serviceNeeded: r.serviceNeeded || r.leadType || '',
- status: r.status || 'New',
- notes: r.notes || '',
- leadFee: r.leadFee,
- rowIndex: r.rowIndex,
- statusColIndex: r.statusColIndex,
- };
- if (!isExampleWebhookLead(leadRecord)) {
- spreadsheetNewLeads.push(leadRecord);
- }
- }
- }
- });
- }
- }
- } catch (e) {}
- }
- }
-
- const raw = localStorage.getItem(STORAGE_KEY);
- let manualLeads: NewLeadRecord[] = [];
- if (raw) {
- try {
- const items = JSON.parse(raw);
- if (Array.isArray(items)) {
- // Filter out any test leads or test web forms or examples
- const cleanedItems = items.filter((item) => {
- if (!item || !item.clientName) return false;
- if (isExampleWebhookLead(item)) return false;
- const nameLower = item.clientName.trim().toLowerCase();
- if (
- nameLower === 'test' ||
- nameLower === 'test 1' ||
- nameLower === 'test test' ||
- nameLower === 'test web form' ||
- nameLower.includes('sample client') ||
- nameLower.startsWith('test ')
- ) {
- return false;
- }
- if (item.leadSource && !isLeadSourceTab(item.leadSource)) return false;
- // A lead explicitly added through the form remains authoritative in New
- // Leads until its own status is changed. Cached sheet history must not hide it.
- return true;
- });
- if (cleanedItems.length !== items.length) {
- localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanedItems));
- }
- manualLeads = cleanedItems;
- }
- } catch (e) {}
- }
-
- // Load cached incoming webhook leads from server
- let webhookLeads: NewLeadRecord[] = [];
- try {
- const whRaw = localStorage.getItem('mrcontract_cached_webhook_leads');
- if (whRaw) {
- const whItems = JSON.parse(whRaw);
- if (Array.isArray(whItems)) {
- const nonExampleItems = whItems.filter((item: any) => item && !isExampleWebhookLead(item));
- if (nonExampleItems.length !== whItems.length) {
- localStorage.setItem('mrcontract_cached_webhook_leads', JSON.stringify(nonExampleItems));
- }
- webhookLeads = nonExampleItems.map((item: any) => ({
- id: item.id,
- createdAt: item.createdAt || new Date().toISOString(),
- clientName: item.clientName,
- clientPhone: item.clientPhone || '',
- clientEmail: item.clientEmail || '',
- address: item.address || '',
- leadSource: item.leadSource || 'Angi',
- serviceNeeded: item.serviceNeeded || '',
- status: item.status || 'New',
- notes: item.notes || '',
- carrier: item.carrier || 'Direct',
- leadFee: item.leadFee || '',
- isWebhookLead: true,
- webhookSource: item.webhookSource || item.leadSource || 'Angi',
- sheetSynced: item.sheetSynced,
- houzzResult: item.houzzResult,
- houzzStatus: item.houzzStatus,
- houzzError: item.houzzError,
- houzzStatusCode: item.houzzStatusCode,
- houzzAttemptAt: item.houzzAttemptAt,
- rawPayload: item.rawPayload,
- }));
- }
- }
- } catch (e) {}
-
- // Load dismissed synced leads list to ensure they don't show up again
- let dismissedSyncLeads: string[] = [];
- try {
- const dismissedRaw = localStorage.getItem(DISMISSED_KEY);
- if (dismissedRaw) {
- dismissedSyncLeads = JSON.parse(dismissedRaw);
- }
- } catch (e) {}
-
- const finalLeads: NewLeadRecord[] = [];
- const syncedClientKeys = new Set<string>();
- const seenFinalIds = new Set<string>();
-
- // 1. Webhook incoming leads first (highest freshness)
- webhookLeads.forEach((val) => {
- if (dismissedSyncLeads.includes(val.id) || dismissedSyncLeads.includes(getLeadDismissalKey(val))) return;
- if (seenFinalIds.has(val.id)) return;
- if (isExampleWebhookLead(val)) return;
- const stat = (val.status || 'new').toLowerCase();
- if (stat !== 'new' && stat !== 'new lead' && stat !== 'active') return;
-
- seenFinalIds.add(val.id);
- finalLeads.push(val);
- const k = normalizeLeadKey(val.clientName, val.clientPhone, val.clientEmail);
- syncedClientKeys.add(k);
- const altK = `name_${(val.clientName || '').trim().toLowerCase()}`;
- syncedClientKeys.add(altK);
- });
-
- const webhookClientKeys = new Set(syncedClientKeys);
- const manualClientKeys = new Set<string>();
- manualLeads.forEach((lead) => {
- manualClientKeys.add(normalizeLeadKey(lead.clientName, lead.clientPhone, lead.clientEmail));
- manualClientKeys.add(`name_${(lead.clientName || '').trim().toLowerCase()}`);
- });
-
- // 2. Synced spreadsheet leads (reverse so newest bottom rows appear first)
- // A matching form-created lead is authoritative until its status changes.
- const sortedSpreadsheetLeads = [...spreadsheetNewLeads].reverse();
- sortedSpreadsheetLeads.forEach((val) => {
- if (dismissedSyncLeads.includes(val.id) || dismissedSyncLeads.includes(getLeadDismissalKey(val))) return;
- if (seenFinalIds.has(val.id)) return;
- const spreadsheetKey = normalizeLeadKey(val.clientName, val.clientPhone, val.clientEmail);
- const spreadsheetNameKey = `name_${(val.clientName || '').trim().toLowerCase()}`;
- if (manualClientKeys.has(spreadsheetKey) || manualClientKeys.has(spreadsheetNameKey)) return;
- if (isExampleWebhookLead(val)) return;
- if (isLeadSourceTab(val.leadSource)) {
- seenFinalIds.add(val.id);
- finalLeads.push(val);
- const k = normalizeLeadKey(val.clientName, val.clientPhone, val.clientEmail);
- syncedClientKeys.add(k);
- const altK = `name_${(val.clientName || '').trim().toLowerCase()}`;
- syncedClientKeys.add(altK);
- }
- });
-
- // 3. Manual leads
- manualLeads.forEach((val) => {
- if (seenFinalIds.has(val.id)) return;
- if (isExampleWebhookLead(val)) return;
- const k = normalizeLeadKey(val.clientName, val.clientPhone, val.clientEmail);
- const altK = `name_${(val.clientName || '').trim().toLowerCase()}`;
- if (!webhookClientKeys.has(k) && !webhookClientKeys.has(altK) && isLeadSourceTab(val.leadSource)) {
- seenFinalIds.add(val.id);
- finalLeads.push(val);
- }
- });
-
- const validNewLeads = finalLeads.filter((l) => isLeadSourceTab(l.leadSource));
-
- // Sort so newest leads are always first in the list
- validNewLeads.sort((a, b) => {
- const aTime = new Date(a.createdAt || 0).getTime();
- const bTime = new Date(b.createdAt || 0).getTime();
- if (!isNaN(aTime) && !isNaN(bTime) && bTime !== aTime && bTime > 0 && aTime > 0) {
- return bTime - aTime;
- }
- return (b.rowIndex || 0) - (a.rowIndex || 0);
- });
-
- return validNewLeads;
- } catch (e) {
- console.error('Error reading new leads:', e);
- return [];
+  return await requestInFlight;
+ } finally {
+  requestInFlight = null;
  }
 }
 
-export function saveNewLeadsList(list: NewLeadRecord[]): void {
+export async function migrateLegacyNewLeads(): Promise<{ migrated: number; skipped: number }> {
+ if (localStorage.getItem(MIGRATION_KEY) === 'complete') return { migrated: 0, skipped: 0 };
+ let legacy: NewLeadRecord[] = [];
  try {
- localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
- window.dispatchEvent(new CustomEvent(EVENT_KEY, { detail: getNewLeads() }));
- } catch (e) {
- console.error('Error saving new leads:', e);
- }
-}
-
-export function addNewLead(payload: AddLeadPayload): NewLeadRecord {
- let manualLeads: NewLeadRecord[] = [];
- try {
- const raw = localStorage.getItem(STORAGE_KEY);
- if (raw) manualLeads = JSON.parse(raw);
- } catch (e) {}
- if (!Array.isArray(manualLeads)) manualLeads = [];
-
- const newRecord: NewLeadRecord = {
- id: `lead_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
- createdAt: new Date().toISOString(),
- clientName: payload.clientName || 'New Client',
- clientPhone: payload.clientPhone || '',
- clientEmail: payload.clientEmail || '',
- address: payload.address || '',
- leadSource: payload.leadSource || 'Angi',
- serviceNeeded: payload.serviceNeeded || '',
- status: 'New', // ALWAYS 'New' as requested
- notes: '',
- leadFee: payload.leadFee,
- };
- manualLeads.unshift(newRecord);
- saveNewLeadsList(manualLeads);
- return newRecord;
-}
-
-export async function deleteNewLead(id: string, lead?: Partial<NewLeadRecord>): Promise<void> {
- rememberDeletedLead(id, lead);
-
- if (id.startsWith('wh_lead_')) {
- await deleteIncomingWebhookLead(id);
- window.dispatchEvent(new CustomEvent(EVENT_KEY));
- return;
- }
-
- if (id.startsWith('lead_')) {
- let manualLeads: NewLeadRecord[] = [];
- try {
- const raw = localStorage.getItem(STORAGE_KEY);
- if (raw) manualLeads = JSON.parse(raw);
+  const parsed = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || '[]');
+  if (Array.isArray(parsed)) legacy = parsed.filter((l) => l && l.clientName);
  } catch {}
- if (Array.isArray(manualLeads)) {
- saveNewLeadsList(manualLeads.filter((item) => item.id !== id));
+ if (!legacy.length) {
+  localStorage.removeItem(LEGACY_STORAGE_KEY);
+  localStorage.setItem(MIGRATION_KEY, 'complete');
+  return { migrated: 0, skipped: 0 };
  }
- return;
- }
-
- window.dispatchEvent(new CustomEvent(EVENT_KEY));
+ const res = await fetch('/api/leads/migrate', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ leads: legacy }),
+ });
+ const data = await res.json().catch(() => ({}));
+ if (!res.ok || !data.success) throw new Error(data.error || 'Legacy lead migration failed.');
+ await fetchNewLeads(true);
+ localStorage.removeItem(LEGACY_STORAGE_KEY);
+ localStorage.setItem(MIGRATION_KEY, 'complete');
+ return { migrated: data.migrated || 0, skipped: data.skipped || 0 };
 }
-export function updateNewLeadStatus(id: string, status: string): void {
+
+export async function addNewLead(payload: AddLeadPayload): Promise<NewLeadRecord> {
+ const res = await fetch('/api/leads/manual', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload),
+ });
+ const data = await res.json().catch(() => ({}));
+ if (!res.ok || !data.success) throw new Error(data.error || 'Failed to save lead to Google Sheets.');
+ await fetchNewLeads(true);
+ return data.lead;
+}
+
+export async function deleteNewLead(id: string, _lead?: Partial<NewLeadRecord>): Promise<void> {
  if (id.startsWith('wh_lead_')) {
- updateIncomingWebhookLead(id, { status });
- return;
+  await fetch(`/api/webhooks/incoming-leads/${encodeURIComponent(id)}`, {
+   method: 'PATCH',
+   headers: { 'Content-Type': 'application/json' },
+   body: JSON.stringify({ status: 'Deleted' }),
+  }).catch(() => null);
  }
- if (id.startsWith('lead_')) {
- let manualLeads: NewLeadRecord[] = [];
- try {
- const raw = localStorage.getItem(STORAGE_KEY);
- if (raw) manualLeads = JSON.parse(raw);
- } catch (e) {}
- if (Array.isArray(manualLeads)) {
- const updated = manualLeads.map((l) => (l.id === id ? { ...l, status } : l));
- saveNewLeadsList(updated);
- }
- } else {
- window.dispatchEvent(new CustomEvent(EVENT_KEY));
- }
+ publish(canonicalLeads.filter((lead) => lead.id !== id));
+}
+
+export function updateNewLeadStatus(id: string, status: string): void {
+ publish(canonicalLeads.map((lead) => lead.id === id ? { ...lead, status } : lead)
+  .filter((lead) => lead.status.toLowerCase() === 'new'));
 }
 
 export function updateNewLeadInfo(id: string, updates: Partial<NewLeadRecord>): void {
- if (id.startsWith('wh_lead_')) {
- updateIncomingWebhookLead(id, updates);
- return;
- }
- if (id.startsWith('lead_')) {
- let manualLeads: NewLeadRecord[] = [];
- try {
- const raw = localStorage.getItem(STORAGE_KEY);
- if (raw) manualLeads = JSON.parse(raw);
- } catch (e) {}
- if (Array.isArray(manualLeads)) {
- const updated = manualLeads.map((l) => (l.id === id ? { ...l, ...updates } : l));
- saveNewLeadsList(updated);
- }
- } else {
- try {
- for (let i = 0; i < localStorage.length; i++) {
- const key = localStorage.key(i);
- if (key && key.startsWith('mrcontract_cache_')) {
- try {
- const cacheRaw = localStorage.getItem(key);
- if (cacheRaw) {
- const data = JSON.parse(cacheRaw);
- if (data && Array.isArray(data.rows)) {
- let modified = false;
- data.rows = data.rows.map((r: any) => {
- const leadId = `sync_new_${r.rowIndex || Date.now()}_${(r.clientName || '').replace(/\s+/g, '')}`;
- if (leadId === id || (updates.rowIndex && r.rowIndex === updates.rowIndex)) {
- modified = true;
- return {
- ...r,
- clientName: updates.clientName !== undefined ? updates.clientName : r.clientName,
- clientPhone: updates.clientPhone !== undefined ? updates.clientPhone : r.clientPhone,
- clientEmail: updates.clientEmail !== undefined ? updates.clientEmail : r.clientEmail,
- address: updates.address !== undefined ? updates.address : r.address,
- serviceNeeded: updates.serviceNeeded !== undefined ? updates.serviceNeeded : r.serviceNeeded,
- leadType: updates.serviceNeeded !== undefined ? updates.serviceNeeded : r.leadType,
- leadSource: updates.leadSource !== undefined ? updates.leadSource : r.leadSource,
- status: updates.status !== undefined ? updates.status : r.status,
- leadFee: updates.leadFee !== undefined ? updates.leadFee : r.leadFee,
- notes: updates.notes !== undefined ? updates.notes : r.notes,
- };
- }
- return r;
- });
- if (modified) {
- localStorage.setItem(key, JSON.stringify(data));
- }
- }
- }
- } catch (e) {}
- }
- }
- } catch (e) {}
- window.dispatchEvent(new CustomEvent(EVENT_KEY));
- }
+ publish(canonicalLeads.map((lead) => lead.id === id ? { ...lead, ...updates } : lead));
 }

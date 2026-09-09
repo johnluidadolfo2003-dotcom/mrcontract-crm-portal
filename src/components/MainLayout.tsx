@@ -40,7 +40,7 @@ import { buildEventPayload, createGoogleCalendarEvent, checkBackendCalendarStatu
 import { appendAppointmentToSheet } from '../lib/sheets';
 import { sendLeadToHouzzPro } from '../lib/houzz';
 import { addOrUpdateScheduledClient } from '../lib/scheduledClients';
-import { addNewLead, getNewLeads } from '../lib/newLeads';
+import { addNewLead, getNewLeads, fetchNewLeads, migrateLegacyNewLeads } from '../lib/newLeads';
 
 export const MainLayout: React.FC = () => {
  const navigate = useNavigate();
@@ -84,18 +84,21 @@ export const MainLayout: React.FC = () => {
  });
  }, []);
 
- // Sync new leads count
+ // Sync every New badge from the same authoritative backend list.
  useEffect(() => {
+ let active = true;
+ migrateLegacyNewLeads()
+  .catch((err) => console.warn('Legacy New lead migration notice:', err))
+  .finally(() => fetchNewLeads(true).catch((err) => console.warn('New lead load notice:', err)));
+
  const handleUpdate = (e: any) => {
- if (e.detail && Array.isArray(e.detail)) {
- setNewLeadsCount(e.detail.length);
- } else {
- setNewLeadsCount(getNewLeads().length);
- }
+  if (!active) return;
+  setNewLeadsCount(Array.isArray(e.detail) ? e.detail.length : getNewLeads().length);
  };
  window.addEventListener('new_leads_updated', handleUpdate);
  return () => {
- window.removeEventListener('new_leads_updated', handleUpdate);
+  active = false;
+  window.removeEventListener('new_leads_updated', handleUpdate);
  };
  }, []);
 
@@ -251,13 +254,14 @@ export const MainLayout: React.FC = () => {
 
  // Save immediately so the lead appears in New Leads even while external
  // services are slow or unavailable.
- addNewLead(payload);
+ await addNewLead(payload);
+ sheetSent = true;
 
  // The sidebar page named "New" is the single destination for newly created leads.
  // Open it immediately; external integrations may continue while the lead is visible.
  setIsAddLeadModalOpen(false);
  navigate('/new');
- window.dispatchEvent(new CustomEvent('new_leads_updated', { detail: getNewLeads() }));
+ window.dispatchEvent(new CustomEvent('new_leads_updated'));
 
  // Always sync to Houzz Pro / Zapier via backend
  try {
@@ -275,34 +279,7 @@ export const MainLayout: React.FC = () => {
  console.warn('Houzz webhook error:', hErr);
  }
 
- if (config.spreadsheetId) {
- const formData: AppointmentFormData = {
- clientName: payload.clientName,
- clientPhone: payload.clientPhone,
- clientEmail: payload.clientEmail,
- address: payload.address,
- leadSource: payload.leadSource,
- leadType: payload.serviceNeeded,
- notes: '',
- appointmentDate: '',
- startTime: '',
- endTime: '',
- salespersonCode: config.salespeople?.[0]?.code || 'DG',
- };
 
- try {
- await appendAppointmentToSheet(
- undefined,
- config.spreadsheetId!,
- payload.leadSource || 'Angi',
- formData,
- payload.status || 'New'
- );
- sheetSent = true;
- } catch (sErr: any) {
- console.warn('Google Sheet append error:', sErr);
- }
- }
 
  // Log action to Team Audit Trail
  logAuditActivity({
