@@ -383,30 +383,38 @@ export const NewLeadsPage: React.FC = () => {
 
  try {
   const config = loadAppConfig();
-  await updateLeadStatusInSpreadsheet(
+  if (!config.spreadsheetId) {
+   throw new Error('Google Sheets is not configured. The lead was not deleted.');
+  }
+  if (!lead.rowIndex || lead.rowIndex < 1) {
+   throw new Error('The Google Sheets row could not be identified. Refresh New and try again.');
+  }
+  const sheetTab = String((lead as any).tabName || lead.leadSource || '').trim();
+  if (!sheetTab) {
+   throw new Error('The lead source worksheet could not be identified.');
+  }
+
+  // Delete from the source of truth first. Only remove it from the CRM after
+  // Google Sheets confirms that the exact row was deleted.
+  await deleteRowFromSheet(
    undefined,
-   config.spreadsheetId!,
-   {
-    clientName: lead.clientName,
-    clientPhone: lead.clientPhone,
-    clientEmail: lead.clientEmail,
-    tabName: lead.leadSource,
-    rowIndex: lead.rowIndex,
-    statusColIndex: lead.statusColIndex,
-   },
-   'Deleted'
+   config.spreadsheetId,
+   sheetTab,
+   lead.rowIndex,
+   lead.clientName,
+   lead.clientPhone
   );
   await deleteNewLead(lead.id, lead);
-  setLeads(getNewLeads());
+  await refreshLocalLeads(true);
 
   logAuditActivity({
    actionType: 'delete_lead',
    clientName: lead.clientName,
    clientPhone: lead.clientPhone,
    tabName: lead.leadSource || 'New Leads',
-   details: `Moved lead "${lead.clientName}" out of New with status Deleted`,
+   details: `Deleted lead "${lead.clientName}" from the CRM and Google Sheets`,
   });
-  setSyncMsg('Lead removed from New');
+  setSyncMsg('Lead deleted from CRM and Google Sheets');
  } catch (err: any) {
   console.error('Failed to remove lead:', err);
   setSyncMsg(err.message || 'Failed to remove lead');
