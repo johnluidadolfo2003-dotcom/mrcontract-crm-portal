@@ -703,6 +703,9 @@ export const NewLeadsPage: React.FC = () => {
                 return false;
               }
             })();
+            const isThumbtackTest =
+              String(lead.leadSource || lead.webhookSource || '').trim().toLowerCase() === 'thumbtack' &&
+              /test customer|test lead/i.test(String(lead.clientName || ''));
 
             return (
               <div
@@ -727,6 +730,14 @@ export const NewLeadsPage: React.FC = () => {
                       {isToday && (
                         <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-[#FF5500] text-white shadow-xs">
                           TODAY
+                        </span>
+                      )}
+                      {isThumbtackTest && (
+                        <span
+                          className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border border-orange-300 dark:border-orange-700"
+                          title="Official Thumbtack webhook test lead"
+                        >
+                          TEST
                         </span>
                       )}
                     </div>

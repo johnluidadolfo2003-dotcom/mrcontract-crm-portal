@@ -1654,6 +1654,14 @@ app.post('/api/webhooks/parse-email', async (req, res) => {
 function isExampleOrTestLead(lead: any): boolean {
   if (!lead) return false;
   const name = (lead.clientName || '').trim().toLowerCase();
+  const source = String(lead.leadSource || lead.webhookSource || '').trim().toLowerCase();
+
+  // Thumbtack's official test delivery must remain visible so administrators
+  // can verify the direct webhook without waiting for a real customer.
+  if (source === 'thumbtack' && (name.includes('test customer') || name.includes('test lead'))) {
+    return false;
+  }
+
   const email = (lead.clientEmail || '').trim().toLowerCase();
   const phone = (lead.clientPhone || '').replace(/\D/g, '');
   const addr = (lead.address || '').toLowerCase();
