@@ -113,30 +113,8 @@ export const NewLeadsPage: React.FC = () => {
   };
 
   const handleDrawerLeadUpdate = async (updatedLead: SheetRowRecord) => {
-    const leadId = String((updatedLead as any).id || (selectedLeadForDrawer as any)?.id || '');
-    if (leadId.startsWith('wh_lead_')) {
-      const response = await fetch(`/api/webhooks/incoming-leads/${encodeURIComponent(leadId)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clientName: updatedLead.clientName,
-          clientPhone: updatedLead.clientPhone,
-          clientEmail: updatedLead.clientEmail,
-          address: updatedLead.address,
-          serviceNeeded: updatedLead.serviceNeeded || updatedLead.leadType,
-          leadSource: updatedLead.leadSource || updatedLead.tabName,
-          leadFee: updatedLead.leadFee,
-          status: updatedLead.status,
-          notes: updatedLead.notes,
-        }),
-      });
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || 'The Thumbtack webhook record could not be updated.');
-      }
-    }
+    refreshLocalLeads();
     setSelectedLeadForDrawer((prev) => (prev ? { ...prev, ...updatedLead } : null));
-    await refreshLocalLeads(true);
   };
 
   const handleCloseDrawer = () => {
@@ -1136,12 +1114,6 @@ export const NewLeadsPage: React.FC = () => {
         lead={selectedLeadForDrawer}
         onStatusChange={handleDrawerStatusChange}
         onLeadUpdate={handleDrawerLeadUpdate}
-        onSendToHouzz={(row) => {
-          const leadId = String((row as any).id || '');
-          const matched = leads.find((item) => item.id === leadId);
-          if (matched) return handleSendThumbtackToHouzz(matched);
-        }}
-        isSendingToHouzz={Boolean((selectedLeadForDrawer as any)?.id && sendingHouzzId === (selectedLeadForDrawer as any).id)}
         statusOptions={LEAD_STATUS_OPTIONS}
         salespeople={config.salespeople}
       />
