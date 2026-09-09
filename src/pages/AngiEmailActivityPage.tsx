@@ -197,7 +197,7 @@ export const AngiEmailActivityPage: React.FC = () => {
           ))}
         </div>
 
-        <div className="relative w-full md:w-72">
+        <div className="relative crm-search-field w-full md:w-72">
           <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
