@@ -445,10 +445,10 @@ export const AddLeadForm: React.FC<AddLeadFormProps> = ({
 
  {/* 1. Client Name (Required) */}
  <div>
- <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1.5">
+ <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">
  Client Name <span className="text-brand-orange">*</span>
  </label>
- <div className="relative">
+ <div className="relative crm-icon-field">
  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
  <User className="w-4 h-4"/>
  </div>
@@ -466,10 +466,10 @@ export const AddLeadForm: React.FC<AddLeadFormProps> = ({
  {/* 2. Phone Number & Email */}
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
  <div>
- <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1.5">
+ <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">
  Phone Number
  </label>
- <div className="relative">
+ <div className="relative crm-icon-field">
  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
  <Phone className="w-4 h-4"/>
  </div>
@@ -484,10 +484,10 @@ export const AddLeadForm: React.FC<AddLeadFormProps> = ({
  </div>
 
  <div>
- <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1.5">
+ <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">
  Email
  </label>
- <div className="relative">
+ <div className="relative crm-icon-field">
  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
  <Mail className="w-4 h-4"/>
  </div>
@@ -504,10 +504,10 @@ export const AddLeadForm: React.FC<AddLeadFormProps> = ({
 
  {/* 3. Address */}
  <div>
- <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1.5">
+ <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">
  Address
  </label>
- <div className="relative">
+ <div className="relative crm-icon-field">
  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400 z-10">
  <MapPin className="w-4 h-4"/>
  </div>
@@ -524,10 +524,10 @@ export const AddLeadForm: React.FC<AddLeadFormProps> = ({
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
  {/* Lead Source */}
  <div>
- <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1.5">
+ <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">
  Lead Source
  </label>
- <div className="relative">
+ <div className="relative crm-icon-field">
  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
  <Tag className="w-4 h-4"/>
  </div>
@@ -547,10 +547,10 @@ export const AddLeadForm: React.FC<AddLeadFormProps> = ({
 
  {/* Service Needed */}
  <div>
- <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1.5">
+ <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">
  Service Needed
  </label>
- <div className="relative">
+ <div className="relative crm-icon-field">
  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
  <Briefcase className="w-4 h-4"/>
  </div>
@@ -566,10 +566,10 @@ export const AddLeadForm: React.FC<AddLeadFormProps> = ({
 
  {/* Status */}
  <div>
- <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1.5">
+ <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">
  Status
  </label>
- <div className="relative">
+ <div className="relative crm-icon-field">
  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
  <Layers className="w-4 h-4"/>
  </div>
@@ -589,10 +589,10 @@ export const AddLeadForm: React.FC<AddLeadFormProps> = ({
 
  {/* Lead Fee */}
  <div>
- <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1.5">
+ <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">
  Lead Fee
  </label>
- <div className="relative">
+ <div className="relative crm-icon-field">
  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
  <DollarSign className="w-4 h-4"/>
  </div>
