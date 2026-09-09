@@ -2976,9 +2976,20 @@ app.post('/api/sheets/append-lead', async (req, res) => {
 
 app.post('/api/sheets/delete-row', async (req, res) => {
   try {
-    const { sheetTab, rowIndex } = req.body;
+    const { sheetTab, rowIndex, clientName, clientPhone } = req.body;
     const targetId = sheetsService.getDefaultSpreadsheetId();
-    await sheetsService.deleteRow(targetId, sheetTab, rowIndex);
+    const numericRowIndex = Number(rowIndex);
+    if (!sheetTab || !Number.isInteger(numericRowIndex) || numericRowIndex < 1) {
+      return res.status(400).json({ error: 'A valid sheet tab and row are required.', errorCode: 'INVALID_ROW' });
+    }
+    const resolvedRowIndex = await sheetsService.resolveActualRowIndex(
+      targetId,
+      String(sheetTab),
+      numericRowIndex,
+      String(clientName || ''),
+      String(clientPhone || '')
+    );
+    await sheetsService.deleteRow(targetId, String(sheetTab), resolvedRowIndex);
     return res.json({ success: true });
   } catch (err: any) {
     const status = err.status || 500;
