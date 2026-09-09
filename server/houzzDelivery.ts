@@ -174,7 +174,11 @@ export function parseAddressParts(fullAddress: string) {
 }
 
 export function constructHouzzPayload(leadId: string, leadData: any): any {
-  const resolvedName = (leadData.clientName || leadData.name || leadData.fullName || 'New Lead').trim();
+  // clientName is the authoritative value entered in the CRM form. Normalize
+  // whitespace only; never replace it with a cached Zapier sample or Sheet name.
+  const submittedClientName = String(leadData?.clientName || '').trim().replace(/\s+/g, ' ');
+  const fallbackName = String(leadData?.name || leadData?.fullName || '').trim().replace(/\s+/g, ' ');
+  const resolvedName = submittedClientName || fallbackName || 'New Lead';
   const nameParts = resolvedName.split(' ');
   const firstName = nameParts[0] || resolvedName;
   const lastName = nameParts.slice(1).join(' ') || '';
@@ -203,11 +207,20 @@ export function constructHouzzPayload(leadId: string, leadData: any): any {
     createNewRecord: true,
     createFreshLead: true,
     action: 'create_new_lead',
+    payloadVersion: 'crm-houzz-v2',
+    // Use houzzClientName in the Zapier Houzz Pro "Client Name" field.
+    // All aliases intentionally contain the exact same authoritative value.
+    houzzClientName: resolvedName,
+    authoritativeClientName: resolvedName,
     clientName: resolvedName,
+    client_name: resolvedName,
     name: resolvedName,
     fullName: resolvedName,
+    full_name: resolvedName,
     customerName: resolvedName,
+    customer_name: resolvedName,
     leadName: resolvedName,
+    lead_name: resolvedName,
     firstName,
     lastName,
     first_name: firstName,
