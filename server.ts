@@ -1742,11 +1742,19 @@ function configuredLeadSourceTabs(): string[] {
 
 async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
   const spreadsheetId = sheetsService.getDefaultSpreadsheetId();
-  const configured = new Set(configuredLeadSourceTabs().map((name) => name.toLowerCase()));
   const details = await sheetsService.getSpreadsheetDetails(spreadsheetId, forceFresh);
   const tabs = details.sheets
     .map((sheet) => sheet.title)
-    .filter((title) => configured.has(title.trim().toLowerCase()));
+    .filter((title) => {
+      const normalized = title.trim().toLowerCase();
+      return normalized &&
+        !normalized.startsWith('_') &&
+        !normalized.includes('summary') &&
+        !normalized.includes('dashboard') &&
+        !normalized.includes('zapier') &&
+        !normalized.includes('appointment') &&
+        !normalized.includes('history');
+    });
   const result = tabs.length
     ? await sheetsService.readAllTabs(spreadsheetId, tabs, forceFresh)
     : { headers: sheetsService.DEFAULT_SHEET_HEADERS, rows: [] };
@@ -1839,7 +1847,26 @@ app.post('/api/leads/manual', async (req, res) => {
     };
     const result = await sheetsService.appendLeadRow(sheetsService.getDefaultSpreadsheetId(), leadSource, lead, 'New');
     sheetsService.invalidateServerCache();
-    return res.status(201).json({ success: true, lead: { ...lead, sheetSynced: true }, sheet: result });
+
+    // Dispatch the exact same normalized object that was written to Sheets.
+    // This prevents browser state or stale Zapier samples from changing the client name.
+    const houzzResult = await houzzDelivery.dispatchLeadToHouzz({
+      leadId: lead.id,
+      payload: lead,
+      webhookUrl: getBackendWebhookUrl(),
+    });
+
+    return res.status(201).json({
+      success: true,
+      lead: {
+        ...lead,
+        sheetSynced: true,
+        houzzStatus: houzzResult.activityStatus,
+        houzzResult: houzzResult.activityStatus,
+      },
+      sheet: result,
+      houzzDelivery: houzzResult,
+    });
   } catch (err: any) {
     return res.status(err.status || 500).json({ success: false, error: err.message || 'Unable to save lead.' });
   }
@@ -2362,133 +2389,132 @@ app.get('/api/webhooks/incoming-lead', (req, res) => {
 });
 
 // Users API (Multi-computer user management)
-app.get('/api/users', (req, res) => {
+const CRM_USERS_TAB = '_CRM Users';
+const CRM_USERS_HEADERS = ['ID', 'Name', 'Color', 'Created At', 'Last Active At'];
+
+async function readPersistentUsers(): Promise<any[]> {
+  const spreadsheetId = sheetsService.getDefaultSpreadsheetId();
+  await sheetsService.createTabIfNotExists(spreadsheetId, CRM_USERS_TAB);
+  const range = encodeURIComponent(sheetsService.formatSheetRange(CRM_USERS_TAB, 'A1:E500'));
+  const data = await sheetsService.callSheetsApi(
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}`,
+    { method: 'GET' },
+    spreadsheetId
+  );
+  const rows: any[][] = Array.isArray(data.values) ? data.values : [];
+  if (!rows.length) {
+    const headerRange = encodeURIComponent(sheetsService.formatSheetRange(CRM_USERS_TAB, 'A1:E1'));
+    await sheetsService.callSheetsApi(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${headerRange}?valueInputOption=RAW`,
+      { method: 'PUT', body: JSON.stringify({ values: [CRM_USERS_HEADERS] }) },
+      spreadsheetId
+    );
+    return [];
+  }
+  return rows.slice(1).filter((row) => String(row?.[0] || '').trim() && String(row?.[1] || '').trim()).map((row) => ({
+    id: String(row[0]),
+    name: String(row[1]),
+    color: String(row[2] || '#FF5500'),
+    createdAt: String(row[3] || ''),
+    lastActiveAt: String(row[4] || ''),
+  }));
+}
+
+async function writePersistentUsers(users: any[]): Promise<void> {
+  const spreadsheetId = sheetsService.getDefaultSpreadsheetId();
+  await sheetsService.createTabIfNotExists(spreadsheetId, CRM_USERS_TAB);
+  const range = encodeURIComponent(sheetsService.formatSheetRange(CRM_USERS_TAB, 'A1:E500'));
+  const values = [
+    CRM_USERS_HEADERS,
+    ...users.map((user) => [
+      String(user.id || ''),
+      String(user.name || ''),
+      String(user.color || '#FF5500'),
+      String(user.createdAt || ''),
+      String(user.lastActiveAt || ''),
+    ]),
+  ];
+  await sheetsService.callSheetsApi(
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:clear`,
+    { method: 'POST', body: '{}' },
+    spreadsheetId
+  );
+  const writeRange = encodeURIComponent(sheetsService.formatSheetRange(CRM_USERS_TAB, `A1:E${Math.max(values.length, 1)}`));
+  await sheetsService.callSheetsApi(
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${writeRange}?valueInputOption=RAW`,
+    { method: 'PUT', body: JSON.stringify({ values }) },
+    spreadsheetId
+  );
+}
+
+app.get('/api/users', async (_req, res) => {
   try {
-    const usersFile = path.join(process.cwd(), 'data', 'users.json');
-    if (fs.existsSync(usersFile)) {
-      const data = JSON.parse(fs.readFileSync(usersFile, 'utf-8'));
-      return res.json({ success: true, users: data });
-    }
-    // Default seed user (empty by default)
-    const defaultUsers: any[] = [];
-    const dataDir = path.join(process.cwd(), 'data');
-    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-    fs.writeFileSync(usersFile, JSON.stringify(defaultUsers, null, 2), 'utf-8');
-    return res.json({ success: true, users: defaultUsers });
+    return res.json({ success: true, users: await readPersistentUsers() });
   } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(err.status || 500).json({ success: false, error: err.message || 'Unable to load persistent users.' });
   }
 });
 
-app.post('/api/users', (req, res) => {
+app.post('/api/users', async (req, res) => {
   try {
-    const { name, color } = req.body;
-    if (!name || !name.trim()) {
-      return res.status(400).json({ success: false, error: 'User name is required.' });
-    }
-    const cleanName = name.trim();
-    const usersFile = path.join(process.cwd(), 'data', 'users.json');
-    const dataDir = path.join(process.cwd(), 'data');
-    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-
-    let users: any[] = [];
-    if (fs.existsSync(usersFile)) {
-      try {
-        users = JSON.parse(fs.readFileSync(usersFile, 'utf-8'));
-      } catch {}
-    }
-
-    // Check if user with same name already exists (case-insensitive)
-    let existingIndex = users.findIndex((u: any) => u.name.trim().toLowerCase() === cleanName.toLowerCase());
-    let userObj;
-    const colors = ['#FF5500', '#3B82F6', '#10B981', '#8B5CF6', '#EC4899', '#F59E0B', '#06B6D4', '#14B8A6'];
-
-    if (existingIndex >= 0) {
-      userObj = {
-        ...users[existingIndex],
-        lastActiveAt: new Date().toISOString(),
-        color: color || users[existingIndex].color || colors[existingIndex % colors.length]
-      };
-      users[existingIndex] = userObj;
-    } else {
-      userObj = {
-        id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        name: cleanName,
-        color: color || colors[users.length % colors.length],
-        createdAt: new Date().toISOString(),
-        lastActiveAt: new Date().toISOString()
-      };
-      users.push(userObj);
-    }
-
-    fs.writeFileSync(usersFile, JSON.stringify(users, null, 2), 'utf-8');
-    return res.json({ success: true, user: userObj, users });
+    const cleanName = String(req.body?.name || '').trim();
+    if (!cleanName) return res.status(400).json({ success: false, error: 'User name is required.' });
+    const users = await readPersistentUsers();
+    const colors = ['#FF5500', '#10B981', '#EF4444'];
+    const existingIndex = users.findIndex((user: any) => String(user.name).trim().toLowerCase() === cleanName.toLowerCase());
+    const now = new Date().toISOString();
+    const user = existingIndex >= 0
+      ? { ...users[existingIndex], lastActiveAt: now, color: req.body?.color || users[existingIndex].color }
+      : {
+          id: `usr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: cleanName,
+          color: req.body?.color || colors[users.length % colors.length],
+          createdAt: now,
+          lastActiveAt: now,
+        };
+    if (existingIndex >= 0) users[existingIndex] = user;
+    else users.push(user);
+    await writePersistentUsers(users);
+    return res.json({ success: true, user, users });
   } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(err.status || 500).json({ success: false, error: err.message || 'Unable to save persistent user.' });
   }
 });
 
-app.delete('/api/users/:id', (req, res) => {
+app.delete('/api/users/:id', async (req, res) => {
   try {
-    const rawId = req.params.id;
-    const id = decodeURIComponent(rawId);
-    const usersFile = path.join(process.cwd(), 'data', 'users.json');
-    if (!fs.existsSync(usersFile)) return res.json({ success: true, users: [] });
-    
-    let users = JSON.parse(fs.readFileSync(usersFile, 'utf-8'));
-    users = users.filter((u: any) => u.id !== id && u.id !== rawId && u.name.toLowerCase() !== id.toLowerCase() && u.name.toLowerCase() !== rawId.toLowerCase());
-    fs.writeFileSync(usersFile, JSON.stringify(users, null, 2), 'utf-8');
+    const id = decodeURIComponent(req.params.id);
+    const users = (await readPersistentUsers()).filter((user: any) =>
+      user.id !== id && String(user.name).toLowerCase() !== id.toLowerCase()
+    );
+    await writePersistentUsers(users);
     return res.json({ success: true, users });
   } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(err.status || 500).json({ success: false, error: err.message || 'Unable to delete persistent user.' });
   }
 });
 
-app.put('/api/users/:id', (req, res) => {
+app.put('/api/users/:id', async (req, res) => {
   try {
-    const rawId = req.params.id;
-    const id = decodeURIComponent(rawId);
-    const { name, color } = req.body;
-    if (!name || !name.trim()) {
-      return res.status(400).json({ success: false, error: 'User name is required.' });
-    }
-    const cleanName = name.trim();
-    const usersFile = path.join(process.cwd(), 'data', 'users.json');
-    const dataDir = path.join(process.cwd(), 'data');
-    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-
-    let users: any[] = [];
-    if (fs.existsSync(usersFile)) {
-      try {
-        users = JSON.parse(fs.readFileSync(usersFile, 'utf-8'));
-      } catch {}
-    }
-
-    const idx = users.findIndex((u: any) => u.id === id || u.id === rawId || u.name.toLowerCase() === id.toLowerCase() || u.name.toLowerCase() === rawId.toLowerCase());
-    let updatedUser: any;
-    if (idx >= 0) {
-      updatedUser = {
-        ...users[idx],
-        name: cleanName,
-        ...(color ? { color } : {}),
-        lastActiveAt: new Date().toISOString()
-      };
-      users[idx] = updatedUser;
-    } else {
-      updatedUser = {
-        id: id.startsWith('usr_') ? id : `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        name: cleanName,
-        color: color || '#FF5500',
-        createdAt: new Date().toISOString(),
-        lastActiveAt: new Date().toISOString()
-      };
-      users.push(updatedUser);
-    }
-
-    fs.writeFileSync(usersFile, JSON.stringify(users, null, 2), 'utf-8');
-    return res.json({ success: true, user: updatedUser, users });
+    const id = decodeURIComponent(req.params.id);
+    const cleanName = String(req.body?.name || '').trim();
+    if (!cleanName) return res.status(400).json({ success: false, error: 'User name is required.' });
+    const users = await readPersistentUsers();
+    const index = users.findIndex((user: any) =>
+      user.id === id || String(user.name).toLowerCase() === id.toLowerCase()
+    );
+    if (index < 0) return res.status(404).json({ success: false, error: 'User not found.' });
+    const user = {
+      ...users[index],
+      name: cleanName,
+      ...(req.body?.color ? { color: String(req.body.color) } : {}),
+      lastActiveAt: new Date().toISOString(),
+    };
+    users[index] = user;
+    await writePersistentUsers(users);
+    return res.json({ success: true, user, users });
   } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(err.status || 500).json({ success: false, error: err.message || 'Unable to update persistent user.' });
   }
 });
 
