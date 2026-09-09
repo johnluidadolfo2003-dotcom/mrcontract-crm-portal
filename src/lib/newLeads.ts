@@ -44,7 +44,9 @@ export function getNewLeads(): NewLeadRecord[] {
 }
 
 export async function fetchNewLeads(forceFresh = false): Promise<NewLeadRecord[]> {
- if (requestInFlight && !forceFresh) return requestInFlight;
+ // Never start duplicate Google Sheets reads. A forced caller can reuse the
+ // current request because that request is already fetching the canonical list.
+ if (requestInFlight) return requestInFlight;
  requestInFlight = (async () => {
   const res = await fetch(`/api/leads?status=New${forceFresh ? '&force=1' : ''}`);
   const data = await res.json().catch(() => ({}));
@@ -93,8 +95,18 @@ export async function addNewLead(payload: AddLeadPayload): Promise<NewLeadRecord
  });
  const data = await res.json().catch(() => ({}));
  if (!res.ok || !data.success) throw new Error(data.error || 'Failed to save lead to Google Sheets.');
- await fetchNewLeads(true);
- return data.lead;
+
+ // Show the confirmed lead immediately. Do not keep the form and navigation
+ // blocked while every spreadsheet tab is downloaded again.
+ const createdLead = data.lead as NewLeadRecord;
+ publish([
+  createdLead,
+  ...canonicalLeads.filter((lead) => lead.id !== createdLead.id),
+ ]);
+ void fetchNewLeads(false).catch((error) => {
+  console.warn('Background New lead refresh failed:', error);
+ });
+ return createdLead;
 }
 
 export async function deleteNewLead(id: string, _lead?: Partial<NewLeadRecord>): Promise<void> {

@@ -87,7 +87,7 @@ export const MainLayout: React.FC = () => {
  let active = true;
  migrateLegacyNewLeads()
   .catch((err) => console.warn('Legacy New lead migration notice:', err))
-  .finally(() => fetchNewLeads(true).catch((err) => console.warn('New lead load notice:', err)));
+  .finally(() => fetchNewLeads(false).catch((err) => console.warn('New lead load notice:', err)));
 
  const handleUpdate = (e: any) => {
   if (!active) return;

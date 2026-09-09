@@ -336,34 +336,43 @@ export const NewLeadsPage: React.FC = () => {
  useEffect(() => {
  let active = true;
  const initialize = async () => {
+  // Render the shared in-memory list first, then refresh without bypassing the
+  // server cache. This makes navigation immediate on repeat visits.
+  const cached = getNewLeads();
+  if (cached.length) setLeads(cached);
   try {
    await migrateLegacyNewLeads();
-   if (active) await refreshLocalLeads(true);
+   if (active) await refreshLocalLeads(false);
   } catch (err) {
    console.warn('New lead migration/initial load notice:', err);
-   if (active) await refreshLocalLeads();
   }
  };
  initialize();
 
  const handleUpdate = (e: any) => {
   if (Array.isArray(e.detail)) setLeads(e.detail);
-  else refreshLocalLeads(true);
+  else void refreshLocalLeads(false);
  };
- const handleDataSync = () => refreshLocalLeads(true);
+ const handleDataSync = () => void refreshLocalLeads(false);
+ const handleVisibility = () => {
+  if (document.visibilityState === 'visible') void refreshLocalLeads(false);
+ };
  window.addEventListener('new_leads_updated', handleUpdate);
  window.addEventListener('mrcontract_data_synced', handleDataSync);
+ document.addEventListener('visibilitychange', handleVisibility);
 
- // Cross-device refresh, paused while this browser tab is hidden.
+ // Poll the lightweight cached endpoint often enough for incoming webhooks to
+ // appear quickly, without forcing repeated full Google Sheets downloads.
  const interval = setInterval(() => {
-  if (document.visibilityState === 'visible') refreshLocalLeads(true);
- }, 15000);
+  if (document.visibilityState === 'visible') void refreshLocalLeads(false);
+ }, 5000);
 
  return () => {
   active = false;
   clearInterval(interval);
   window.removeEventListener('new_leads_updated', handleUpdate);
   window.removeEventListener('mrcontract_data_synced', handleDataSync);
+  document.removeEventListener('visibilitychange', handleVisibility);
  };
  }, []);
 
@@ -375,6 +384,8 @@ export const NewLeadsPage: React.FC = () => {
  message: `${unsyncedLeads.length} new ${unsyncedLeads.length === 1 ? 'lead has' : 'leads have'} not yet synced to Google Sheets`,
  details: 'Incoming webhook leads recorded locally but waiting for Google Sheets sync confirmation.',
  });
+ } else {
+ setSyncIssue(null);
  }
 
  const config = loadAppConfig();
