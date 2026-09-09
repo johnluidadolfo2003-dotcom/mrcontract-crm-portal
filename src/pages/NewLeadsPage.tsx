@@ -407,27 +407,27 @@ export const NewLeadsPage: React.FC = () => {
 
  try {
   const config = loadAppConfig();
-  if (!config.spreadsheetId) {
-   throw new Error('Google Sheets is not configured. The lead was not deleted.');
-  }
-  if (!lead.rowIndex || lead.rowIndex < 1) {
+  const hasSheetRow = Boolean(config.spreadsheetId && lead.rowIndex && lead.rowIndex >= 1);
+  const sheetTab = String((lead as any).tabName || lead.leadSource || '').trim();
+
+  // A webhook lead whose Sheets append failed has no row to delete. Delete the
+  // CRM record directly instead of trapping it forever behind a missing row.
+  if (hasSheetRow) {
+   if (!sheetTab) {
+    throw new Error('The lead source worksheet could not be identified.');
+   }
+   await deleteRowFromSheet(
+    undefined,
+    config.spreadsheetId,
+    sheetTab,
+    lead.rowIndex!,
+    lead.clientName,
+    lead.clientPhone
+   );
+  } else if (lead.sheetSynced !== false) {
    throw new Error('The Google Sheets row could not be identified. Refresh New and try again.');
   }
-  const sheetTab = String((lead as any).tabName || lead.leadSource || '').trim();
-  if (!sheetTab) {
-   throw new Error('The lead source worksheet could not be identified.');
-  }
 
-  // Delete from the source of truth first. Only remove it from the CRM after
-  // Google Sheets confirms that the exact row was deleted.
-  await deleteRowFromSheet(
-   undefined,
-   config.spreadsheetId,
-   sheetTab,
-   lead.rowIndex,
-   lead.clientName,
-   lead.clientPhone
-  );
   await deleteNewLead(lead.id, lead);
   await refreshLocalLeads(true);
 
@@ -436,9 +436,11 @@ export const NewLeadsPage: React.FC = () => {
    clientName: lead.clientName,
    clientPhone: lead.clientPhone,
    tabName: lead.leadSource || 'New Leads',
-   details: `Deleted lead "${lead.clientName}" from the CRM and Google Sheets`,
+   details: hasSheetRow
+    ? `Deleted lead "${lead.clientName}" from the CRM and Google Sheets`
+    : `Deleted unsynced lead "${lead.clientName}" from the CRM; no Google Sheets row existed`,
   });
-  setSyncMsg('Lead deleted from CRM and Google Sheets');
+  setSyncMsg(hasSheetRow ? 'Lead deleted from CRM and Google Sheets' : 'Unsynced lead deleted from CRM');
  } catch (err: any) {
   console.error('Failed to remove lead:', err);
   setSyncMsg(err.message || 'Failed to remove lead');

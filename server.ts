@@ -1238,18 +1238,21 @@ async function parseIncomingLeadPayload(body: any, defaultSource: string = 'Angi
 // Deduplication cache for Google Sheets appends to guarantee leads are sent only once
 const recentSheetAppends = new Map<string, number>();
 
-function canAppendToSheet(phone: string, name: string): boolean {
+function getSheetAppendKey(phone: string, name: string): string {
   const cleanPhone = (phone || '').replace(/\D/g, '');
   const cleanName = (name || '').toLowerCase().trim();
-  const key = `${cleanPhone}_${cleanName}`;
-  if (!cleanPhone && !cleanName) return true;
+  return `${cleanPhone}_${cleanName}`;
+}
+
+function canAppendToSheet(phone: string, name: string): boolean {
+  const key = getSheetAppendKey(phone, name);
+  if (key === '_') return true;
 
   const now = Date.now();
   const lastTime = recentSheetAppends.get(key);
-  if (lastTime && (now - lastTime) < 30000) { // 30 seconds deduplication window
+  if (lastTime && (now - lastTime) < 30000) {
     return false;
   }
-  recentSheetAppends.set(key, now);
 
   if (recentSheetAppends.size > 500) {
     for (const [k, t] of recentSheetAppends.entries()) {
@@ -1259,7 +1262,10 @@ function canAppendToSheet(phone: string, name: string): boolean {
   return true;
 }
 
-async function tryAutoAppendToGoogleSheet(lead: any): Promise<boolean> {
+async function tryAutoAppendToGoogleSheet(
+  lead: any,
+  options: { force?: boolean } = {}
+): Promise<boolean> {
   try {
     const phone = lead.clientPhone || lead.phone || lead.phoneNumber || '';
     const name = lead.clientName || lead.name || lead.fullName || '';
@@ -1275,15 +1281,31 @@ async function tryAutoAppendToGoogleSheet(lead: any): Promise<boolean> {
       try {
         const configData = JSON.parse(fs.readFileSync(configFile, 'utf-8'));
         if (configData.spreadsheetId) spreadsheetId = configData.spreadsheetId;
-        if (configData.autoSyncToSheets === false) return false;
+        if (configData.autoSyncToSheets === false && !options.force) return false;
       } catch {}
     }
     const targetTab = (lead.leadSource || 'Angi').trim();
     await sheetsService.appendLeadRow(spreadsheetId, targetTab, lead, lead.status || 'New');
+    recentSheetAppends.set(getSheetAppendKey(phone, name), Date.now());
     return true;
   } catch (e) {
     console.warn('Server auto-append via Service Account note:', e);
     return false;
+  }
+}
+
+function setIncomingLeadSheetSyncState(leadId: string, synced: boolean): void {
+  try {
+    const incomingFile = path.join(process.cwd(), 'data', 'incoming_leads.json');
+    const leads = durableStore.safeReadJsonFile<any[]>('incoming_leads.json', []);
+    const index = leads.findIndex((lead: any) => lead.id === leadId);
+    if (index >= 0) {
+      leads[index] = { ...leads[index], sheetSynced: synced };
+      durableStore.safeWriteJsonFile('incoming_leads.json', leads);
+    }
+    durableStore.saveLeadMetadata({ leadId, sheetSynced: synced });
+  } catch (error) {
+    console.warn('[Google Sheet] Could not persist sync state:', error);
   }
 }
 
@@ -1558,14 +1580,38 @@ app.post('/api/webhooks/angi', async (req, res) => {
 
     console.log('[Webhook] Authenticated Angi lead received.');
     const parsed = await parseIncomingLeadPayload(req.body, 'Angi');
-    const lead = saveIncomingLeadAndLog(parsed, req, { skipAutoHouzz: true });
-    const houzzResult = await houzzDelivery.dispatchLeadToHouzz({ leadId: lead.id, payload: lead, webhookUrl: getBackendWebhookUrl() });
+    const lead = saveIncomingLeadAndLog(parsed, req, { skipAutoSheet: true, skipAutoHouzz: true });
+
+    // Sheets is part of the Angi transaction: wait for a confirmed append before
+    // reporting the result. A failed append is queued for automatic retry.
+    const sheetSynced = await tryAutoAppendToGoogleSheet(lead, { force: true });
+    setIncomingLeadSheetSyncState(lead.id, sheetSynced);
+    lead.sheetSynced = sheetSynced;
+    if (!sheetSynced) {
+      durableStore.enqueueDelivery(lead.id, 'sheets', lead, lead.leadSource || 'Angi');
+    }
+
+    const houzzResult = await houzzDelivery.dispatchLeadToHouzz({
+      leadId: lead.id,
+      payload: lead,
+      webhookUrl: getBackendWebhookUrl(),
+    });
 
     return res.status(200).json({
       success: true,
-      message: houzzResult.success ? 'Angi lead received; Zapier accepted delivery and Houzz confirmation is pending.' : 'Angi lead saved, but Zapier delivery failed.',
+      message: sheetSynced
+        ? (houzzResult.success
+            ? 'Angi lead saved in CRM and Google Sheets; Zapier accepted Houzz delivery and confirmation is pending.'
+            : 'Angi lead saved in CRM and Google Sheets, but Zapier delivery failed.')
+        : (houzzResult.success
+            ? 'Angi lead saved in CRM and sent to Zapier. Google Sheets sync is queued for automatic retry.'
+            : 'Angi lead saved in CRM. Google Sheets retry is queued and Zapier delivery failed.'),
       leadId: lead.id,
       lead,
+      sheetSync: {
+        success: sheetSynced,
+        status: sheetSynced ? 'synced' : 'queued_for_retry',
+      },
       houzzDelivery: houzzResult,
     });
   } catch (err: any) {
@@ -3299,6 +3345,7 @@ app.post('/api/webhooks/retry', async (req, res) => {
         const sheetId = item.spreadsheetId || sheetsService.getDefaultSpreadsheetId();
         const tabName = item.tabName || item.source || 'Angi';
         await sheetsService.appendLeadRow(sheetId, tabName, item.payload, item.payload?.status || 'New');
+        if (existingLeadId) setIncomingLeadSheetSyncState(existingLeadId, true);
         deliverySuccess = true;
       } catch (sheetErr: any) {
         deliveryError = sheetErr.message || 'Google Sheets append failed.';
@@ -3510,6 +3557,7 @@ setInterval(async () => {
         const sheetId = (item as any).spreadsheetId || sheetsService.getDefaultSpreadsheetId();
         const tabName = (item as any).tabName || 'Angi';
         await sheetsService.appendLeadRow(sheetId, tabName, item.payload, item.payload?.status || 'New');
+        if (item.leadId) setIncomingLeadSheetSyncState(item.leadId, true);
         return { success: true };
       }
     });
