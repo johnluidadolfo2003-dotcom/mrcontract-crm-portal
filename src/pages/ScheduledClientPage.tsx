@@ -629,7 +629,7 @@ export const ScheduledClientPage: React.FC = () => {
  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3.5 rounded-2xl shadow-xs space-y-3">
  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
  {/* Search input */}
- <div className="relative flex-1">
+ <div className="relative crm-search-field flex-1">
  <Search className="w-4 h-4 text-zinc-400 dark:text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2"/>
  <input
  type="text"
