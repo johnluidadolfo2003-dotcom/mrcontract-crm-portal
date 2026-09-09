@@ -2402,13 +2402,20 @@ async function readPersistentUsers(): Promise<any[]> {
     spreadsheetId
   );
   const rows: any[][] = Array.isArray(data.values) ? data.values : [];
-  if (!rows.length) {
+  if (rows.length <= 1) {
     const headerRange = encodeURIComponent(sheetsService.formatSheetRange(CRM_USERS_TAB, 'A1:E1'));
     await sheetsService.callSheetsApi(
       `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${headerRange}?valueInputOption=RAW`,
       { method: 'PUT', body: JSON.stringify({ values: [CRM_USERS_HEADERS] }) },
       spreadsheetId
     );
+
+    // One-time migration of existing repository users into the durable worksheet.
+    const legacyUsers = durableStore.safeReadJsonFile<any[]>('users.json', []);
+    if (Array.isArray(legacyUsers) && legacyUsers.length) {
+      await writePersistentUsers(legacyUsers);
+      return legacyUsers;
+    }
     return [];
   }
   return rows.slice(1).filter((row) => String(row?.[0] || '').trim() && String(row?.[1] || '').trim()).map((row) => ({
