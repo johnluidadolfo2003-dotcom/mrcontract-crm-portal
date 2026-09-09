@@ -474,3 +474,38 @@ html, body {
     scroll-behavior: auto !important;
   }
 }
+
+
+/* Collision-safe form and search fields */
+.crm-icon-field,
+.crm-search-field {
+  position: relative;
+  min-width: 0;
+}
+
+.crm-icon-field > input,
+.crm-icon-field > select,
+.crm-icon-field > textarea,
+.crm-icon-field > div > input,
+.crm-search-field > input {
+  padding-left: 2.75rem !important;
+  min-width: 0;
+}
+
+.crm-icon-field > :first-child,
+.crm-search-field > svg:first-child {
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.crm-search-field > svg:first-child {
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.crm-search-field > input {
+  padding-right: 2.5rem !important;
+  text-overflow: ellipsis;
+}
