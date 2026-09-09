@@ -579,7 +579,7 @@ export const NewLeadsPage: React.FC = () => {
  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 sm:p-3.5 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 max-w-xl">
  {/* Search Input */}
- <div className="relative flex-1">
+ <div className="relative crm-search-field flex-1">
  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500"/>
  <input
  type="text"
