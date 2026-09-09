@@ -37,7 +37,6 @@ import { ActivityLogModal } from './ActivityLogModal';
 import { useUser } from '../lib/userContext';
 import { logAuditActivity } from '../lib/activityLogger';
 import { buildEventPayload, createGoogleCalendarEvent, checkBackendCalendarStatus, BackendCalendarStatus } from '../lib/calendar';
-import { sendLeadToHouzzPro } from '../lib/houzz';
 import { addOrUpdateScheduledClient } from '../lib/scheduledClients';
 import { addNewLead, getNewLeads, fetchNewLeads, migrateLegacyNewLeads } from '../lib/newLeads';
 
@@ -248,12 +247,14 @@ export const MainLayout: React.FC = () => {
  const handleAddLeadSubmit = async (payload: AddLeadPayload) => {
  setIsSubmitting(true);
  try {
- let houzzSent = false;
  let sheetSent = false;
 
  // Save immediately so the lead appears in New Leads even while external
  // services are slow or unavailable.
- await addNewLead(payload);
+ const createdLead = await addNewLead(payload);
+ const houzzSent = ['accepted by zapier', 'created in houzz pro'].some((status) =>
+  String(createdLead.houzzStatus || createdLead.houzzResult || '').toLowerCase().includes(status)
+ );
  sheetSent = true;
 
  // The sidebar page named "New" is the single destination for newly created leads.
@@ -261,24 +262,6 @@ export const MainLayout: React.FC = () => {
  setIsAddLeadModalOpen(false);
  navigate('/new');
  window.dispatchEvent(new CustomEvent('new_leads_updated'));
-
- // Always sync to Houzz Pro / Zapier via backend
- try {
- await sendLeadToHouzzPro(config.houzzWebhookUrl, {
- clientName: payload.clientName,
- clientPhone: payload.clientPhone,
- clientEmail: payload.clientEmail,
- address: payload.address,
- leadSource: payload.leadSource,
- serviceNeeded: payload.serviceNeeded,
- notes: '',
- });
- houzzSent = true;
- } catch (hErr: any) {
- console.warn('Houzz webhook error:', hErr);
- }
-
-
 
  // Log action to Team Audit Trail
  logAuditActivity({
