@@ -189,6 +189,12 @@ export async function sendLeadToHouzzPro(
   const resolvedService = data.serviceNeeded || data.leadType || '';
   const resolvedSource = data.leadSource || 'Web App';
   const resolvedNotes = data.notes || '';
+  const createdAt = rawData.createdAt ? new Date(rawData.createdAt) : new Date();
+  const safeCreatedAt = Number.isNaN(createdAt.getTime()) ? new Date() : createdAt;
+  const monthTag = new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    timeZone: 'America/New_York',
+  }).format(safeCreatedAt).toUpperCase();
 
   const payload: any = {
     leadId,
@@ -234,6 +240,9 @@ export async function sendLeadToHouzzPro(
     service: resolvedService,
     leadSource: resolvedSource,
     source: resolvedSource,
+    monthTag,
+    tag: monthTag,
+    tags: [monthTag],
     notes: resolvedNotes,
     message: resolvedNotes,
     status: data.status || 'New',
