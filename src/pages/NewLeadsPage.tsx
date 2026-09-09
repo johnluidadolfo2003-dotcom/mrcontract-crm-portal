@@ -81,6 +81,8 @@ export const NewLeadsPage: React.FC = () => {
       rawValues: [],
     };
     (sheetLead as any).id = lead.id;
+    (sheetLead as any).houzzStatus = lead.houzzStatus || '';
+    (sheetLead as any).houzzResult = lead.houzzResult || '';
     setSelectedLeadForDrawer(sheetLead);
     setIsDrawerOpen(true);
   };
