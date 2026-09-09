@@ -1844,7 +1844,10 @@ async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
     const key = canonicalContactKey(sheetLead);
     const metadata = transientByContact.get(key);
     const merged = metadata ? { ...sheetLead, ...metadata, rowIndex: row.rowIndex, statusColIndex: row.statusColIndex, sheetSynced: true } : sheetLead;
-    if (!seen.has(key) && !isExampleOrTestLead(merged)) {
+    // Every row explicitly saved in Google Sheets is a real CRM record, even
+    // when its name contains "Test". Do not hide form-created validation leads
+    // during the background refresh.
+    if (!seen.has(key)) {
       seen.add(key);
       leads.push(merged);
     }
