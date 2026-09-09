@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Loader2,
   Save,
+  Zap,
 } from 'lucide-react';
 import { SheetRowRecord, updateLeadInSpreadsheet } from '../../lib/sheets';
 import { formatPhoneNumber, getLeadActivities, addLeadActivity, LeadActivity, isMeetingScheduledStatus } from '../../lib/utils';
@@ -30,6 +31,8 @@ interface LeadDrawerProps {
   onClose: () => void;
   onStatusChange: (row: SheetRowRecord, newStatus: string) => void;
   onLeadUpdate?: (updatedLead: SheetRowRecord) => Promise<void> | void;
+  onSendToHouzz?: (lead: SheetRowRecord) => Promise<void> | void;
+  isSendingToHouzz?: boolean;
   statusOptions: readonly string[];
   salespeople?: SalespersonOption[];
   calendarEvents?: any[];
@@ -41,6 +44,8 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
   onClose,
   onStatusChange,
   onLeadUpdate,
+  onSendToHouzz,
+  isSendingToHouzz = false,
   statusOptions,
   salespeople = [],
   calendarEvents = [],
@@ -258,6 +263,14 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
   const inputClass = "w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#FF5500] dark:focus:border-[#FF5500] rounded-xl px-3.5 py-2 text-sm text-zinc-900 dark:text-white font-medium outline-none transition-colors placeholder-zinc-400";
   const houzzState = String((lead as any).houzzStatus || (lead as any).houzzResult || '').trim().toLowerCase();
   const isConfirmedInHouzz = houzzState.includes('created in houzz pro');
+  const isHouzzAccepted = houzzState.includes('accepted by zapier');
+  const isThumbtackLead = String(lead.leadSource || lead.tabName || '').trim().toLowerCase() === 'thumbtack';
+  const hasHouzzRequiredInfo = Boolean(
+    lead.clientName?.trim() &&
+    (lead.clientPhone?.trim() || lead.clientEmail?.trim()) &&
+    lead.address?.trim() &&
+    (lead.serviceNeeded || lead.leadType || '').trim()
+  );
 
   return (
     <>
@@ -687,6 +700,39 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                   </div>
                 </div>
               </div>
+
+              {/* Thumbtack leads require a human review before Houzz creation. */}
+              {isThumbtackLead && (
+                <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl space-y-2.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white">Houzz Pro</h3>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        {isConfirmedInHouzz
+                          ? 'This lead is already in Houzz Pro.'
+                          : isHouzzAccepted
+                            ? 'Zapier accepted this lead. Waiting for Houzz confirmation.'
+                            : hasHouzzRequiredInfo
+                              ? 'Information is complete and ready to send.'
+                              : 'Complete the name, contact, address, and service before sending.'}
+                      </p>
+                    </div>
+                    {isConfirmedInHouzz && <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" aria-hidden="true" />}
+                  </div>
+                  {!isConfirmedInHouzz && !isHouzzAccepted && (
+                    <button
+                      type="button"
+                      disabled={!hasHouzzRequiredInfo || isSendingToHouzz || !onSendToHouzz}
+                      onClick={() => onSendToHouzz?.(lead)}
+                      className="w-full py-2.5 bg-[#FF5500] hover:bg-[#E64D00] disabled:bg-zinc-300 dark:disabled:bg-zinc-800 disabled:text-zinc-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                      title={hasHouzzRequiredInfo ? 'Create this Thumbtack lead in Houzz Pro' : 'Complete the required lead information first'}
+                    >
+                      {isSendingToHouzz ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                      <span>{isSendingToHouzz ? 'Sending…' : 'Create in Houzz Pro'}</span>
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* Edit Button CTA */}
               <button
