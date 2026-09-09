@@ -1883,7 +1883,7 @@ export const SpreadsheetPage: React.FC = () => {
  </select>
  </div>
 
- <div className="relative">
+ <div className="relative crm-search-field">
  <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2"/>
  <input
  type="text"
