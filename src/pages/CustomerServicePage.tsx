@@ -591,7 +591,7 @@ export const CustomerServicePage: React.FC = () => {
  >
  {/* Search & Lead Source Filter Header */}
  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3.5 rounded-xl space-y-2.5">
- <div className="relative">
+ <div className="relative crm-search-field">
  <Search className="w-4 h-4 text-zinc-400 dark:text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2"/>
  <input
  type="text"
