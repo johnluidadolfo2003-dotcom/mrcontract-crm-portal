@@ -37,7 +37,6 @@ import { ActivityLogModal } from './ActivityLogModal';
 import { useUser } from '../lib/userContext';
 import { logAuditActivity } from '../lib/activityLogger';
 import { buildEventPayload, createGoogleCalendarEvent, checkBackendCalendarStatus, BackendCalendarStatus } from '../lib/calendar';
-import { appendAppointmentToSheet } from '../lib/sheets';
 import { sendLeadToHouzzPro } from '../lib/houzz';
 import { addOrUpdateScheduledClient } from '../lib/scheduledClients';
 import { addNewLead, getNewLeads, fetchNewLeads, migrateLegacyNewLeads } from '../lib/newLeads';
@@ -192,7 +191,7 @@ export const MainLayout: React.FC = () => {
 
  if (config.spreadsheetId && config.autoSyncToSheets !== false) {
  try {
- await appendAppointmentToSheet(
+ await (await import('../lib/sheets')).appendAppointmentToSheet(
  undefined,
  config.spreadsheetId!,
  config.sheetTabName || 'Appointments',
