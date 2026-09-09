@@ -4,7 +4,7 @@ import { GoogleGenAI, Type, ThinkingLevel } from '@google/genai';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
-import { timingSafeEqual } from 'crypto';
+import { timingSafeEqual, createHash } from 'crypto';
 import sharp from 'sharp';
 import * as sheetsService from './server/sheetsService.ts';
 import * as durableStore from './server/durableStore.ts';
@@ -355,9 +355,16 @@ app.post('/api/webhook-url', (_req, res) => res.status(403).json({ success: fals
 
 // Rate limiter: Max 60 requests per minute per IP for webhook ingest (Weakness 8)
 const webhookRateLimits = new Map<string, { count: number; resetTime: number }>();
+let lastRateLimitCleanup = 0;
 
 function isWebhookRateLimited(ip: string): boolean {
   const now = Date.now();
+  if (now - lastRateLimitCleanup > 60000 || webhookRateLimits.size > 5000) {
+    for (const [key, value] of webhookRateLimits) {
+      if (now > value.resetTime) webhookRateLimits.delete(key);
+    }
+    lastRateLimitCleanup = now;
+  }
   const record = webhookRateLimits.get(ip);
   if (!record || now > record.resetTime) {
     webhookRateLimits.set(ip, { count: 1, resetTime: now + 60000 });
@@ -405,6 +412,13 @@ function validateThumbtackBasicAuth(req: express.Request): boolean {
   } catch {
     return false;
   }
+}
+
+function validateHouzzCallback(req: express.Request): boolean {
+  const expected = (process.env.HOUZZ_CALLBACK_SECRET || '').trim();
+  if (!expected) return false;
+  const supplied = String(req.headers['x-houzz-callback-secret'] || '').trim();
+  return supplied ? safeSecretEqual(supplied, expected) : false;
 }
 
 function maskPhoneNumber(phone?: string): string {
@@ -1370,8 +1384,20 @@ function saveIncomingLeadAndLog(
     } catch {}
   }
 
-  const leadId = `wh_lead_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const externalEventId = String(
+    parsed.sourceEventId || parsed.eventId || parsed.leadId || parsed.rawPayload?.id ||
+    parsed.rawPayload?.eventId || parsed.rawPayload?.leadId ||
+    String(parsed.rawPayload?.rawEmail || '').match(/#(\d{6,})/)?.[1] || ''
+  ).trim();
+  const stableInput = externalEventId || [
+    parsed.leadSource, parsed.clientPhone, parsed.clientEmail, parsed.clientName, parsed.serviceNeeded
+  ].map((value) => String(value || '').trim().toLowerCase()).join('|');
+  const stableHash = createHash('sha256').update(stableInput).digest('hex').slice(0, 20);
+  const leadId = `wh_lead_${stableHash}`;
   const now = new Date().toISOString();
+
+  const existingLead = existingLeads.find((item: any) => item.id === leadId);
+  if (existingLead) return existingLead;
 
   const newLeadRecord = {
     id: leadId,
@@ -1448,7 +1474,11 @@ function saveIncomingLeadAndLog(
     success: true,
     ip: req.ip || req.headers['x-forwarded-for'] || 'unknown',
     leadId: leadId,
-    payloadSnippet: parsed.rawPayload,
+    payloadSnippet: { source: parsed.leadSource, fieldsPresent: {
+      name: Boolean(parsed.clientName), phone: Boolean(parsed.clientPhone),
+      email: Boolean(parsed.clientEmail), address: Boolean(parsed.address),
+      service: Boolean(parsed.serviceNeeded)
+    } },
   });
   if (logs.length > 150) {
     logs = logs.slice(0, 150);
@@ -1526,14 +1556,14 @@ app.post('/api/webhooks/angi', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Unauthorized. Invalid webhook secret token.' });
     }
 
-    console.log('Incoming Angi Webhook received:', req.body);
+    console.log('[Webhook] Authenticated Angi lead received.');
     const parsed = await parseIncomingLeadPayload(req.body, 'Angi');
     const lead = saveIncomingLeadAndLog(parsed, req, { skipAutoHouzz: true });
     const houzzResult = await houzzDelivery.dispatchLeadToHouzz({ leadId: lead.id, payload: lead, webhookUrl: getBackendWebhookUrl() });
 
     return res.status(200).json({
       success: true,
-      message: houzzResult.success ? 'Angi lead received and sent to Houzz Pro automation.' : 'Angi lead saved, but Houzz Pro delivery failed.',
+      message: houzzResult.success ? 'Angi lead received; Zapier accepted delivery and Houzz confirmation is pending.' : 'Angi lead saved, but Zapier delivery failed.',
       leadId: lead.id,
       lead,
       houzzDelivery: houzzResult,
@@ -1556,7 +1586,7 @@ app.post('/api/webhooks/thumbtack', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Unauthorized. Valid Thumbtack Basic Authentication is required.' });
     }
 
-    console.log('Incoming Thumbtack Webhook received:', req.body);
+    console.log('[Webhook] Authenticated Thumbtack lead received.');
     const parsed = await parseIncomingLeadPayload(req.body, 'Thumbtack');
     const lead = saveIncomingLeadAndLog(parsed, req, { skipAutoHouzz: true });
 
@@ -1584,7 +1614,7 @@ app.post('/api/webhooks/incoming-lead', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Unauthorized. Invalid webhook secret token.' });
     }
 
-    console.log('Incoming Universal Webhook received:', req.body);
+    console.log('[Webhook] Authenticated universal lead received.');
     const parsed = await parseIncomingLeadPayload(req.body, '');
     const lead = saveIncomingLeadAndLog(parsed, req);
 
@@ -1666,6 +1696,26 @@ function isExampleOrTestLead(lead: any): boolean {
 
   return false;
 }
+
+// Zapier must call this after its Houzz Pro action finishes.
+app.post('/api/integrations/houzz-result', (req, res) => {
+  if (!validateHouzzCallback(req)) {
+    return res.status(401).json({ success: false, error: 'Invalid Houzz callback secret.' });
+  }
+  const leadId = String(req.body?.leadId || req.body?.idempotencyKey || '').trim();
+  const successful = req.body?.success === true || ['success', 'created', 'confirmed'].includes(String(req.body?.status || '').toLowerCase());
+  if (!leadId) return res.status(400).json({ success: false, error: 'leadId is required.' });
+  const activityStatus = successful ? 'Created in Houzz Pro' : 'Failed in Houzz Pro';
+  houzzDelivery.updateLeadHouzzState(leadId, {
+    activityStatus,
+    destinationLabel: 'Houzz Pro',
+    statusCode: Number(req.body?.statusCode || 0) || null,
+    error: successful ? undefined : String(req.body?.error || 'Houzz Pro action failed.').slice(0, 200),
+    attemptAt: new Date().toISOString(),
+    success: successful,
+  });
+  return res.json({ success: true, leadId, status: activityStatus });
+});
 
 // Canonical lead API: Google Sheets is the source of truth for Sidebar -> New.
 function canonicalContactKey(lead: any): string {

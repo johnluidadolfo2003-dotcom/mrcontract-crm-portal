@@ -18,7 +18,7 @@ export function getHouzzDestinationInfo(webhookUrl?: string): HouzzDestinationIn
   return {
     displayName,
     sendingLabel: `Sending to ${displayName}`,
-    sentLabel: `Sent to ${displayName}`,
+    sentLabel: isAutomation ? 'Accepted by Zapier' : 'Created in Houzz Pro',
     failedLabel: `Failed to send to ${displayName}`,
   };
 }
@@ -89,7 +89,7 @@ export function evaluateHouzzResponse(
       // Body is plain text or HTML, HTTP status is 2xx -> Treat as successful
       return {
         success: true,
-        safeSummary: `Sent to ${destinationName} (HTTP ${status} OK)`,
+        safeSummary: destinationName === 'Zapier' ? `Accepted by Zapier (HTTP ${status} OK; awaiting Houzz confirmation)` : `Created in Houzz Pro (HTTP ${status} OK)`,
       };
     }
   }
@@ -128,7 +128,7 @@ export function evaluateHouzzResponse(
   return {
     success: true,
     parsedBody: parsed,
-    safeSummary: `Sent to ${destinationName} (HTTP ${status} OK)`,
+    safeSummary: destinationName === 'Zapier' ? `Accepted by Zapier (HTTP ${status} OK; awaiting Houzz confirmation)` : `Created in Houzz Pro (HTTP ${status} OK)`,
   };
 }
 
@@ -413,6 +413,7 @@ export async function dispatchLeadToHouzz(params: {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'Idempotency-Key': params.leadId,
       },
       body: JSON.stringify(fullPayload),
       signal: controller.signal,

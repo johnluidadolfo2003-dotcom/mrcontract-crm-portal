@@ -460,18 +460,20 @@ export const NewLeadsPage: React.FC = () => {
 
  const source = String(lead.leadSource || lead.webhookSource || '').trim().toLowerCase();
  const status = String(lead.houzzStatus || lead.houzzResult || '').toLowerCase();
- const sent = status.startsWith('sent to ');
- const failed = status.startsWith('failed to ');
+ const confirmed = status.includes('created in houzz pro');
+ const accepted = status.includes('accepted by zapier');
+ const sent = confirmed || accepted;
+ const failed = status.startsWith('failed') || status.includes('failed in houzz');
  const sending = sendingHouzzId === lead.id || status.startsWith('sending to ');
  const sizeClass = compact ? 'w-[148px] px-2.5 py-1.5 rounded-lg justify-center whitespace-nowrap' : 'w-[160px] px-3.5 py-2 rounded-xl justify-center whitespace-nowrap';
 
  if (source === 'angi') {
- const label = sent ? 'Sent automatically' : failed ? 'Auto-send failed' : 'Sending automatically';
+ const label = confirmed ? 'Created in Houzz Pro' : accepted ? 'Zapier accepted' : failed ? 'Auto-send failed' : 'Sending automatically';
  return (
  <button
  type="button"
  disabled
- title={failed ? (lead.houzzError || 'Automatic Houzz delivery failed.') : 'Angi leads are sent to Houzz Pro automatically.'}
+ title={failed ? (lead.houzzError || 'Automatic Houzz delivery failed.') : confirmed ? 'Houzz Pro confirmed creation.' : accepted ? 'Zapier accepted the lead; waiting for Houzz Pro confirmation.' : 'Angi automatic delivery is processing.'}
  className={`${sizeClass} text-xs font-bold inline-flex items-center gap-1.5 border cursor-not-allowed ${
  sent
  ? 'bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/30'
@@ -496,7 +498,7 @@ export const NewLeadsPage: React.FC = () => {
  event.stopPropagation();
  handleSendThumbtackToHouzz(lead);
  }}
- title={sent ? 'This Thumbtack lead was sent to Houzz Pro.' : 'Send this Thumbtack lead to Houzz Pro.'}
+ title={confirmed ? 'Houzz Pro confirmed creation.' : accepted ? 'Zapier accepted the lead; waiting for Houzz confirmation.' : 'Send this Thumbtack lead to Houzz Pro.'}
  className={`${sizeClass} text-xs font-bold inline-flex items-center gap-1.5 transition-colors border ${
  sent
  ? 'bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/30 cursor-not-allowed'
@@ -504,7 +506,7 @@ export const NewLeadsPage: React.FC = () => {
  }`}
  >
  {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : sent ? <Check className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
- <span>{sending ? 'Sending...' : sent ? 'Sent to Houzz Pro' : failed ? 'Retry Houzz Pro' : 'Send to Houzz Pro'}</span>
+ <span>{sending ? 'Sending...' : confirmed ? 'Created in Houzz Pro' : accepted ? 'Zapier accepted' : failed ? 'Retry Houzz Pro' : 'Send to Houzz Pro'}</span>
  </button>
  );
  };
