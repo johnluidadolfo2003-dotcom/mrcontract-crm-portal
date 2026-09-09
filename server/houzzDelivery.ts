@@ -186,6 +186,12 @@ export function constructHouzzPayload(leadId: string, leadData: any): any {
   const serviceNeeded = (leadData.serviceNeeded || leadData.service || leadData.leadType || '').trim();
   const leadSource = (leadData.leadSource || leadData.source || 'Web App').trim();
   const notes = (leadData.notes || leadData.message || '').trim();
+  const createdAt = leadData.createdAt ? new Date(leadData.createdAt) : new Date();
+  const safeCreatedAt = Number.isNaN(createdAt.getTime()) ? new Date() : createdAt;
+  const monthTag = new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    timeZone: 'America/New_York',
+  }).format(safeCreatedAt).toUpperCase();
 
   return {
     leadId: leadId || leadData.id || `lead_${Date.now()}`,
@@ -232,6 +238,9 @@ export function constructHouzzPayload(leadId: string, leadData: any): any {
     leadSource,
     source: leadSource,
     leadFee: leadData.leadFee || '',
+    tag: monthTag,
+    tags: [monthTag],
+    monthTag,
     notes,
     message: notes,
     status: leadData.status || 'New',
