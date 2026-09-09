@@ -1642,7 +1642,9 @@ export async function deleteRowFromSheet(
  accessToken: string | undefined,
  spreadsheetId: string,
  sheetTab: string,
- rowIndex: number
+ rowIndex: number,
+ clientName?: string,
+ clientPhone?: string
 ): Promise<void> {
  const cleanId = extractSpreadsheetId(spreadsheetId);
  const res = await fetch('/api/sheets/delete-row', {
@@ -1652,6 +1654,8 @@ export async function deleteRowFromSheet(
  spreadsheetId: cleanId,
  sheetTab,
  rowIndex,
+ clientName,
+ clientPhone,
  }),
  });
 
