@@ -717,11 +717,6 @@ export const NewLeadsPage: React.FC = () => {
                           {lead.serviceNeeded}
                         </span>
                       )}
-                      {lead.leadFee && (
-                        <span className="px-1.5 py-0.5 text-[10px] font-semibold text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 rounded-md border border-zinc-200 dark:border-zinc-700">
-                          {lead.leadFee.startsWith('$') ? lead.leadFee : `$${lead.leadFee}`}
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>
