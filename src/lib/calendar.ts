@@ -57,18 +57,12 @@ export function buildEventPayload(
 
   const timeZone = config?.timeZone || BUSINESS_TIME_ZONE;
 
-  // 1. Title format: Appt - Client Name (Service Needed) - Sales person initial example DG
-  const clientStr = (clientName || '').trim();
-  const serviceStr = (serviceNeeded || '').trim();
-  const spStr = (salespersonCode || '').trim();
-
-  let summary = `Appt - ${clientStr}`;
-  if (serviceStr) {
-    summary += ` (${serviceStr})`;
-  }
-  if (spStr) {
-    summary += ` - ${spStr}`;
-  }
+  // 1. Canonical title format for both the preview and Google Calendar.
+  // Example: Appt - DG - Jane Smith (Brick Repair)
+  const clientStr = (clientName || '').trim() || 'Client';
+  const serviceStr = (serviceNeeded || '').trim() || 'Service Needed';
+  const spStr = (salespersonCode || '').trim() || 'Unassigned';
+  const summary = `Appt - ${spStr} - ${clientStr} (${serviceStr})`;
 
   // 2. Format Date and Time with exact target timezone offset
   const startOffset = getTimezoneOffsetString(appointmentDate, startTime, timeZone);
