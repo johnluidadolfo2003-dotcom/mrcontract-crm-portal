@@ -6,6 +6,31 @@ export const DEFAULT_SALESPEOPLE: SalespersonOption[] = [
  { id: 'sp_js', code: 'JS', name: 'JS' },
 ];
 
+export function mergeStandardSalespeople(savedSalespeople?: unknown): SalespersonOption[] {
+ const saved = Array.isArray(savedSalespeople) ? savedSalespeople : [];
+ const standardCodes = new Set(DEFAULT_SALESPEOPLE.map((sp) => sp.code));
+ const savedByCode = new Map(
+ saved
+ .filter((sp: any) => sp && typeof sp.code === 'string')
+ .map((sp: any) => [sp.code.trim().toUpperCase(), sp])
+ );
+
+ return [
+ ...DEFAULT_SALESPEOPLE.map((standard) => {
+ const existing = savedByCode.get(standard.code);
+ return existing ? { ...standard, ...existing, code: standard.code } : standard;
+ }),
+ ...saved.filter((sp: any) => {
+ const code = typeof sp?.code === 'string' ? sp.code.trim().toUpperCase() : '';
+ return code && !standardCodes.has(code);
+ }),
+ ].map((sp: any) => ({
+ id: sp.id || `sp_${(sp.code || 'salesperson').toLowerCase()}`,
+ code: (sp.code || 'DG').trim().toUpperCase(),
+ name: (sp.name || sp.code || 'Salesperson').trim(),
+ }));
+}
+
 export const US_TIME_ZONES = [
  { value: 'America/New_York', label: 'Eastern Time (ET - Eastern)' },
  { value: 'America/Chicago', label: 'Central Time (CT - Central)' },
@@ -84,29 +109,7 @@ export function loadAppConfig(): AppConfig {
  const mergedLeadSources = Array.from(
  new Set([...DEFAULT_LEAD_SOURCES, ...(parsed.leadSources || [])])
  ).filter(isLeadSourceTab);
- // Always include the company-standard order in every user's saved configuration.
- // Existing custom salespeople are preserved after DG, SB, and JS.
- const savedSalespeople = Array.isArray(parsed.salespeople) ? parsed.salespeople : [];
- const standardCodes = new Set(DEFAULT_SALESPEOPLE.map((sp) => sp.code));
- const savedByCode = new Map(
- savedSalespeople
- .filter((sp: any) => sp && typeof sp.code === 'string')
- .map((sp: any) => [sp.code.trim().toUpperCase(), sp])
- );
- const loadedSalespeople = [
- ...DEFAULT_SALESPEOPLE.map((standard) => {
- const saved = savedByCode.get(standard.code);
- return saved ? { ...standard, ...saved, code: standard.code } : standard;
- }),
- ...savedSalespeople.filter((sp: any) => {
- const code = typeof sp?.code === 'string' ? sp.code.trim().toUpperCase() : '';
- return code && !standardCodes.has(code);
- }),
- ].map((sp: any) => ({
- id: sp.id || `sp_${(sp.code || 'salesperson').toLowerCase()}`,
- code: (sp.code || 'DG').trim().toUpperCase(),
- name: (sp.name || sp.code || 'Salesperson').trim(),
- }));
+ const loadedSalespeople = mergeStandardSalespeople(parsed.salespeople);
 
  const loaded: AppConfig = {
  ...DEFAULT_CONFIG,
@@ -164,6 +167,7 @@ export async function fetchAndSyncServerConfig(): Promise<AppConfig> {
  const merged = {
  ...local,
  ...serverCfg,
+ salespeople: mergeStandardSalespeople(serverCfg.salespeople ?? local.salespeople),
  houzzWebhookUrl: '',
  };
  localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
