@@ -505,6 +505,75 @@ export function isSameSalesperson(sp1: string, sp2: string): boolean {
   return false;
 }
 
+/**
+ * Rebuilds calendar RFC 3339 offsets in the configured event timezone.
+ * This prevents a browser in another country from shifting the selected wall-clock time.
+ */
+function normalizeCalendarPayloadTimes(payload: any): any {
+  if (!payload || typeof payload !== 'object') return payload;
+
+  const timeZone =
+    String(payload.start?.timeZone || payload.end?.timeZone || process.env.BUSINESS_TIME_ZONE || 'America/New_York').trim() ||
+    'America/New_York';
+
+  const normalizeDateTime = (value: unknown): string | null => {
+    const match = typeof value === 'string'
+      ? value.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$/)
+      : null;
+    if (!match) return null;
+
+    const [, date, hour, minute, second = '00'] = match;
+    const utcGuess = Date.UTC(
+      Number(date.slice(0, 4)),
+      Number(date.slice(5, 7)) - 1,
+      Number(date.slice(8, 10)),
+      Number(hour),
+      Number(minute)
+    );
+
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+      }).formatToParts(new Date(utcGuess));
+      const values = Object.fromEntries(
+        parts.filter((part) => part.type !== 'literal').map((part) => [part.type, part.value])
+      );
+      const zonedAsUtc = Date.UTC(
+        Number(values.year),
+        Number(values.month) - 1,
+        Number(values.day),
+        Number(values.hour),
+        Number(values.minute)
+      );
+      const offsetMinutes = Math.round((zonedAsUtc - utcGuess) / 60000);
+      const sign = offsetMinutes >= 0 ? '+' : '-';
+      const absolute = Math.abs(offsetMinutes);
+      const offset = `${sign}${String(Math.floor(absolute / 60)).padStart(2, '0')}:${String(absolute % 60).padStart(2, '0')}`;
+      return `${date}T${hour}:${minute}:${second}${offset}`;
+    } catch {
+      return null;
+    }
+  };
+
+  const normalizeEndpoint = (endpoint: any) => {
+    if (!endpoint || typeof endpoint !== 'object' || !endpoint.dateTime) return endpoint;
+    const dateTime = normalizeDateTime(endpoint.dateTime);
+    return dateTime ? { ...endpoint, dateTime, timeZone } : { ...endpoint, timeZone };
+  };
+
+  return {
+    ...payload,
+    start: normalizeEndpoint(payload.start),
+    end: normalizeEndpoint(payload.end),
+  };
+}
+
 // In-flight booking lock per salesperson to coordinate simultaneous booking requests
 // Different salespeople run with their own lock and are allowed appointments at the same time.
 const salespersonBookingLocks = new Map<string, Promise<void>>();
@@ -655,6 +724,7 @@ export async function createCalendarEvent(
   requiredScopes?: string[];
   status?: number;
 }> {
+  payload = normalizeCalendarPayloadTimes(payload);
   const auth = await getCalendarAccessToken(reqCalendarId);
   const calendarId = resolveCalendarId(reqCalendarId);
 
@@ -788,6 +858,7 @@ export async function updateCalendarEvent(
   requiredScopes?: string[];
   status?: number;
 }> {
+  payload = normalizeCalendarPayloadTimes(payload);
   const auth = await getCalendarAccessToken(reqCalendarId);
   const calendarId = resolveCalendarId(reqCalendarId);
 
