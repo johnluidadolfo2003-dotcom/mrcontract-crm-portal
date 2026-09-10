@@ -2,6 +2,8 @@ import { AppConfig, SalespersonOption } from './types';
 
 export const DEFAULT_SALESPEOPLE: SalespersonOption[] = [
  { id: 'sp_dg', code: 'DG', name: 'Daniel Grider (DG)' },
+ { id: 'sp_sb', code: 'SB', name: 'SB' },
+ { id: 'sp_js', code: 'JS', name: 'JS' },
 ];
 
 export const US_TIME_ZONES = [
@@ -82,16 +84,29 @@ export function loadAppConfig(): AppConfig {
  const mergedLeadSources = Array.from(
  new Set([...DEFAULT_LEAD_SOURCES, ...(parsed.leadSources || [])])
  ).filter(isLeadSourceTab);
- let loadedSalespeople = parsed.salespeople || DEFAULT_SALESPEOPLE;
- loadedSalespeople = loadedSalespeople
- .map((sp: any) => ({
- id: sp.id || String(Date.now()),
- code: sp.code || 'DG',
- name: sp.name || 'Salesperson',
+ // Always include the company-standard order in every user's saved configuration.
+ // Existing custom salespeople are preserved after DG, SB, and JS.
+ const savedSalespeople = Array.isArray(parsed.salespeople) ? parsed.salespeople : [];
+ const standardCodes = new Set(DEFAULT_SALESPEOPLE.map((sp) => sp.code));
+ const savedByCode = new Map(
+ savedSalespeople
+ .filter((sp: any) => sp && typeof sp.code === 'string')
+ .map((sp: any) => [sp.code.trim().toUpperCase(), sp])
+ );
+ const loadedSalespeople = [
+ ...DEFAULT_SALESPEOPLE.map((standard) => {
+ const saved = savedByCode.get(standard.code);
+ return saved ? { ...standard, ...saved, code: standard.code } : standard;
+ }),
+ ...savedSalespeople.filter((sp: any) => {
+ const code = typeof sp?.code === 'string' ? sp.code.trim().toUpperCase() : '';
+ return code && !standardCodes.has(code);
+ }),
+ ].map((sp: any) => ({
+ id: sp.id || `sp_${(sp.code || 'salesperson').toLowerCase()}`,
+ code: (sp.code || 'DG').trim().toUpperCase(),
+ name: (sp.name || sp.code || 'Salesperson').trim(),
  }));
- if (loadedSalespeople.length === 0) {
- loadedSalespeople = DEFAULT_SALESPEOPLE;
- }
 
  const loaded: AppConfig = {
  ...DEFAULT_CONFIG,
