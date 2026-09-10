@@ -14,7 +14,7 @@ export function getTimezoneOffsetString(
 ): string {
  try {
  const match = `${dateStr || ''}T${timeStr || ''}`.match(
- /^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2})$/
+ /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/
  );
  if (!match) return '-04:00';
 
