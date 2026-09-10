@@ -13,19 +13,34 @@ export function getTimezoneOffsetString(
  timeZone: string = BUSINESS_TIME_ZONE
 ): string {
  try {
- const cleanDate = dateStr.trim();
- const cleanTime = timeStr && timeStr.trim().length === 5 ? timeStr.trim() : '12:00';
- // Create UTC date reference
- const sampleUtc = new Date(`${cleanDate}T${cleanTime}:00Z`);
- if (isNaN(sampleUtc.getTime())) return '-04:00';
- // Format in target timezone to calculate exact local offset
- const invDate = new Date(sampleUtc.toLocaleString('en-US', { timeZone }));
- const diffMinutes = Math.round((invDate.getTime() - sampleUtc.getTime()) / 60000);
- const sign = diffMinutes >= 0 ? '+' : '-';
- const abs = Math.abs(diffMinutes);
- const hours = String(Math.floor(abs / 60)).padStart(2, '0');
- const minutes = String(abs % 60).padStart(2, '0');
- return `${sign}${hours}:${minutes}`;
+ const match = `${dateStr || ''}T${timeStr || ''}`.match(
+ /^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2})$/
+ );
+ if (!match) return '-04:00';
+
+ const [, year, month, day, hour, minute] = match;
+ const utcGuess = Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute));
+ const parts = new Intl.DateTimeFormat('en-US', {
+ timeZone,
+ year: 'numeric',
+ month: '2-digit',
+ day: '2-digit',
+ hour: '2-digit',
+ minute: '2-digit',
+ hourCycle: 'h23',
+ }).formatToParts(new Date(utcGuess));
+ const values = Object.fromEntries(parts.filter((part) => part.type !== 'literal').map((part) => [part.type, part.value]));
+ const zonedAsUtc = Date.UTC(
+ Number(values.year),
+ Number(values.month) - 1,
+ Number(values.day),
+ Number(values.hour),
+ Number(values.minute)
+ );
+ const offsetMinutes = Math.round((zonedAsUtc - utcGuess) / 60000);
+ const sign = offsetMinutes >= 0 ? '+' : '-';
+ const absolute = Math.abs(offsetMinutes);
+ return `${sign}${String(Math.floor(absolute / 60)).padStart(2, '0')}:${String(absolute % 60).padStart(2, '0')}`;
  } catch {
  return '-04:00';
  }
