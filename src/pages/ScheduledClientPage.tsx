@@ -38,7 +38,8 @@ import {
  updateScheduledClientStatus,
  updateScheduledClientSalesperson,
  deleteScheduledClient,
- subscribeScheduledClients
+ subscribeScheduledClients,
+ sortScheduledClientsNewestFirst
 } from '../lib/scheduledClients';
 import { useUser } from '../lib/userContext';
 import { AppConfig, AppointmentFormData, LEAD_STATUS_OPTIONS } from '../types';
@@ -270,7 +271,7 @@ export const ScheduledClientPage: React.FC = () => {
 			});
 		});
 
-		return deduplicatedResult;
+		return sortScheduledClientsNewestFirst(deduplicatedResult);
 	}, [scheduledClients, calendarEvents, config]);
 
  // Quick Schedule Modal state
