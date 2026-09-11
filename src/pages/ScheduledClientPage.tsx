@@ -63,7 +63,6 @@ export const ScheduledClientPage: React.FC = () => {
  const [copiedField, setCopiedField] = useState<string | null>(null);
  const [isSyncing, setIsSyncing] = useState(false);
  const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
- const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
  const [calSyncStatus, setCalSyncStatus] = useState<CalendarSyncStatus>(getCalendarSyncStatus);
 
  // Salesperson directory options from config only (excluding workers/users)
@@ -530,8 +529,6 @@ export const ScheduledClientPage: React.FC = () => {
  const target = scheduledClients.find((c) => c.id === id);
  if (!target || target.status === newStatus) return;
 
- setStatusUpdatingId(id);
-
  // Save to the CRM immediately so the dropdown never reverts while the
  // spreadsheet request is still running.
  updateScheduledClientStatus(id, newStatus);
@@ -560,7 +557,6 @@ export const ScheduledClientPage: React.FC = () => {
  console.warn('Could not sync status to Google Sheets:', e);
  setSuccessMessage("Status saved in CRM; Google Sheets will retry on the next sync.");
  } finally {
- setStatusUpdatingId(null);
  setTimeout(() => setSuccessMessage(null), 4000);
  }
  };
