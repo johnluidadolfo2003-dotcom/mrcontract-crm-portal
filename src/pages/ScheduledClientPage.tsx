@@ -49,6 +49,27 @@ import { buildEventPayload, createGoogleCalendarEvent, fetchGoogleCalendarEvents
 import { appendAppointmentToSheet, updateLeadStatusInSpreadsheet, readAllSpreadsheetTabs, getSpreadsheetDetails, invalidateSpreadsheetCache } from '../lib/sheets';
 import { sendLeadToHouzzPro } from '../lib/houzz';
 
+const CALENDAR_STATUS_OVERRIDES_KEY = 'mrcontract_calendar_status_overrides';
+
+function getCalendarStatusOverride(eventId?: string): string {
+ if (!eventId) return '';
+ try {
+  const saved = JSON.parse(localStorage.getItem(CALENDAR_STATUS_OVERRIDES_KEY) || '{}');
+  return typeof saved[eventId] === 'string' ? saved[eventId] : '';
+ } catch {
+  return '';
+ }
+}
+
+function saveCalendarStatusOverride(eventId: string | undefined, status: string): void {
+ if (!eventId) return;
+ try {
+  const saved = JSON.parse(localStorage.getItem(CALENDAR_STATUS_OVERRIDES_KEY) || '{}');
+  saved[eventId] = status;
+  localStorage.setItem(CALENDAR_STATUS_OVERRIDES_KEY, JSON.stringify(saved));
+ } catch {}
+}
+
 export const ScheduledClientPage: React.FC = () => {
  const navigate = useNavigate();
  const { users } = useUser();
@@ -228,6 +249,11 @@ export const ScheduledClientPage: React.FC = () => {
 				if (event.id && matchedEventIds.has(event.id)) return;
 
 				const { formData } = parseCalendarEventToFormData(event, config);
+				const movedStatus = getCalendarStatusOverride(event.id);
+				if (
+					movedStatus &&
+					!isMeetingScheduledStatus(movedStatus, formData.leadSource || 'Google Calendar')
+				) return;
 				if (formData.clientName && formData.clientName.trim() && !/^(interview|assistant|meeting|call)/i.test(formData.clientName)) {
 					const resolved = normalizeRep(formData.salespersonCode || formData.salespersonName);
 					calendarOnlyRecords.push({
@@ -583,6 +609,7 @@ export const ScheduledClientPage: React.FC = () => {
  const remainsScheduled = isMeetingScheduledStatus(newStatus, sourceTab);
  updateScheduledClientStatus(target.id, newStatus);
  if (!remainsScheduled) {
+ saveCalendarStatusOverride(target.calendarEventId, newStatus);
  deleteScheduledClient(target.id);
  setScheduledClients((current) => current.filter((client) => client.id !== target.id));
  } else {
@@ -591,8 +618,11 @@ export const ScheduledClientPage: React.FC = () => {
  );
  }
 
- invalidateSpreadsheetCache(config.spreadsheetId);
- window.dispatchEvent(new CustomEvent('mrcontract_data_synced'));
+ // Preserve current cached leads and send the confirmed update to the sidebar,
+ // instead of clearing all badges before the next full Sheets refresh.
+ window.dispatchEvent(new CustomEvent('mrcontract_data_synced', {
+ detail: [{ ...target, leadSource: sourceTab, status: newStatus }]
+ }));
  setSuccessMessage(`Moved to ${newStatus}`);
  } catch (e: any) {
  console.warn('Could not move scheduled lead to the selected status:', e);
