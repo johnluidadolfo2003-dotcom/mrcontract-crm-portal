@@ -47,6 +47,29 @@ import { LeadDrawer } from '../components/ui/LeadDrawer';
 import { sendThumbtackLeadToHouzz } from '../lib/webhooks';
 import { WebhookDiagnosticsModal } from '../components/WebhookDiagnosticsModal';
 
+const getDateKeyInTimeZone = (date: Date, timeZone: string): string => {
+ const parts = new Intl.DateTimeFormat('en-US', {
+  timeZone,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+ }).formatToParts(date);
+ const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+ return `${values.year}-${values.month}-${values.day}`;
+};
+
+const wasCreatedTodayInBusinessTimeZone = (createdAt?: string, timeZone = 'America/New_York'): boolean => {
+ if (!createdAt) return false;
+ const created = new Date(createdAt);
+ if (Number.isNaN(created.getTime())) return false;
+
+ try {
+  return getDateKeyInTimeZone(created, timeZone) === getDateKeyInTimeZone(new Date(), timeZone);
+ } catch {
+  return false;
+ }
+};
+
 export const NewLeadsPage: React.FC = () => {
  const navigate = useNavigate();
  const [leads, setLeads] = useState<NewLeadRecord[]>(() => getNewLeads());
@@ -700,22 +723,11 @@ export const NewLeadsPage: React.FC = () => {
         /* CLEAN VIEW: 1 COLUMN HORIZONTAL ROW CARDS (STANDARDIZED WITH TODAY'S TASKS & SPREADSHEET VIEWS) */
         <div className="flex flex-col gap-3 w-full">
           {filteredLeads.map((lead) => {
-            // Check if lead was created/added today
-            const isToday = (() => {
-              if (!lead.createdAt) return false;
-              try {
-                const d = new Date(lead.createdAt);
-                if (isNaN(d.getTime())) return false;
-                const now = new Date();
-                return (
-                  d.getDate() === now.getDate() &&
-                  d.getMonth() === now.getMonth() &&
-                  d.getFullYear() === now.getFullYear()
-                );
-              } catch (_) {
-                return false;
-              }
-            })();
+            // Keep TODAY visible until midnight in the configured U.S. business timezone.
+            const isToday = wasCreatedTodayInBusinessTimeZone(
+              lead.createdAt,
+              config.timeZone || 'America/New_York'
+            );
             const isThumbtackTest =
               String(lead.leadSource || lead.webhookSource || '').trim().toLowerCase() === 'thumbtack' &&
               /test customer|test lead/i.test(String(lead.clientName || ''));
