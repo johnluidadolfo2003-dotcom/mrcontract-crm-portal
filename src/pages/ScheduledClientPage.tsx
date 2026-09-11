@@ -799,13 +799,13 @@ export const ScheduledClientPage: React.FC = () => {
  <td className="p-3.5">
  <select
  value={client.status}
+ onPointerDown={(e) => e.stopPropagation()}
  onClick={(e) => e.stopPropagation()}
  onChange={(e) => {
  e.stopPropagation();
  void handleStatusChange(client.id, e.target.value);
  }}
- disabled={statusUpdatingId === client.id}
- className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#FF5500] cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+ className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#FF5500] cursor-pointer"
  >
  <option value="Meeting Scheduled">Meeting Scheduled</option>
  <option value="Scheduled">Scheduled</option>
@@ -1057,13 +1057,13 @@ export const ScheduledClientPage: React.FC = () => {
  </span>
  <select
  value={client.status}
+ onPointerDown={(e) => e.stopPropagation()}
  onClick={(e) => e.stopPropagation()}
  onChange={(e) => {
  e.stopPropagation();
  void handleStatusChange(client.id, e.target.value);
  }}
- disabled={statusUpdatingId === client.id}
- className="px-3 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-black text-zinc-900 dark:text-white cursor-pointer focus:outline-none focus:border-[#FF5500] disabled:opacity-50 disabled:cursor-wait"
+ className="px-3 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-black text-zinc-900 dark:text-white cursor-pointer focus:outline-none focus:border-[#FF5500]"
  >
  {LEAD_STATUS_OPTIONS.map((opt) => (
  <option key={opt} value={opt}>
