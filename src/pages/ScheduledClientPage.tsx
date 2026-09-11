@@ -525,39 +525,80 @@ export const ScheduledClientPage: React.FC = () => {
  setTimeout(() => setSuccessMessage(null), 3000);
  };
 
- const handleStatusChange = async (id: string, newStatus: string) => {
- const target = scheduledClients.find((c) => c.id === id);
+ const handleStatusChange = async (target: ScheduledClientRecord, newStatus: string) => {
  if (!target || target.status === newStatus) return;
 
- // Save to the CRM immediately so the dropdown never reverts while the
- // spreadsheet request is still running.
- updateScheduledClientStatus(id, newStatus);
- setScheduledClients((current) =>
- current.map((client) => (client.id === id ? { ...client, status: newStatus } : client))
- );
-
  try {
- if (config.spreadsheetId) {
- await updateLeadStatusInSpreadsheet(
+ if (!config.spreadsheetId) {
+ throw new Error('Google Sheets is not configured, so this lead cannot be moved to another status.');
+ }
+
+ const sourceTab = (
+ target.leadSource &&
+ target.leadSource.trim().toLowerCase() !== 'google calendar'
+ ? target.leadSource
+ : config.sheetTabName || 'Angi'
+ ).trim();
+
+ const updatedExistingRow = await updateLeadStatusInSpreadsheet(
  undefined,
- config.spreadsheetId!,
+ config.spreadsheetId,
  {
  clientName: target.clientName,
  clientPhone: target.clientPhone,
  clientEmail: target.clientEmail,
- tabName: target.leadSource,
+ tabName: sourceTab,
  rowIndex: target.rowIndex,
  statusColIndex: target.statusColIndex,
  },
  newStatus
  );
+
+ // Calendar-only appointments do not always have a lead row yet. Create one
+ // with the selected status so it is visible in the matching CRM section.
+ if (!updatedExistingRow) {
+ await appendAppointmentToSheet(
+ undefined,
+ config.spreadsheetId,
+ sourceTab,
+ {
+ clientName: target.clientName,
+ clientPhone: target.clientPhone,
+ clientEmail: target.clientEmail,
+ address: target.address,
+ serviceNeeded: target.serviceNeeded,
+ leadSource: sourceTab,
+ leadType: target.leadType || target.serviceNeeded || 'Direct',
+ appointmentDate: target.appointmentDate,
+ startTime: target.startTime,
+ endTime: target.endTime,
+ salespersonCode: target.salespersonCode || '',
+ salespersonName: target.salespersonName,
+ notes: target.notes,
+ },
+ newStatus
+ );
  }
- setSuccessMessage("Status saved");
+
+ const remainsScheduled = isMeetingScheduledStatus(newStatus, sourceTab);
+ updateScheduledClientStatus(target.id, newStatus);
+ if (!remainsScheduled) {
+ deleteScheduledClient(target.id);
+ setScheduledClients((current) => current.filter((client) => client.id !== target.id));
+ } else {
+ setScheduledClients((current) =>
+ current.map((client) => (client.id === target.id ? { ...client, status: newStatus } : client))
+ );
+ }
+
+ invalidateSpreadsheetCache(config.spreadsheetId);
+ window.dispatchEvent(new CustomEvent('mrcontract_data_synced'));
+ setSuccessMessage(`Moved to ${newStatus}`);
  } catch (e: any) {
- console.warn('Could not sync status to Google Sheets:', e);
- setSuccessMessage("Status saved in CRM; Google Sheets will retry on the next sync.");
+ console.warn('Could not move scheduled lead to the selected status:', e);
+ setSuccessMessage(e.message || 'Unable to move this lead. Please try again.');
  } finally {
- setTimeout(() => setSuccessMessage(null), 4000);
+ setTimeout(() => setSuccessMessage(null), 4500);
  }
  };
 
@@ -799,7 +840,7 @@ export const ScheduledClientPage: React.FC = () => {
  onClick={(e) => e.stopPropagation()}
  onChange={(e) => {
  e.stopPropagation();
- void handleStatusChange(client.id, e.target.value);
+ void handleStatusChange(client, e.target.value);
  }}
  className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#FF5500] cursor-pointer"
  >
@@ -1057,7 +1098,7 @@ export const ScheduledClientPage: React.FC = () => {
  onClick={(e) => e.stopPropagation()}
  onChange={(e) => {
  e.stopPropagation();
- void handleStatusChange(client.id, e.target.value);
+ void handleStatusChange(client, e.target.value);
  }}
  className="px-3 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-black text-zinc-900 dark:text-white cursor-pointer focus:outline-none focus:border-[#FF5500]"
  >
