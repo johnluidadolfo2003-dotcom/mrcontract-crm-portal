@@ -34,6 +34,19 @@ const STORAGE_KEY = 'mr_contract_scheduled_clients_v2';
 const EVENT_KEY = 'scheduled_clients_updated';
 const REP_OVERRIDES_STORAGE_KEY = 'mrcontract_representative_overrides';
 
+/** Keeps newly scheduled appointments at the top of every Meeting Scheduled view. */
+export function sortScheduledClientsNewestFirst(records: ScheduledClientRecord[]): ScheduledClientRecord[] {
+ const timestampFor = (record: ScheduledClientRecord): number => {
+  const createdAt = Date.parse(record.createdAt || '');
+  if (Number.isFinite(createdAt)) return createdAt;
+
+  const scheduledAt = Date.parse((record.appointmentDate || '') + 'T' + (record.startTime || '00:00') + ':00');
+  return Number.isFinite(scheduledAt) ? scheduledAt : 0;
+ };
+
+ return [...records].sort((a, b) => timestampFor(b) - timestampFor(a));
+}
+
 export function getRepresentativeOverrides(): Record<string, { salespersonCode: string; salespersonName: string }> {
  try {
  const raw = localStorage.getItem(REP_OVERRIDES_STORAGE_KEY);
@@ -580,7 +593,7 @@ export function getScheduledClients(calendarEvents?: any[]): ScheduledClientReco
       });
     }
 
-    return finalCleanList;
+    return sortScheduledClientsNewestFirst(finalCleanList);
  } catch (e) {
  console.error('Error reading scheduled clients:', e);
  return [];
@@ -591,7 +604,7 @@ export function saveScheduledClientsList(list: ScheduledClientRecord[]): void {
  try {
  const finalIdSet = new Set<string>();
  const deduplicatedList: ScheduledClientRecord[] = [];
- list.forEach((rec, idx) => {
+ sortScheduledClientsNewestFirst(list).forEach((rec, idx) => {
  if (!rec.id || finalIdSet.has(rec.id)) {
  rec.id = `sched_${(rec.clientName || 'client').replace(/\s+/g, '')}_${idx}_${Math.random().toString(36).substring(2, 6)}`;
  }
