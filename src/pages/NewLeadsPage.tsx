@@ -70,15 +70,15 @@ const wasCreatedTodayInBusinessTimeZone = (createdAt?: string, timeZone = 'Ameri
   // Google Sheets can return timestamps without a timezone, for example
   // "9/14/2026 10:30:00 AM". That is a business-calendar date, so compare its
   // written date directly instead of letting each laptop interpret it locally.
-  const hasExplicitOffset = /(?:Z|[+-]\\d{2}:?\\d{2})$/i.test(rawCreatedAt);
+  const hasExplicitOffset = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(rawCreatedAt);
   if (!hasExplicitOffset) {
-   const isoDate = rawCreatedAt.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})(?:$|[T\\s])/);
+   const isoDate = rawCreatedAt.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:$|[T\s])/);
    if (isoDate) {
     const dateKey = `${isoDate[1]}-${isoDate[2].padStart(2, '0')}-${isoDate[3].padStart(2, '0')}`;
     return dateKey === todayKey;
    }
 
-   const usDate = rawCreatedAt.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})(?:$|[T\\s])/);
+   const usDate = rawCreatedAt.match(/^(\d{1,2})\\/(\d{1,2})\\/(\d{4})(?:$|[T\s])/);
    if (usDate) {
     const dateKey = `${usDate[3]}-${usDate[1].padStart(2, '0')}-${usDate[2].padStart(2, '0')}`;
     return dateKey === todayKey;
