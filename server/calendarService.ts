@@ -12,19 +12,39 @@ export interface CalendarAuthInfo {
 }
 
 export function resolveCalendarId(reqCalendarId?: string): string {
-  if (reqCalendarId && reqCalendarId.trim() && reqCalendarId.trim() !== 'null' && reqCalendarId.trim() !== 'undefined') {
-    return reqCalendarId.trim();
-  }
+  const requestedCalendarId = reqCalendarId?.trim();
   const envCalendarId = (
     process.env.GOOGLE_CALENDAR_ID ||
     process.env.GOOGLE_CALENDAR_EMAIL ||
     process.env.GOOGLE_CALENDAR ||
     ''
   ).trim();
-  if (envCalendarId) {
-    return envCalendarId;
+
+  const selectedCalendarId = requestedCalendarId && requestedCalendarId !== 'null' && requestedCalendarId !== 'undefined'
+    ? requestedCalendarId
+    : envCalendarId || 'primary';
+
+  // A normal account email identifies the same calendar as `primary` when the
+  // backend uses that account's OAuth refresh token. Using `primary` avoids a
+  // misleading Google 404 after the account is re-authorized or its password
+  // changes. Keep group/shared calendar IDs explicit.
+  const hasBackendOAuth = Boolean(
+    (process.env.GOOGLE_CALENDAR_REFRESH_TOKEN ||
+      process.env.GOOGLE_REFRESH_TOKEN ||
+      process.env.GOOGLE_OAUTH_REFRESH_TOKEN ||
+      '').trim()
+  );
+  const isAccountEmail = /^[^\s@]+@[^\s@]+$/i.test(selectedCalendarId) &&
+    !selectedCalendarId.toLowerCase().endsWith('@group.calendar.google.com');
+  const isConfiguredBackendCalendar = !requestedCalendarId ||
+    !envCalendarId ||
+    selectedCalendarId.toLowerCase() === envCalendarId.toLowerCase();
+
+  if (hasBackendOAuth && isAccountEmail && isConfiguredBackendCalendar) {
+    return 'primary';
   }
-  return 'primary';
+
+  return selectedCalendarId;
 }
 
 /**
