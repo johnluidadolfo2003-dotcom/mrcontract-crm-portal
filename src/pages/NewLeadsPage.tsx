@@ -894,7 +894,13 @@ export const NewLeadsPage: React.FC = () => {
  </tr>
  </thead>
  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium">
- {filteredLeads.map((lead) => (
+ {filteredLeads.map((lead) => {
+ const isToday = wasCreatedTodayInBusinessTimeZone(
+  lead.createdAt,
+  config.timeZone || 'America/New_York'
+ );
+
+ return (
  <tr
                 key={lead.id}
                 onClick={() => handleOpenLead(lead)}
@@ -906,6 +912,11 @@ export const NewLeadsPage: React.FC = () => {
  <User className="w-3.5 h-3.5 text-[#FF5500]" />
  </div>
  <span className="hover:text-[#FF5500] transition-colors">{lead.clientName}</span>
+ {isToday && (
+  <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-[#FF5500] text-white shadow-xs">
+   TODAY
+  </span>
+ )}
  </div>
  </td>
  <td className="py-3 px-4 whitespace-nowrap">{lead.clientPhone || '—'}</td>
@@ -970,7 +981,8 @@ export const NewLeadsPage: React.FC = () => {
                   </div>
                 </td>
  </tr>
- ))}
+ );
+ })}
  </tbody>
  </table>
  </div>
