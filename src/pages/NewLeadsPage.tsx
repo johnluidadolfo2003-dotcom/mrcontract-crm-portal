@@ -60,13 +60,46 @@ const getDateKeyInTimeZone = (date: Date, timeZone: string): string => {
 
 const wasCreatedTodayInBusinessTimeZone = (createdAt?: string, timeZone = 'America/New_York'): boolean => {
  if (!createdAt) return false;
- const created = new Date(createdAt);
- if (Number.isNaN(created.getTime())) return false;
+
+ const rawCreatedAt = String(createdAt).trim();
+ if (!rawCreatedAt) return false;
 
  try {
-  return getDateKeyInTimeZone(created, timeZone) === getDateKeyInTimeZone(new Date(), timeZone);
+  const todayKey = getDateKeyInTimeZone(new Date(), timeZone);
+
+  // Google Sheets can return timestamps without a timezone, for example
+  // "9/14/2026 10:30:00 AM". That is a business-calendar date, so compare its
+  // written date directly instead of letting each laptop interpret it locally.
+  const hasExplicitOffset = /(?:Z|[+-]\\d{2}:?\\d{2})$/i.test(rawCreatedAt);
+  if (!hasExplicitOffset) {
+   const isoDate = rawCreatedAt.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})(?:$|[T\\s])/);
+   if (isoDate) {
+    const dateKey = `${isoDate[1]}-${isoDate[2].padStart(2, '0')}-${isoDate[3].padStart(2, '0')}`;
+    return dateKey === todayKey;
+   }
+
+   const usDate = rawCreatedAt.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})(?:$|[T\\s])/);
+   if (usDate) {
+    const dateKey = `${usDate[3]}-${usDate[1].padStart(2, '0')}-${usDate[2].padStart(2, '0')}`;
+    return dateKey === todayKey;
+   }
+  }
+
+  // ISO timestamps containing Z or an offset represent an exact instant and
+  // must be converted into the configured U.S. business timezone.
+  const created = new Date(rawCreatedAt);
+  if (Number.isNaN(created.getTime())) return false;
+  return getDateKeyInTimeZone(created, timeZone) === todayKey;
  } catch {
-  return false;
+  // The CRM defaults to Eastern Time if an older saved timezone is invalid.
+  try {
+   const created = new Date(rawCreatedAt);
+   return !Number.isNaN(created.getTime()) &&
+    getDateKeyInTimeZone(created, 'America/New_York') ===
+    getDateKeyInTimeZone(new Date(), 'America/New_York');
+  } catch {
+   return false;
+  }
  }
 };
 
