@@ -515,9 +515,34 @@ export const ScheduledClientPage: React.FC = () => {
  let calResult = null;
  // Publish to Google Calendar
  try {
+ let targetEventId = editingClient?.calendarEventId || '';
+ if (editingClient) {
+  const now = Date.now();
+  const freshEvents = await fetchGoogleCalendarEvents({
+   calendarId: config.calendarId,
+   timeMin: new Date(now - 730 * 86400000).toISOString(),
+   timeMax: new Date(now + 730 * 86400000).toISOString(),
+  });
+  if (getCalendarSyncStatus().status !== 'success') {
+   throw new Error('Calendar could not be verified. Refresh Calendar before editing this appointment.');
+  }
+  const matchedEvent = matchCalendarEventForLead(
+   editingClient.clientName,
+   editingClient.clientPhone,
+   editingClient.clientEmail,
+   freshEvents,
+   config,
+   editingClient.address,
+   targetEventId
+  );
+  targetEventId = matchedEvent?.event?.id || targetEventId;
+  if (!targetEventId) {
+   throw new Error('The existing Calendar appointment could not be identified. No duplicate event was created.');
+  }
+ }
  const payload = buildEventPayload(formData, config);
- calResult = editingClient?.calendarEventId
- ? await updateGoogleCalendarEvent(editingClient.calendarEventId, payload, config.calendarId)
+ calResult = targetEventId
+ ? await updateGoogleCalendarEvent(targetEventId, payload, config.calendarId)
  : await createGoogleCalendarEvent(payload, config.calendarId);
  } catch (calErr: any) {
  console.warn('Google Calendar sync notice:', calErr);
@@ -525,6 +550,11 @@ export const ScheduledClientPage: React.FC = () => {
  setErrorMessage('This salesperson already has an appointment at this time.');
  setIsSubmitting(false);
  return;
+ }
+ if (editingClient) {
+  setErrorMessage(calErr?.message || 'The existing Calendar appointment could not be updated.');
+  setIsSubmitting(false);
+  return;
  }
  }
 
