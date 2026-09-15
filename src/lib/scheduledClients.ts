@@ -490,7 +490,7 @@ export function getScheduledClients(calendarEvents?: any[]): ScheduledClientReco
  }
 
  const rep = resolveSalespersonForLead(r, config, repOverrides);
- const statusChangedAt = getStatusOverrideTimestamp(tabKey, r.rowIndex, r.clientName);
+ const statusChangedAt = getStatusOverrideTimestamp(r.tabName || r.leadSource || 'tab', r.rowIndex, r.clientName);
 
  const schedRecord: ScheduledClientRecord = {
  id: uniqueId,
