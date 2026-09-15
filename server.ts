@@ -1014,10 +1014,6 @@ async function parseIncomingLeadPayload(body: any, defaultSource: string = 'Angi
       clientName = `${fn} ${ln}`.trim();
     }
   }
-  if (!clientName) {
-    clientName = `New ${defaultSource} Lead`;
-  }
-
   // Normalize all-caps name (e.g. "JAN MCCOY" -> "Jan McCoy")
   if (clientName && clientName === clientName.toUpperCase() && clientName.length > 3) {
     clientName = clientName
@@ -1388,11 +1384,24 @@ function isAutoSendToHouzzEnabled(): boolean {
   return false;
 }
 
+function isGeneratedPlaceholderLeadName(value: unknown): boolean {
+  const name = String(value || '').trim();
+  return /^new\s+.+\s+lead$/i.test(name) || /^unnamed\s+client$/i.test(name);
+}
+
 function saveIncomingLeadAndLog(
   parsed: any,
   req: express.Request,
   options: { skipAutoSheet?: boolean; skipAutoHouzz?: boolean } = {}
 ) {
+  const clientName = String(parsed?.clientName || '').trim();
+  if (!clientName || isGeneratedPlaceholderLeadName(clientName)) {
+    const validationError: any = new Error('Customer name could not be extracted. No CRM lead was created.');
+    validationError.status = 422;
+    throw validationError;
+  }
+  parsed.clientName = clientName;
+
   const dataDir = path.join(process.cwd(), 'data');
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
@@ -1616,7 +1625,7 @@ app.post('/api/webhooks/angi', async (req, res) => {
     });
   } catch (err: any) {
     console.error('Error processing Angi webhook:', err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(err.status || 500).json({ success: false, error: err.message });
   }
 });
 
@@ -1644,7 +1653,7 @@ app.post('/api/webhooks/thumbtack', async (req, res) => {
     });
   } catch (err: any) {
     console.error('Error processing Thumbtack webhook:', err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(err.status || 500).json({ success: false, error: err.message });
   }
 });
 
@@ -1672,7 +1681,7 @@ app.post('/api/webhooks/incoming-lead', async (req, res) => {
     });
   } catch (err: any) {
     console.error('Error processing incoming lead webhook:', err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(err.status || 500).json({ success: false, error: err.message });
   }
 });
 
@@ -1693,13 +1702,14 @@ app.post('/api/webhooks/parse-email', async (req, res) => {
 
     return res.json({ success: true, parsed, created: false });
   } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(err.status || 500).json({ success: false, error: err.message });
   }
 });
 
 function isExampleOrTestLead(lead: any): boolean {
   if (!lead) return false;
   const name = (lead.clientName || '').trim().toLowerCase();
+  if (isGeneratedPlaceholderLeadName(name)) return true;
   const source = String(lead.leadSource || lead.webhookSource || '').trim().toLowerCase();
 
   // Thumbtack's official test delivery must remain visible so administrators
@@ -1825,6 +1835,7 @@ async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
   for (const row of result.rows || []) {
     const status = String(row.status || 'New').trim().toLowerCase();
     if (!['new', 'new lead', 'active', 'uncontacted', 'pending', 'new inquiry'].includes(status)) continue;
+    if (isGeneratedPlaceholderLeadName(row.clientName)) continue;
     const sheetLead = {
       id: `sheet_${encodeURIComponent(row.tabName || row.leadSource || 'Other')}_${row.rowIndex}`,
       createdAt: row.timestamp || new Date(0).toISOString(),
