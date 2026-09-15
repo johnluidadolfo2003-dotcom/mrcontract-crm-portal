@@ -87,6 +87,7 @@ export const ScheduledClientPage: React.FC = () => {
  const [calSyncStatus, setCalSyncStatus] = useState<CalendarSyncStatus>(getCalendarSyncStatus);
  const [calendarVerifiedAt, setCalendarVerifiedAt] = useState<string | null>(null);
  const reconciledCalendarRows = useRef<Set<string>>(new Set());
+ const calendarLoadInFlight = useRef(false);
 
  // Salesperson directory options from config only (excluding workers/users)
   const representativeOptions = useMemo(() => {
@@ -105,6 +106,8 @@ export const ScheduledClientPage: React.FC = () => {
 
  // Fetch Google Calendar events to populate exact appointment dates & times
  const loadCalendarEvents = async (showToast = false) => {
+ if (calendarLoadInFlight.current) return;
+ calendarLoadInFlight.current = true;
  setIsSyncingCalendar(true);
  try {
  const validDates = scheduledClients
@@ -116,10 +119,13 @@ export const ScheduledClientPage: React.FC = () => {
  const timeMax = new Date(Math.max(now + 365 * day, ...(validDates.length ? validDates.map((value) => value + 7 * day) : [now]))).toISOString();
  const events = await fetchGoogleCalendarEvents({ calendarId: config.calendarId, timeMin, timeMax });
  setCalendarEvents(events);
- setScheduledClients(getScheduledClients(events));
+ const refreshedClients = getScheduledClients(events);
+ saveScheduledClientsList(refreshedClients);
+ setScheduledClients(refreshedClients);
  const freshStatus = getCalendarSyncStatus();
  setCalSyncStatus(freshStatus);
  if (freshStatus.status === 'success') {
+  reconciledCalendarRows.current.clear();
   setCalendarVerifiedAt(freshStatus.lastSyncAt || new Date().toISOString());
  }
 
@@ -141,6 +147,7 @@ export const ScheduledClientPage: React.FC = () => {
  setTimeout(() => setErrorMessage(null), 4000);
  }
  } finally {
+ calendarLoadInFlight.current = false;
  setIsSyncingCalendar(false);
  }
  };
@@ -152,6 +159,14 @@ export const ScheduledClientPage: React.FC = () => {
  const handleAuthChange = () => {
  if (isMounted) loadCalendarEvents();
  };
+
+ const handleVisibilityChange = () => {
+  if (isMounted && document.visibilityState === 'visible') loadCalendarEvents();
+ };
+
+ const calendarRefreshInterval = window.setInterval(() => {
+  if (isMounted && document.visibilityState === 'visible') loadCalendarEvents();
+ }, 60000);
 
  const handleCalendarEventsUpdated = (e: any) => {
  if (isMounted) {
@@ -170,15 +185,22 @@ export const ScheduledClientPage: React.FC = () => {
 
  window.addEventListener('google_auth_updated', handleAuthChange);
  window.addEventListener('dashboard_data_refresh', handleAuthChange);
+ window.addEventListener('mrcontract_data_synced', handleAuthChange);
+ window.addEventListener('focus', handleAuthChange);
  window.addEventListener('calendar_events_updated', handleCalendarEventsUpdated);
  window.addEventListener('calendar_sync_status_changed', handleSyncStatusChange);
+ document.addEventListener('visibilitychange', handleVisibilityChange);
 
  return () => {
  isMounted = false;
  window.removeEventListener('google_auth_updated', handleAuthChange);
  window.removeEventListener('dashboard_data_refresh', handleAuthChange);
+ window.removeEventListener('mrcontract_data_synced', handleAuthChange);
+ window.removeEventListener('focus', handleAuthChange);
  window.removeEventListener('calendar_events_updated', handleCalendarEventsUpdated);
  window.removeEventListener('calendar_sync_status_changed', handleSyncStatusChange);
+ document.removeEventListener('visibilitychange', handleVisibilityChange);
+ window.clearInterval(calendarRefreshInterval);
  };
  }, []);
 
