@@ -215,9 +215,12 @@ export const ScheduledClientPage: React.FC = () => {
 
 			if (!repCode) {
 				const scanText = `${client.clientName || ''} ${client.notes || ''} ${client.serviceNeeded || ''}`;
-				const codeMatch = scanText.match(/(?:[-–—:]\s*|\(|\b)(DG|SB|DK|JR|JC|EP)\b/i);
-				if (codeMatch && codeMatch[1]) {
-					repCode = codeMatch[1].toUpperCase();
+				const scanTokens = new Set(scanText.toUpperCase().split(/[^A-Z0-9_-]+/).filter(Boolean));
+				const configuredCode = (config.salespeople || []).find((salesperson) =>
+					scanTokens.has(String(salesperson.code || '').trim().toUpperCase())
+				);
+				if (configuredCode) {
+					repCode = configuredCode.code;
 				}
 			}
 
