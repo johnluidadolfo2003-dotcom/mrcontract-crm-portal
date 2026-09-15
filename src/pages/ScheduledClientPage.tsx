@@ -45,8 +45,8 @@ import { useUser } from '../lib/userContext';
 import { AppConfig, AppointmentFormData, LEAD_STATUS_OPTIONS } from '../types';
 import { loadAppConfig, saveAppConfig, DEFAULT_LEAD_SOURCES, isLeadSourceTab } from '../config';
 import { formatPhoneNumber, isMeetingScheduledStatus } from '../lib/utils';
-import { buildEventPayload, createGoogleCalendarEvent, fetchGoogleCalendarEvents, getCachedCalendarEvents, matchCalendarEventForLead, parseCalendarEventToFormData, formatTime12Hour, formatAppointmentDateTime, formatAppointmentDateNice, getCalendarSyncStatus, CalendarSyncStatus } from '../lib/calendar';
-import { appendAppointmentToSheet, updateLeadStatusInSpreadsheet, readAllSpreadsheetTabs, getSpreadsheetDetails, invalidateSpreadsheetCache } from '../lib/sheets';
+import { buildEventPayload, createGoogleCalendarEvent, updateGoogleCalendarEvent, fetchGoogleCalendarEvents, getCachedCalendarEvents, matchCalendarEventForLead, formatTime12Hour, formatAppointmentDateTime, formatAppointmentDateNice, getCalendarSyncStatus, CalendarSyncStatus } from '../lib/calendar';
+import { appendAppointmentToSheet, updateLeadInSpreadsheet, updateLeadStatusInSpreadsheet, readAllSpreadsheetTabs, getSpreadsheetDetails, invalidateSpreadsheetCache } from '../lib/sheets';
 import { sendLeadToHouzzPro } from '../lib/houzz';
 
 const CALENDAR_STATUS_OVERRIDES_KEY = 'mrcontract_calendar_status_overrides';
@@ -236,56 +236,10 @@ export const ScheduledClientPage: React.FC = () => {
 			};
 		});
 
-		// Also include calendar-only events so that appointments on Google Calendar are rendered
-		const matchedEventIds = new Set<string>();
-		updated.forEach((c) => {
-			if (c.calendarEventId) matchedEventIds.add(c.calendarEventId);
-		});
-
-		const calendarOnlyRecords: ScheduledClientRecord[] = [];
-		if (calendarEvents && Array.isArray(calendarEvents)) {
-			calendarEvents.forEach((event, eIdx) => {
-				if (!event || event.status === 'cancelled') return;
-				if (event.id && matchedEventIds.has(event.id)) return;
-
-				const { formData } = parseCalendarEventToFormData(event, config);
-				const movedStatus = getCalendarStatusOverride(event.id);
-				if (
-					movedStatus &&
-					!isMeetingScheduledStatus(movedStatus, formData.leadSource || 'Google Calendar')
-				) return;
-				if (formData.clientName && formData.clientName.trim() && !/^(interview|assistant|meeting|call)/i.test(formData.clientName)) {
-					const resolved = normalizeRep(formData.salespersonCode || formData.salespersonName);
-					calendarOnlyRecords.push({
-						id: `gcal_${event.id || eIdx}`,
-						createdAt: event.created || new Date().toISOString(),
-						clientName: formData.clientName,
-						clientPhone: formData.clientPhone || '',
-						clientEmail: formData.clientEmail || '',
-						address: formData.address || '',
-						serviceNeeded: formData.serviceNeeded || 'Service details needed',
-						appointmentDate: formData.appointmentDate,
-						startTime: formData.startTime,
-						endTime: formData.endTime,
-						salespersonCode: resolved.code,
-						salespersonName: resolved.name,
-						leadSource: formData.leadSource || 'Google Calendar',
-						leadType: formData.leadType || 'Direct',
-						notes: formData.notes || '',
-						status: 'Meeting Scheduled',
-						calendarEventId: event.id,
-						calendarHtmlLink: event.htmlLink,
-						origin: 'gcal_sync',
-					});
-				}
-			});
-		}
-
-		const combined = [...updated, ...calendarOnlyRecords];
 		const seenIds = new Set<string>();
 		const deduplicatedResult: ScheduledClientRecord[] = [];
 
-		combined.forEach((c, idx) => {
+		updated.forEach((c, idx) => {
 			let uniqueId = c.id;
 			if (!uniqueId || seenIds.has(uniqueId)) {
 				uniqueId = `${c.id || 'client'}_${idx}_${Math.random().toString(36).substring(2, 5)}`;
@@ -470,7 +424,9 @@ export const ScheduledClientPage: React.FC = () => {
  // Publish to Google Calendar
  try {
  const payload = buildEventPayload(formData, config);
- calResult = await createGoogleCalendarEvent(payload, config.calendarId);
+ calResult = editingClient?.calendarEventId
+ ? await updateGoogleCalendarEvent(editingClient.calendarEventId, payload, config.calendarId)
+ : await createGoogleCalendarEvent(payload, config.calendarId);
  } catch (calErr: any) {
  console.warn('Google Calendar sync notice:', calErr);
  if (calErr?.message?.includes('already has an appointment')) {
@@ -484,14 +440,30 @@ export const ScheduledClientPage: React.FC = () => {
  let sheetOk = false;
  if (config.spreadsheetId) {
  try {
- await appendAppointmentToSheet(
- undefined,
- config.spreadsheetId!,
- config.sheetTabName || 'Appointments',
- formData,
- formData.status || 'Meeting Scheduled'
- );
- sheetOk = true;
+ if (editingClient) {
+  sheetOk = await updateLeadInSpreadsheet(undefined, config.spreadsheetId, {
+   tabName: editingClient.leadSource || config.sheetTabName || 'Angi',
+   rowIndex: editingClient.rowIndex,
+   clientName: formData.clientName.trim(),
+   clientPhone: formData.clientPhone.trim(),
+   clientEmail: formData.clientEmail.trim(),
+   address: formData.address.trim(),
+   serviceNeeded: formData.serviceNeeded?.trim(),
+   status: formData.status || editingClient.status || 'Meeting Scheduled',
+   notes: formData.notes.trim(),
+  });
+ }
+
+ if (!editingClient || !sheetOk) {
+  await appendAppointmentToSheet(
+   undefined,
+   config.spreadsheetId,
+   config.sheetTabName || 'Appointments',
+   formData,
+   formData.status || 'Meeting Scheduled'
+  );
+  sheetOk = true;
+ }
  } catch (sheetErr) {
  console.warn('Google Sheets append notice:', sheetErr);
  }
