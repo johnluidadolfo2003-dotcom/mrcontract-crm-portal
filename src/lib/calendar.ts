@@ -800,6 +800,31 @@ export function formatAppointmentDateTime(dateStr?: string, startTimeStr?: strin
  return niceDate;
 }
 
+
+function isNameTokenWithinOneEdit(a: string, b: string): boolean {
+ if (a === b) return true;
+ if (Math.abs(a.length - b.length) > 1 || Math.min(a.length, b.length) < 3) return false;
+ let i = 0;
+ let j = 0;
+ let edits = 0;
+ while (i < a.length && j < b.length) {
+  if (a[i] === b[j]) {
+   i++;
+   j++;
+   continue;
+  }
+  edits++;
+  if (edits > 1) return false;
+  if (a.length > b.length) i++;
+  else if (b.length > a.length) j++;
+  else {
+   i++;
+   j++;
+  }
+ }
+ if (i < a.length || j < b.length) edits++;
+ return edits <= 1;
+}
 export function matchCalendarEventForLead(
  clientName?: string,
  clientPhone?: string,
@@ -861,6 +886,7 @@ export function matchCalendarEventForLead(
  const location = (event.location || '').toLowerCase();
  const allText = `${summary} ${description} ${location}`;
  const allTextDigits = allText.replace(/\D/g, '');
+ const eventNameTokens = allText.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
 
  let score = 0;
  const matchReasons: string[] = [];
@@ -913,7 +939,13 @@ export function matchCalendarEventForLead(
  matchReasons.push('name_all_tokens');
  } else {
  const lastName = nameTokens[nameTokens.length - 1];
- if (lastName.length >= 4 && (summary.includes(lastName) || description.includes(lastName))) {
+ const firstName = nameTokens[0];
+ const closeFirstName = eventNameTokens.some((token) => isNameTokenWithinOneEdit(firstName, token));
+ const closeLastName = eventNameTokens.some((token) => isNameTokenWithinOneEdit(lastName, token));
+ if (nameTokens.length >= 2 && closeFirstName && closeLastName) {
+ score += 65;
+ matchReasons.push('name_close');
+ } else if (lastName.length >= 4 && (summary.includes(lastName) || description.includes(lastName))) {
  score += 35;
  matchReasons.push('name_last');
  }
