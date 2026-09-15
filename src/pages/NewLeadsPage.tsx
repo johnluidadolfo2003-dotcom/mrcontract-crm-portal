@@ -78,9 +78,10 @@ const wasCreatedTodayInBusinessTimeZone = (createdAt?: string, timeZone = 'Ameri
     return dateKey === todayKey;
    }
 
-   const usDate = rawCreatedAt.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:$|[T\s])/);
+   const usDate = rawCreatedAt.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})(?:$|[T,\s])/);
    if (usDate) {
-    const dateKey = `${usDate[3]}-${usDate[1].padStart(2, '0')}-${usDate[2].padStart(2, '0')}`;
+    const year = usDate[3].length === 2 ? `20${usDate[3]}` : usDate[3];
+    const dateKey = `${year}-${usDate[1].padStart(2, '0')}-${usDate[2].padStart(2, '0')}`;
     return dateKey === todayKey;
    }
   }
