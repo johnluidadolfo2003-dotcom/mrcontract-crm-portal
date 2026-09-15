@@ -450,7 +450,7 @@ export function extractSalesperson(payloadOrEvent: any): string {
 
     // 1. Direct regex for standard salesperson codes like DG, SB, DK, JR, JC, EP
     // Matches trailing "- DG", "- SB", "- DG (Notes)", "(DG)", "(SB)" etc.
-    const directCodeMatch = cleanSum.match(/(?:[-–—:]\s*|\(|\b)(DG|SB|DK|JR|JC|EP)\b(?:\s*[\)\]\}]|\s*\(|\s*$)/i);
+    const directCodeMatch = cleanSum.match(/(?:[-–—:]\s*|\(|\b)(DG|SB|JS|BK|DK|JR|JC|EP)\b(?:\s*[\)\]\}]|\s*\(|\s*$)/i);
     if (directCodeMatch && directCodeMatch[1]) {
       return directCodeMatch[1].toUpperCase().trim();
     }
@@ -469,7 +469,7 @@ export function extractSalesperson(payloadOrEvent: any): string {
         // Check all parts for non-standard positioning
         for (let i = parts.length - 1; i >= 0; i--) {
           const partCand = parts[i].split(/[\(\[\{]/)[0].trim();
-          if (/^(DG|SB|DK|JR|JC|EP)$/i.test(partCand)) {
+          if (/^(DG|SB|JS|BK|DK|JR|JC|EP)$/i.test(partCand)) {
             return partCand.toUpperCase();
           }
         }
