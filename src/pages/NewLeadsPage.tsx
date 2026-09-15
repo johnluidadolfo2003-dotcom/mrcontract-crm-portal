@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
  UserPlus,
@@ -42,7 +42,9 @@ import {
  updateLeadStatusInSpreadsheet,
  updateLeadInSpreadsheet,
  SheetRowRecord,
+ getStatusOverrideTimestamp,
 } from '../lib/sheets';
+import { fetchGoogleCalendarEvents, getCalendarSyncStatus, matchCalendarEventForLead } from '../lib/calendar';
 import { LeadDrawer } from '../components/ui/LeadDrawer';
 import { sendThumbtackLeadToHouzz } from '../lib/webhooks';
 import { WebhookDiagnosticsModal } from '../components/WebhookDiagnosticsModal';
@@ -116,6 +118,7 @@ export const NewLeadsPage: React.FC = () => {
  const [leadToDelete, setLeadToDelete] = useState<NewLeadRecord | null>(null);
  const [isWebhookDiagOpen, setIsWebhookDiagOpen] = useState(false);
  const [syncIssue, setSyncIssue] = useState<{ message: string; details: string } | null>(null);
+ const recoveredCalendarLeads = useRef<Set<string>>(new Set());
 
   const config = loadAppConfig();
   const [selectedLeadForDrawer, setSelectedLeadForDrawer] = useState<SheetRowRecord | null>(null);
@@ -432,6 +435,84 @@ export const NewLeadsPage: React.FC = () => {
   document.removeEventListener('visibilitychange', handleVisibility);
  };
  }, []);
+
+ // One-time recovery for records incorrectly returned to New by the retired
+ // Calendar reconciliation. Restore only a strong, fresh appointment match.
+ useEffect(() => {
+  if (!config.spreadsheetId || leads.length === 0) return;
+  const unsafeReconciliationStartedAt = Date.parse('2026-09-15T15:51:18Z');
+  const candidates = leads.filter((lead) => {
+   const sourceTab = String((lead as any).tabName || lead.leadSource || '').trim();
+   const key = `${sourceTab}_${lead.rowIndex ?? ''}_${lead.clientName}`.toLowerCase();
+   if (recoveredCalendarLeads.current.has(key)) return false;
+   const changedAt = getStatusOverrideTimestamp(sourceTab, lead.rowIndex || 0, lead.clientName);
+   return Boolean(changedAt && changedAt >= unsafeReconciliationStartedAt);
+  });
+  if (candidates.length === 0) return;
+
+  let cancelled = false;
+  const recoverConfirmedAppointments = async () => {
+   const now = Date.now();
+   const events = await fetchGoogleCalendarEvents({
+    calendarId: config.calendarId,
+    timeMin: new Date(now - 730 * 86400000).toISOString(),
+    timeMax: new Date(now + 730 * 86400000).toISOString(),
+   });
+   if (cancelled || getCalendarSyncStatus().status !== 'success') return;
+
+   let restored = 0;
+   for (const lead of candidates) {
+    const sourceTab = String((lead as any).tabName || lead.leadSource || '').trim();
+    const key = `${sourceTab}_${lead.rowIndex ?? ''}_${lead.clientName}`.toLowerCase();
+    recoveredCalendarLeads.current.add(key);
+    const match = matchCalendarEventForLead(
+     lead.clientName,
+     lead.clientPhone,
+     lead.clientEmail,
+     events,
+     config,
+     lead.address
+    );
+    const strongMatch = /calendar_event_id|phone_10|email_|name_exact|name_all_tokens/.test(match?.matchType || '');
+    const eventText = `${match?.event?.summary || ''} ${match?.event?.description || ''}`;
+    const isAppointment = /\b(?:appt|appointment)\b/i.test(eventText);
+    if (!match || !strongMatch || !isAppointment || !sourceTab) continue;
+
+    try {
+     const updated = await updateLeadStatusInSpreadsheet(
+      undefined,
+      config.spreadsheetId,
+      {
+       clientName: lead.clientName,
+       clientPhone: lead.clientPhone,
+       clientEmail: lead.clientEmail,
+       tabName: sourceTab,
+       rowIndex: lead.rowIndex,
+       statusColIndex: lead.statusColIndex,
+      },
+      'Meeting Scheduled'
+     );
+     if (updated) {
+      updateNewLeadStatus(lead.id, 'Meeting Scheduled');
+      restored += 1;
+     }
+    } catch (error) {
+     recoveredCalendarLeads.current.delete(key);
+     console.warn('Could not restore confirmed Calendar appointment:', error);
+    }
+   }
+
+   if (!cancelled && restored > 0) {
+    await refreshLocalLeads(true);
+    window.dispatchEvent(new CustomEvent('dashboard_data_refresh'));
+    setSyncMsg(`${restored} confirmed Calendar appointment${restored === 1 ? '' : 's'} restored`);
+    setTimeout(() => setSyncMsg(null), 4500);
+   }
+  };
+
+  void recoverConfirmedAppointments();
+  return () => { cancelled = true; };
+ }, [leads, config.calendarId, config.spreadsheetId]);
 
  // Monitor for sync issues needing attention
  useEffect(() => {
