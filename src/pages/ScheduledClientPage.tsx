@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
  CalendarClock,
@@ -85,6 +85,8 @@ export const ScheduledClientPage: React.FC = () => {
  const [isSyncing, setIsSyncing] = useState(false);
  const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
  const [calSyncStatus, setCalSyncStatus] = useState<CalendarSyncStatus>(getCalendarSyncStatus);
+ const [calendarVerifiedAt, setCalendarVerifiedAt] = useState<string | null>(null);
+ const reconciledCalendarRows = useRef<Set<string>>(new Set());
 
  // Salesperson directory options from config only (excluding workers/users)
   const representativeOptions = useMemo(() => {
@@ -105,11 +107,21 @@ export const ScheduledClientPage: React.FC = () => {
  const loadCalendarEvents = async (showToast = false) => {
  setIsSyncingCalendar(true);
  try {
- const events = await fetchGoogleCalendarEvents(config.calendarId);
+ const validDates = scheduledClients
+  .map((client) => Date.parse(`${client.appointmentDate || ''}T12:00:00Z`))
+  .filter(Number.isFinite);
+ const now = Date.now();
+ const day = 86400000;
+ const timeMin = new Date(Math.min(now - 365 * day, ...(validDates.length ? validDates.map((value) => value - 7 * day) : [now]))).toISOString();
+ const timeMax = new Date(Math.max(now + 365 * day, ...(validDates.length ? validDates.map((value) => value + 7 * day) : [now]))).toISOString();
+ const events = await fetchGoogleCalendarEvents({ calendarId: config.calendarId, timeMin, timeMax });
  setCalendarEvents(events);
  setScheduledClients(getScheduledClients(events));
  const freshStatus = getCalendarSyncStatus();
  setCalSyncStatus(freshStatus);
+ if (freshStatus.status === 'success') {
+  setCalendarVerifiedAt(freshStatus.lastSyncAt || new Date().toISOString());
+ }
 
  if (showToast) {
  if (freshStatus.status === 'error') {
@@ -256,6 +268,92 @@ export const ScheduledClientPage: React.FC = () => {
 
 		return sortScheduledClientsNewestFirst(deduplicatedResult);
 	}, [scheduledClients, calendarEvents, config]);
+
+ // Reconcile only after a verified Calendar sync. A matching event supplies
+ // the salesperson. An unassigned Sheet lead is returned to New only when no
+ // active Calendar event matches it in the verified search window.
+ useEffect(() => {
+  if (!calendarVerifiedAt || calSyncStatus.status !== 'success' || isSyncingCalendar || !config.spreadsheetId) return;
+
+  const reconcile = async () => {
+   let changed = false;
+   for (const client of scheduledClients) {
+    const rowKey = `${client.leadSource || ''}_${client.rowIndex ?? ''}_${client.clientName || ''}`.toLowerCase();
+    if (reconciledCalendarRows.current.has(rowKey)) continue;
+
+    const matched = matchCalendarEventForLead(
+     client.clientName,
+     client.clientPhone,
+     client.clientEmail,
+     calendarEvents,
+     config,
+     client.address,
+     client.calendarEventId
+    );
+
+    if (matched?.formData?.salespersonCode && !client.salespersonCode) {
+     const rep = representativeOptions.find(
+      (option) => option.code.toUpperCase() === matched.formData.salespersonCode.toUpperCase()
+     );
+     if (rep) {
+      reconciledCalendarRows.current.add(rowKey);
+      updateScheduledClientSalesperson(
+       client.id,
+       rep.code,
+       rep.name,
+       client.clientName,
+       client.leadSource,
+       client.rowIndex
+      );
+      changed = true;
+      continue;
+     }
+    }
+
+    const isUnassigned = !String(client.salespersonCode || client.salespersonName || '').trim();
+    const isSheetLead = client.origin === 'spreadsheet_sync' && typeof client.rowIndex === 'number';
+    if (matched || !isUnassigned || !isSheetLead) {
+     reconciledCalendarRows.current.add(rowKey);
+     continue;
+    }
+
+    const sourceTab = String(client.leadSource || '').trim();
+    if (!sourceTab || sourceTab.toLowerCase() === 'google calendar') continue;
+
+    reconciledCalendarRows.current.add(rowKey);
+    try {
+     const moved = await updateLeadStatusInSpreadsheet(
+      undefined,
+      config.spreadsheetId,
+      {
+       clientName: client.clientName,
+       clientPhone: client.clientPhone,
+       clientEmail: client.clientEmail,
+       tabName: sourceTab,
+       rowIndex: client.rowIndex,
+       statusColIndex: client.statusColIndex,
+      },
+      'New'
+     );
+     if (moved) {
+      updateScheduledClientStatus(client.id, 'New');
+      deleteScheduledClient(client.id);
+      changed = true;
+     }
+    } catch (error) {
+     reconciledCalendarRows.current.delete(rowKey);
+     console.warn('Could not return unmatched scheduled lead to New:', error);
+    }
+   }
+
+   if (changed) {
+    setScheduledClients(getScheduledClients(calendarEvents));
+    window.dispatchEvent(new CustomEvent('dashboard_data_refresh'));
+   }
+  };
+
+  reconcile();
+ }, [calendarVerifiedAt, calendarEvents, calSyncStatus.status, isSyncingCalendar, scheduledClients, config, representativeOptions]);
 
  // Quick Schedule Modal state
  const [isModalOpen, setIsModalOpen] = useState(false);
