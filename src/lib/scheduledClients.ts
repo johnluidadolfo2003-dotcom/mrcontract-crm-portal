@@ -218,16 +218,6 @@ export function parseDateFromRowOrNotes(
  }
  }
 
- // Check for Gerald Kobell / Gerald Kobill
- const lowClientName = (r.clientName || '').toLowerCase();
- if (lowClientName.includes('gerald') && (lowClientName.includes('kob') || lowClientName.includes('bill'))) {
- return {
- date: '2026-09-02',
- startTime: '10:00',
- endTime: '12:00'
- };
- }
-
  // 1. Check if r.appointmentDate exists and parse it (supports YYYY-MM-DD, MM/DD/YYYY, etc.)
  if (r.appointmentDate && typeof r.appointmentDate === 'string' && r.appointmentDate.trim().length >= 5) {
  let cleanDate = r.appointmentDate.trim();
@@ -351,42 +341,12 @@ export function parseDateFromRowOrNotes(
  };
  }
 
- // 3. Fallback: Distribute dynamic upcoming working days starting from today's real date
- const now = new Date();
- const baseDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
- 
- const timeSlots = [
- { start: '09:00', end: '10:00' },
- { start: '10:30', end: '11:30' },
- { start: '13:00', end: '14:00' },
- { start: '14:30', end: '15:30' },
- { start: '16:00', end: '17:00' }
- ];
-
- // Distribute across next 14 working days (skipping Sundays)
- let dayOffset = 0;
- let workDayCount = 0;
- const targetWorkDayIndex = Math.floor(idx / timeSlots.length);
- 
- while (workDayCount < targetWorkDayIndex) {
- dayOffset++;
- const testDate = new Date(baseDate.getTime() + dayOffset * 86400000);
- if (testDate.getDay() !== 0) { // skip Sundays
- workDayCount++;
- }
- }
-
- const assignedDate = new Date(baseDate.getTime() + dayOffset * 86400000);
- const yyyy = assignedDate.getFullYear();
- const mm = String(assignedDate.getMonth() + 1).padStart(2, '0');
- const dd = String(assignedDate.getDate()).padStart(2, '0');
- const timeIdx = idx % timeSlots.length;
- const slot = timeSlots[timeIdx];
-
+ // Never fabricate an appointment. A missing Calendar/Sheet date stays blank
+ // until a real event is matched or staff enters the correct value.
  return {
- date: `${yyyy}-${mm}-${dd}`,
- startTime: parsedStart || r.startTime || slot.start,
- endTime: parsedEnd || r.endTime || slot.end
+ date: '',
+ startTime: parsedStart || r.startTime || '',
+ endTime: parsedEnd || r.endTime || ''
  };
 }
 
