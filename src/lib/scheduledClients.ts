@@ -2,6 +2,7 @@ import { AppointmentFormData, CreatedCalendarEvent } from '../types';
 import { isMeetingScheduledStatus } from './utils';
 import { getCachedCalendarEvents, matchCalendarEventForLead } from './calendar';
 import { loadAppConfig } from '../config';
+import { getStatusOverrideTimestamp } from './sheets';
 
 export interface ScheduledClientRecord {
  id: string;
@@ -489,11 +490,14 @@ export function getScheduledClients(calendarEvents?: any[]): ScheduledClientReco
  }
 
  const rep = resolveSalespersonForLead(r, config, repOverrides);
+ const statusChangedAt = getStatusOverrideTimestamp(tabKey, r.rowIndex, r.clientName);
 
  const schedRecord: ScheduledClientRecord = {
  id: uniqueId,
  createdAt: r.timestamp || new Date().toISOString(),
- scheduledAt: r.scheduledAt || r.updatedAt || r.timestamp || new Date().toISOString(),
+ scheduledAt: statusChangedAt
+  ? new Date(statusChangedAt).toISOString()
+  : r.scheduledAt || r.updatedAt || r.timestamp || new Date().toISOString(),
  clientName: r.clientName,
  clientPhone: r.clientPhone || '',
  clientEmail: r.clientEmail || '',
@@ -764,9 +768,11 @@ export function subscribeScheduledClients(callback: (list: ScheduledClientRecord
  window.addEventListener(EVENT_KEY, handler);
  window.addEventListener('storage', handler);
  window.addEventListener('calendar_events_updated', handler);
+ window.addEventListener('status_overrides_updated', handler);
  return () => {
  window.removeEventListener(EVENT_KEY, handler);
  window.removeEventListener('storage', handler);
  window.removeEventListener('calendar_events_updated', handler);
+ window.removeEventListener('status_overrides_updated', handler);
  };
 }
