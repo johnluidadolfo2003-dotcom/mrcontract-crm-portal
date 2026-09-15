@@ -346,6 +346,38 @@ export function isSameSalesperson(sp1: string, sp2: string): boolean {
  return false;
 }
 
+/** Resolve a salesperson from any Calendar title/description text using the
+ * configured directory. This supports initials, full names, and names that
+ * include initials in parentheses. */
+export function resolveCalendarSalesperson(
+ value: string | undefined,
+ config?: AppConfig
+): { code: string; name: string } | null {
+ const text = String(value || '').trim();
+ if (!text) return null;
+ const normalizedText = text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+ const tokens = new Set(normalizedText.split(/\s+/).filter(Boolean));
+
+ for (const salesperson of config?.salespeople || []) {
+  const code = String(salesperson.code || '').trim();
+  const name = String(salesperson.name || code).trim();
+  if (!code) continue;
+  const normalizedCode = code.toLowerCase();
+  const normalizedName = name.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const nameTokens = normalizedName.split(/\s+/).filter(Boolean);
+  const nameWithoutCode = nameTokens.filter((token) => token !== normalizedCode).join(' ');
+
+  if (
+   tokens.has(normalizedCode) ||
+   (normalizedName.length >= 2 && normalizedText.includes(normalizedName)) ||
+   (nameWithoutCode.length >= 3 && normalizedText.includes(nameWithoutCode))
+  ) {
+   return { code: salesperson.code, name: salesperson.name };
+  }
+ }
+ return null;
+}
+
 /**
  * Creates a Google Calendar event via the backend server proxy.
  */
@@ -639,17 +671,13 @@ export function parseCalendarEventToFormData(
 	}
 
 	let salespersonName = '';
-	if (salespersonCode && config?.salespeople) {
-		const matchedSp = config.salespeople.find(
-			(s) =>
-				s.code.toUpperCase() === salespersonCode.toUpperCase() ||
-				s.name.toLowerCase().includes(salespersonCode.toLowerCase()) ||
-				salespersonCode.toLowerCase().includes(s.name.toLowerCase())
-		);
-		if (matchedSp) {
-			salespersonCode = matchedSp.code;
-			salespersonName = matchedSp.name;
-		}
+	const matchedSp = resolveCalendarSalesperson(
+		`${salespersonCode || ''} ${summary} ${cleanDesc}`,
+		config
+	);
+	if (matchedSp) {
+		salespersonCode = matchedSp.code;
+		salespersonName = matchedSp.name;
 	}
 
 	let notes = '';
@@ -702,6 +730,7 @@ export function parseCalendarEventToFormData(
  startTime,
  endTime,
  salespersonCode,
+ salespersonName,
  clientPhone,
  clientEmail,
  address,
