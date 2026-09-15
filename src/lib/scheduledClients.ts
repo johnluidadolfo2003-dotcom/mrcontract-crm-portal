@@ -6,6 +6,7 @@ import { loadAppConfig } from '../config';
 export interface ScheduledClientRecord {
  id: string;
  createdAt: string; // ISO string
+ scheduledAt?: string; // ISO string recording when the lead entered Meeting Scheduled
  clientName: string;
  clientPhone: string;
  clientEmail: string;
@@ -37,11 +38,14 @@ const REP_OVERRIDES_STORAGE_KEY = 'mrcontract_representative_overrides';
 /** Keeps newly scheduled appointments at the top of every Meeting Scheduled view. */
 export function sortScheduledClientsNewestFirst(records: ScheduledClientRecord[]): ScheduledClientRecord[] {
  const timestampFor = (record: ScheduledClientRecord): number => {
+  const scheduledAt = Date.parse(record.scheduledAt || '');
+  if (Number.isFinite(scheduledAt)) return scheduledAt;
+
   const createdAt = Date.parse(record.createdAt || '');
   if (Number.isFinite(createdAt)) return createdAt;
 
-  const scheduledAt = Date.parse((record.appointmentDate || '') + 'T' + (record.startTime || '00:00') + ':00');
-  return Number.isFinite(scheduledAt) ? scheduledAt : 0;
+  const appointmentAt = Date.parse((record.appointmentDate || '') + 'T' + (record.startTime || '00:00') + ':00');
+  return Number.isFinite(appointmentAt) ? appointmentAt : 0;
  };
 
  return [...records].sort((a, b) => timestampFor(b) - timestampFor(a));
@@ -483,6 +487,7 @@ export function getScheduledClients(calendarEvents?: any[]): ScheduledClientReco
  const schedRecord: ScheduledClientRecord = {
  id: uniqueId,
  createdAt: r.timestamp || new Date().toISOString(),
+ scheduledAt: r.scheduledAt || r.updatedAt || r.timestamp || new Date().toISOString(),
  clientName: r.clientName,
  clientPhone: r.clientPhone || '',
  clientEmail: r.clientEmail || '',
@@ -641,6 +646,7 @@ export function addOrUpdateScheduledClient(
  const newRecord: ScheduledClientRecord = {
  id,
  createdAt: existingIndex >= 0 ? currentList[existingIndex].createdAt : nowIso,
+ scheduledAt: existingIndex >= 0 ? (currentList[existingIndex].scheduledAt || nowIso) : nowIso,
  clientName: formData.clientName || 'Valued Client',
  clientPhone: formData.clientPhone || '',
  clientEmail: formData.clientEmail || '',
