@@ -269,9 +269,8 @@ export const ScheduledClientPage: React.FC = () => {
 		return sortScheduledClientsNewestFirst(deduplicatedResult);
 	}, [scheduledClients, calendarEvents, config]);
 
- // Reconcile only after a verified Calendar sync. A matching event supplies
- // the salesperson. An unassigned Sheet lead is returned to New only when no
- // active Calendar event matches it in the verified search window.
+ // After a verified Calendar sync, persist salesperson details from confirmed
+ // event matches. Missing matches never change a lead's status.
  useEffect(() => {
   if (!calendarVerifiedAt || calSyncStatus.status !== 'success' || isSyncingCalendar || !config.spreadsheetId) return;
 
@@ -310,40 +309,10 @@ export const ScheduledClientPage: React.FC = () => {
      }
     }
 
-    const isUnassigned = !String(client.salespersonCode || client.salespersonName || '').trim();
-    const isSheetLead = client.origin === 'spreadsheet_sync' && typeof client.rowIndex === 'number';
-    if (matched || !isUnassigned || !isSheetLead) {
-     reconciledCalendarRows.current.add(rowKey);
-     continue;
-    }
-
-    const sourceTab = String(client.leadSource || '').trim();
-    if (!sourceTab || sourceTab.toLowerCase() === 'google calendar') continue;
-
+    // Never move a lead based only on a missing fuzzy Calendar match.
+    // Calendar list windows, spelling differences, or incomplete event details can
+    // hide a real appointment. Unmatched records remain unchanged for staff review.
     reconciledCalendarRows.current.add(rowKey);
-    try {
-     const moved = await updateLeadStatusInSpreadsheet(
-      undefined,
-      config.spreadsheetId,
-      {
-       clientName: client.clientName,
-       clientPhone: client.clientPhone,
-       clientEmail: client.clientEmail,
-       tabName: sourceTab,
-       rowIndex: client.rowIndex,
-       statusColIndex: client.statusColIndex,
-      },
-      'New'
-     );
-     if (moved) {
-      updateScheduledClientStatus(client.id, 'New');
-      deleteScheduledClient(client.id);
-      changed = true;
-     }
-    } catch (error) {
-     reconciledCalendarRows.current.delete(rowKey);
-     console.warn('Could not return unmatched scheduled lead to New:', error);
-    }
    }
 
    if (changed) {
