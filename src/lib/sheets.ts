@@ -25,6 +25,7 @@ export interface SheetRowRecord {
  tabName?: string; // which tab/source this row belongs to (e.g. 'Angi', 'Thumbtack', etc.)
  statusColIndex?: number; // 0-based column index of Status in sheet
  timestamp?: string;
+ scheduledAt?: string;
  appointmentDate?: string;
  startTime?: string;
  endTime?: string;
@@ -565,6 +566,7 @@ export async function fetchSharedStatusOverrides(): Promise<Record<string, any>>
  memorySharedOverrides = { ...memorySharedOverrides, ...data.overrides };
  if (typeof window !== 'undefined') {
  localStorage.setItem('mrcontract_status_overrides', JSON.stringify(memorySharedOverrides));
+ window.dispatchEvent(new CustomEvent('status_overrides_updated'));
  }
  return memorySharedOverrides;
  }
@@ -650,6 +652,31 @@ export function getStatusOverride(
  return null;
 }
 
+
+export function getStatusOverrideTimestamp(
+ sheetTab: string,
+ rowIndex: number,
+ clientName?: string
+): number | null {
+ try {
+  const rowKey = `${sheetTab}_${rowIndex}`;
+  const nameKey = clientName && clientName !== 'Unnamed Client'
+   ? `name_${clientName.toLowerCase().trim()}`
+   : '';
+  const entry = memorySharedOverrides[rowKey] || (nameKey ? memorySharedOverrides[nameKey] : null);
+  const timestamp = Number(entry?.timestamp);
+  if (Number.isFinite(timestamp) && timestamp > 0) return timestamp;
+
+  const raw = typeof window !== 'undefined' ? localStorage.getItem('mrcontract_status_overrides') : null;
+  if (!raw) return null;
+  const overrides = JSON.parse(raw);
+  const saved = overrides[rowKey] || (nameKey ? overrides[nameKey] : null);
+  const savedTimestamp = Number(saved?.timestamp);
+  return Number.isFinite(savedTimestamp) && savedTimestamp > 0 ? savedTimestamp : null;
+ } catch {
+  return null;
+ }
+}
 export function updateStatusInLocalStorageCache(
  spreadsheetId: string,
  sheetTab: string,
@@ -673,6 +700,9 @@ export function updateStatusInLocalStorageCache(
 
  // Record persistent status override
  saveStatusOverride(sheetTab, rowIndex, newStatus, clientName, byUser);
+ const scheduledAt = /^(?:meeting|appointment)\s+scheduled$/i.test(newStatus.trim()) || /^scheduled$/i.test(newStatus.trim())
+  ? new Date().toISOString()
+  : undefined;
 
  // 1. Update the specific tab cache
  const tabCacheKey = `mrcontract_cache_${cleanId}_${sheetTab}`;
@@ -681,7 +711,7 @@ export function updateStatusInLocalStorageCache(
  const parsed = JSON.parse(tabCached);
  if (parsed && Array.isArray(parsed.rows)) {
  parsed.rows = parsed.rows.map((r: any) =>
- r.rowIndex === rowIndex ? { ...r, status: newStatus } : r
+ r.rowIndex === rowIndex ? { ...r, status: newStatus, ...(scheduledAt ? { scheduledAt } : {}) } : r
  );
  localStorage.setItem(tabCacheKey, JSON.stringify(parsed));
  }
@@ -695,7 +725,7 @@ export function updateStatusInLocalStorageCache(
  if (parsed && Array.isArray(parsed.rows)) {
  parsed.rows = parsed.rows.map((r: any) =>
  r.rowIndex === rowIndex && (!r.tabName || r.tabName === sheetTab)
- ? { ...r, status: newStatus }
+ ? { ...r, status: newStatus, ...(scheduledAt ? { scheduledAt } : {}) }
  : r
  );
  localStorage.setItem(allCacheKey, JSON.stringify(parsed));
