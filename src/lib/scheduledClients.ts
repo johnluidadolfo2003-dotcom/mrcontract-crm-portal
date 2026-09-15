@@ -35,6 +35,11 @@ const STORAGE_KEY = 'mr_contract_scheduled_clients_v2';
 const EVENT_KEY = 'scheduled_clients_updated';
 const REP_OVERRIDES_STORAGE_KEY = 'mrcontract_representative_overrides';
 
+function isGeneratedPlaceholderLeadName(value?: string): boolean {
+ return /^new\s+.+\s+lead$/i.test(String(value || '').trim()) ||
+  /^unnamed\s+client$/i.test(String(value || '').trim());
+}
+
 /** Keeps newly scheduled appointments at the top of every Meeting Scheduled view. */
 export function sortScheduledClientsNewestFirst(records: ScheduledClientRecord[]): ScheduledClientRecord[] {
  const timestampFor = (record: ScheduledClientRecord): number => {
@@ -402,7 +407,8 @@ export function getScheduledClients(calendarEvents?: any[]): ScheduledClientReco
 
  // Filter parsed items from STORAGE_KEY to only include meeting scheduled / scheduled records
  parsed = parsed.filter((c) => {
- return isMeetingScheduledStatus(c.status, c.leadSource);
+ return !isGeneratedPlaceholderLeadName(c.clientName) &&
+  isMeetingScheduledStatus(c.status, c.leadSource);
  });
 
  // Deduplicate parsed items already loaded from storage
@@ -455,7 +461,7 @@ export function getScheduledClients(calendarEvents?: any[]): ScheduledClientReco
  const data = JSON.parse(cacheRaw);
  if (data && Array.isArray(data.rows)) {
  data.rows.forEach((r: any) => {
- if (r && r.clientName && !r.clientName.toLowerCase().startsWith('unnamed') && isMeetingScheduledStatus(r.status, r.leadSource || r.tabName)) {
+ if (r && r.clientName && !isGeneratedPlaceholderLeadName(r.clientName) && isMeetingScheduledStatus(r.status, r.leadSource || r.tabName)) {
  const pDigits = r.clientPhone ? String(r.clientPhone).replace(/\D/g, '') : '';
  const nameKey = (r.clientName || '').trim().toLowerCase();
  const emailKey = (r.clientEmail || '').trim().toLowerCase();
