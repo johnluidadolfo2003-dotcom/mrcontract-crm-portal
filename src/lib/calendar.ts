@@ -615,25 +615,25 @@ export function parseCalendarEventToFormData(
 
 	if (!salespersonCode && summary) {
 		const cleanSum = summary.trim();
-		const directCodeMatch = cleanSum.match(/(?:[-–—:]\s*|\(|\b)(DG|SB|DK|JR|JC|EP)\b(?:\s*[\)\]\}]|\s*\(|\s*$)/i);
-		if (directCodeMatch && directCodeMatch[1]) {
-			salespersonCode = directCodeMatch[1].toUpperCase().trim();
-		} else if (cleanSum.includes('-') || cleanSum.includes('–') || cleanSum.includes('—')) {
-			const parts = cleanSum.split(/[-–—]/).map((p: string) => p.trim()).filter(Boolean);
-			if (parts.length >= 2) {
-				const lastPart = parts[parts.length - 1];
-				const lastCandidate = lastPart.split(/[\(\[\{]/)[0].trim();
-				if (lastCandidate && !/^(\$|ES#|Job|Appt|Meeting)/i.test(lastCandidate)) {
-					salespersonCode = lastCandidate;
-				} else {
-					for (let i = parts.length - 1; i >= 0; i--) {
-						const partCand = parts[i].split(/[\(\[\{]/)[0].trim();
-						if (/^(DG|SB|DK|JR|JC|EP)$/i.test(partCand)) {
-							salespersonCode = partCand.toUpperCase();
-							break;
-						}
-					}
-				}
+		const configuredCodes = (config?.salespeople || [])
+			.map((salesperson) => String(salesperson.code || '').trim().toUpperCase())
+			.filter(Boolean);
+		const configuredCodeSet = new Set(configuredCodes);
+		const titleParts = cleanSum.split(/[-–—]/).map((part: string) => part.trim()).filter(Boolean);
+		const candidates: string[] = [];
+
+		// Current format: Appt - DG - Client Name (Service Needed)
+		if (/^(?:appt|appointment)\b/i.test(titleParts[0] || '') && titleParts[1]) {
+			candidates.push(titleParts[1]);
+		}
+		// Older format: Appt - Client Name (Service Needed) - DG
+		if (titleParts.length > 1) candidates.push(titleParts[titleParts.length - 1]);
+
+		for (const rawCandidate of candidates) {
+			const candidate = rawCandidate.replace(/[\(\)\[\]\{\}]/g, '').trim().toUpperCase();
+			if (configuredCodeSet.has(candidate)) {
+				salespersonCode = candidate;
+				break;
 			}
 		}
 	}
