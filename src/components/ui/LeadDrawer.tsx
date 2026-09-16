@@ -25,6 +25,12 @@ import { SalespersonOption } from '../../types';
 import { loadAppConfig } from '../../config';
 import { updateNewLeadInfo } from '../../lib/newLeads';
 
+const ANGI_ACCOUNT_OPTIONS = [
+  { value: 'not_identified', label: 'Angi (Not Identified)' },
+  { value: 'dxg', label: 'Angi (DXG)' },
+  { value: 'mr_contract', label: 'Angi (Mr. Contract)' },
+] as const;
+
 interface LeadDrawerProps {
   lead: SheetRowRecord | null;
   isOpen: boolean;
@@ -67,6 +73,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
   const [editAddress, setEditAddress] = useState('');
   const [editService, setEditService] = useState('');
   const [editSource, setEditSource] = useState('');
+  const [editAngiAccount, setEditAngiAccount] = useState<'not_identified' | 'dxg' | 'mr_contract'>('not_identified');
   const [editStatus, setEditStatus] = useState('');
   const [editFee, setEditFee] = useState('');
   const [editNotes, setEditNotes] = useState('');
@@ -96,6 +103,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
       setEditAddress(lead.address || '');
       setEditService(lead.serviceNeeded || lead.leadType || '');
       setEditSource(lead.leadSource || lead.tabName || 'Angi');
+      setEditAngiAccount((lead.angiAccount as 'not_identified' | 'dxg' | 'mr_contract') || 'not_identified');
       setEditStatus(lead.status || 'New');
       setEditFee(lead.leadFee || '');
       setEditNotes(lead.notes || '');
@@ -168,6 +176,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
       serviceNeeded: editService.trim(),
       leadType: editService.trim(),
       leadSource: editSource.trim(),
+      angiAccount: editAngiAccount,
       tabName: lead.tabName || editSource.trim(),
       status: editStatus,
       leadFee: editFee.trim(),
@@ -201,6 +210,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
         address: updatedRecord.address,
         serviceNeeded: updatedRecord.serviceNeeded,
         leadSource: updatedRecord.leadSource,
+        angiAccount: updatedRecord.angiAccount,
         status: updatedRecord.status,
         leadFee: updatedRecord.leadFee,
         notes: updatedRecord.notes,
@@ -264,7 +274,11 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
   const houzzState = String((lead as any).houzzStatus || (lead as any).houzzResult || '').trim().toLowerCase();
   const isConfirmedInHouzz = houzzState.includes('created in houzz pro');
   const isHouzzAccepted = houzzState.includes('accepted by zapier');
-  const isThumbtackLead = String(lead.leadSource || lead.tabName || '').trim().toLowerCase() === 'thumbtack';
+  const normalizedLeadSource = String(lead.leadSource || lead.tabName || '').trim().toLowerCase();
+  const isThumbtackLead = normalizedLeadSource === 'thumbtack';
+  const isAngiLead = normalizedLeadSource === 'angi';
+  const angiAccountLabel = ANGI_ACCOUNT_OPTIONS.find((option) => option.value === (lead.angiAccount || 'not_identified'))?.label
+    || 'Angi (Not Identified)';
   const hasHouzzRequiredInfo = Boolean(
     lead.clientName?.trim() &&
     (lead.clientPhone?.trim() || lead.clientEmail?.trim()) &&
@@ -522,6 +536,22 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                 </div>
               </div>
 
+              {isAngiLead && (
+                <div>
+                  <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 block mb-1">Angi Account</label>
+                  <select
+                    value={editAngiAccount}
+                    onChange={(e) => setEditAngiAccount(e.target.value as 'not_identified' | 'dxg' | 'mr_contract')}
+                    className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#FF5500] dark:focus:border-[#FF5500] rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-white font-semibold outline-none cursor-pointer"
+                  >
+                    {ANGI_ACCOUNT_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-[10px] text-zinc-500 dark:text-zinc-400">Identification only; routing and integrations stay unchanged.</p>
+                </div>
+              )}
+
               {/* Notes */}
               <div>
                 <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 block mb-1">Notes</label>
@@ -690,7 +720,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                   )}
                   <div className="flex justify-between items-center border-b border-zinc-200 dark:border-zinc-800/60 pb-3">
                     <span className="text-zinc-500 dark:text-zinc-400">Source</span>
-                    <span className="text-zinc-800 dark:text-zinc-100 font-semibold">{lead.leadSource || lead.tabName || '-'}</span>
+                    <span className="text-zinc-800 dark:text-zinc-100 font-semibold">{isAngiLead ? angiAccountLabel : (lead.leadSource || lead.tabName || '-')}</span>
                   </div>
                   <div className="pt-1">
                     <span className="text-zinc-500 dark:text-zinc-400 block mb-2 text-xs font-semibold">Notes</span>
