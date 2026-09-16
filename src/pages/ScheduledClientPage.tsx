@@ -68,7 +68,7 @@ function getMeetingScheduledBadge(client: ScheduledClientRecord, timeZone: strin
   : null;
  const enteredAt = statusChangedAt
   ? new Date(statusChangedAt)
-  : client.origin === 'web_portal' && client.scheduledAt
+  : client.scheduledAt
    ? new Date(client.scheduledAt)
    : null;
  if (!enteredAt || Number.isNaN(enteredAt.getTime())) return '';
