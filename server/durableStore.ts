@@ -60,6 +60,7 @@ export interface LeadDurableMetadata {
   sheetSynced?: boolean;
   sheetRowIndex?: number;
   sheetTab?: string;
+  angiAccount?: 'not_identified' | 'dxg' | 'mr_contract';
   taskCompletions?: Record<string, { completedAt: string; completedBy?: string }>;
 }
 
