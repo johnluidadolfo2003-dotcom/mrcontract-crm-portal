@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
  UserPlus,
@@ -41,13 +41,15 @@ import {
  deleteRowFromSheet,
  updateLeadStatusInSpreadsheet,
  updateLeadInSpreadsheet,
- SheetRowRecord,
- getStatusOverrideTimestamp,
+ SheetRowRecord
 } from '../lib/sheets';
-import { fetchGoogleCalendarEvents, getCalendarSyncStatus, matchCalendarEventForLead } from '../lib/calendar';
 import { LeadDrawer } from '../components/ui/LeadDrawer';
 import { sendThumbtackLeadToHouzz } from '../lib/webhooks';
 import { WebhookDiagnosticsModal } from '../components/WebhookDiagnosticsModal';
+
+// Meeting Scheduled is intentionally excluded here. New leads must use the
+// Schedule action so an appointment is created before the status can change.
+const NEW_LEAD_STATUS_OPTIONS = LEAD_STATUS_OPTIONS.filter((status) => status !== 'Meeting Scheduled');
 
 const getDateKeyInTimeZone = (date: Date, timeZone: string): string => {
  const parts = new Intl.DateTimeFormat('en-US', {
@@ -118,7 +120,6 @@ export const NewLeadsPage: React.FC = () => {
  const [leadToDelete, setLeadToDelete] = useState<NewLeadRecord | null>(null);
  const [isWebhookDiagOpen, setIsWebhookDiagOpen] = useState(false);
  const [syncIssue, setSyncIssue] = useState<{ message: string; details: string } | null>(null);
- const recoveredCalendarLeads = useRef<Set<string>>(new Set());
 
   const config = loadAppConfig();
   const [selectedLeadForDrawer, setSelectedLeadForDrawer] = useState<SheetRowRecord | null>(null);
@@ -343,6 +344,11 @@ export const NewLeadsPage: React.FC = () => {
  };
 
  const handleStatusChange = async (lead: NewLeadRecord, newStatus: string) => {
+ if (newStatus === 'Meeting Scheduled') {
+  setSyncMsg('Use the Schedule button to create the appointment first.');
+  setTimeout(() => setSyncMsg(null), 3500);
+  return;
+ }
  setUpdatingId(lead.id);
  const config = loadAppConfig();
  try {
@@ -435,84 +441,6 @@ export const NewLeadsPage: React.FC = () => {
   document.removeEventListener('visibilitychange', handleVisibility);
  };
  }, []);
-
- // One-time recovery for records incorrectly returned to New by the retired
- // Calendar reconciliation. Restore only a strong, fresh appointment match.
- useEffect(() => {
-  if (!config.spreadsheetId || leads.length === 0) return;
-  const unsafeReconciliationStartedAt = Date.parse('2026-09-15T15:51:18Z');
-  const candidates = leads.filter((lead) => {
-   const sourceTab = String((lead as any).tabName || lead.leadSource || '').trim();
-   const key = `${sourceTab}_${lead.rowIndex ?? ''}_${lead.clientName}`.toLowerCase();
-   if (recoveredCalendarLeads.current.has(key)) return false;
-   const changedAt = getStatusOverrideTimestamp(sourceTab, lead.rowIndex || 0, lead.clientName);
-   return Boolean(changedAt && changedAt >= unsafeReconciliationStartedAt);
-  });
-  if (candidates.length === 0) return;
-
-  let cancelled = false;
-  const recoverConfirmedAppointments = async () => {
-   const now = Date.now();
-   const events = await fetchGoogleCalendarEvents({
-    calendarId: config.calendarId,
-    timeMin: new Date(now - 730 * 86400000).toISOString(),
-    timeMax: new Date(now + 730 * 86400000).toISOString(),
-   });
-   if (cancelled || getCalendarSyncStatus().status !== 'success') return;
-
-   let restored = 0;
-   for (const lead of candidates) {
-    const sourceTab = String((lead as any).tabName || lead.leadSource || '').trim();
-    const key = `${sourceTab}_${lead.rowIndex ?? ''}_${lead.clientName}`.toLowerCase();
-    recoveredCalendarLeads.current.add(key);
-    const match = matchCalendarEventForLead(
-     lead.clientName,
-     lead.clientPhone,
-     lead.clientEmail,
-     events,
-     config,
-     lead.address
-    );
-    const strongMatch = /calendar_event_id|phone_10|email_|name_exact|name_all_tokens/.test(match?.matchType || '');
-    const eventText = `${match?.event?.summary || ''} ${match?.event?.description || ''}`;
-    const isAppointment = /\b(?:appt|appointment)\b/i.test(eventText);
-    if (!match || !strongMatch || !isAppointment || !sourceTab) continue;
-
-    try {
-     const updated = await updateLeadStatusInSpreadsheet(
-      undefined,
-      config.spreadsheetId,
-      {
-       clientName: lead.clientName,
-       clientPhone: lead.clientPhone,
-       clientEmail: lead.clientEmail,
-       tabName: sourceTab,
-       rowIndex: lead.rowIndex,
-       statusColIndex: lead.statusColIndex,
-      },
-      'Meeting Scheduled'
-     );
-     if (updated) {
-      updateNewLeadStatus(lead.id, 'Meeting Scheduled');
-      restored += 1;
-     }
-    } catch (error) {
-     recoveredCalendarLeads.current.delete(key);
-     console.warn('Could not restore confirmed Calendar appointment:', error);
-    }
-   }
-
-   if (!cancelled && restored > 0) {
-    await refreshLocalLeads(true);
-    window.dispatchEvent(new CustomEvent('dashboard_data_refresh'));
-    setSyncMsg(`${restored} confirmed Calendar appointment${restored === 1 ? '' : 's'} restored`);
-    setTimeout(() => setSyncMsg(null), 4500);
-   }
-  };
-
-  void recoverConfirmedAppointments();
-  return () => { cancelled = true; };
- }, [leads, config.calendarId, config.spreadsheetId]);
 
  // Monitor for sync issues needing attention
  useEffect(() => {
@@ -915,7 +843,7 @@ export const NewLeadsPage: React.FC = () => {
                       className="w-full px-2.5 py-1.5 pr-7 rounded-xl text-xs font-semibold bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer appearance-none disabled:opacity-50"
                       title="Update lead status"
                     >
-                      {LEAD_STATUS_OPTIONS.map((st) => (
+                      {NEW_LEAD_STATUS_OPTIONS.map((st) => (
                         <option key={st} value={st} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white normal-case font-medium">
                           {st}
                         </option>
@@ -1032,7 +960,7 @@ export const NewLeadsPage: React.FC = () => {
  className="w-full px-2.5 py-0.5 pr-6 rounded-full text-xs font-medium bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer appearance-none disabled:opacity-50"
  title="Click to edit status"
  >
- {LEAD_STATUS_OPTIONS.map((st) => (
+ {NEW_LEAD_STATUS_OPTIONS.map((st) => (
  <option key={st} value={st} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white normal-case font-medium">
  {st}
  </option>
@@ -1208,7 +1136,7 @@ export const NewLeadsPage: React.FC = () => {
  onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
  className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white font-bold"
  >
- {LEAD_STATUS_OPTIONS.map((st) => (
+ {NEW_LEAD_STATUS_OPTIONS.map((st) => (
  <option key={st} value={st}>
  {st}
  </option>
@@ -1310,7 +1238,7 @@ export const NewLeadsPage: React.FC = () => {
           if (matched) return handleSendThumbtackToHouzz(matched);
         }}
         isSendingToHouzz={Boolean((selectedLeadForDrawer as any)?.id && sendingHouzzId === (selectedLeadForDrawer as any).id)}
-        statusOptions={LEAD_STATUS_OPTIONS}
+        statusOptions={NEW_LEAD_STATUS_OPTIONS}
         salespeople={config.salespeople}
       />
 
