@@ -35,6 +35,45 @@ export interface ScheduledClientRecord {
 const STORAGE_KEY = 'mr_contract_scheduled_clients_v2';
 const EVENT_KEY = 'scheduled_clients_updated';
 const REP_OVERRIDES_STORAGE_KEY = 'mrcontract_representative_overrides';
+const MEETING_TRANSITIONS_STORAGE_KEY = 'mrcontract_meeting_scheduled_transitions';
+
+type MeetingTransitionIdentity = {
+ clientName?: string;
+ clientPhone?: string;
+ leadSource?: string;
+ rowIndex?: number;
+};
+
+function meetingTransitionKeys(lead: MeetingTransitionIdentity): string[] {
+ const keys: string[] = [];
+ const name = String(lead.clientName || '').trim().toLowerCase();
+ const phone = String(lead.clientPhone || '').replace(/\D/g, '');
+ const source = String(lead.leadSource || '').trim().toLowerCase();
+ if (source && lead.rowIndex) keys.push(`row_${source}_${lead.rowIndex}`);
+ if (phone.length >= 7) keys.push(`phone_${phone}`);
+ if (name) keys.push(`name_${name}`);
+ return keys;
+}
+
+export function recordMeetingScheduledTransition(lead: MeetingTransitionIdentity, timestamp = Date.now()): void {
+ try {
+  const saved = JSON.parse(localStorage.getItem(MEETING_TRANSITIONS_STORAGE_KEY) || '{}');
+  meetingTransitionKeys(lead).forEach((key) => { saved[key] = timestamp; });
+  localStorage.setItem(MEETING_TRANSITIONS_STORAGE_KEY, JSON.stringify(saved));
+  window.dispatchEvent(new CustomEvent(EVENT_KEY));
+ } catch {}
+}
+
+export function getMeetingScheduledTransition(lead: MeetingTransitionIdentity): number | null {
+ try {
+  const saved = JSON.parse(localStorage.getItem(MEETING_TRANSITIONS_STORAGE_KEY) || '{}');
+  for (const key of meetingTransitionKeys(lead)) {
+   const timestamp = Number(saved[key]);
+   if (Number.isFinite(timestamp) && timestamp > 0) return timestamp;
+  }
+ } catch {}
+ return null;
+}
 
 function isGeneratedPlaceholderLeadName(value?: string): boolean {
  return /^new\s+.+\s+lead$/i.test(String(value || '').trim()) ||
@@ -450,7 +489,8 @@ export function getScheduledClients(calendarEvents?: any[]): ScheduledClientReco
  }
 
  const rep = resolveSalespersonForLead(r, config, repOverrides);
- const statusChangedAt = getStatusOverrideTimestamp(r.tabName || r.leadSource || 'tab', r.rowIndex, r.clientName);
+ const statusChangedAt = getStatusOverrideTimestamp(r.tabName || r.leadSource || 'tab', r.rowIndex, r.clientName) ||
+  getMeetingScheduledTransition({ clientName: r.clientName, clientPhone: r.clientPhone, leadSource: r.leadSource || r.tabName, rowIndex: r.rowIndex });
 
  const schedRecord: ScheduledClientRecord = {
  id: uniqueId,
@@ -573,9 +613,11 @@ export function getScheduledClients(calendarEvents?: any[]): ScheduledClientReco
     // keep their locally recorded scheduledAt time. Never use lead creation or
     // appointment dates for TODAY/YESTERDAY.
     finalCleanList.forEach((rec) => {
-      const statusChangedAt = rec.rowIndex
-       ? getStatusOverrideTimestamp(rec.leadSource || 'tab', rec.rowIndex, rec.clientName)
-       : null;
+      const statusChangedAt = (
+       rec.rowIndex
+        ? getStatusOverrideTimestamp(rec.leadSource || 'tab', rec.rowIndex, rec.clientName)
+        : null
+      ) || getMeetingScheduledTransition(rec);
       if (statusChangedAt) {
         rec.scheduledAt = new Date(statusChangedAt).toISOString();
       } else if (rec.origin !== 'web_portal' && rec.scheduledAt) {
