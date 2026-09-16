@@ -47,10 +47,6 @@ import { LeadDrawer } from '../components/ui/LeadDrawer';
 import { sendThumbtackLeadToHouzz } from '../lib/webhooks';
 import { WebhookDiagnosticsModal } from '../components/WebhookDiagnosticsModal';
 
-// Meeting Scheduled is intentionally excluded here. New leads must use the
-// Schedule action so an appointment is created before the status can change.
-const NEW_LEAD_STATUS_OPTIONS = LEAD_STATUS_OPTIONS.filter((status) => status !== 'Meeting Scheduled');
-
 const getDateKeyInTimeZone = (date: Date, timeZone: string): string => {
  const parts = new Intl.DateTimeFormat('en-US', {
   timeZone,
@@ -344,11 +340,6 @@ export const NewLeadsPage: React.FC = () => {
  };
 
  const handleStatusChange = async (lead: NewLeadRecord, newStatus: string) => {
- if (newStatus === 'Meeting Scheduled') {
-  setSyncMsg('Use the Schedule button to create the appointment first.');
-  setTimeout(() => setSyncMsg(null), 3500);
-  return;
- }
  setUpdatingId(lead.id);
  const config = loadAppConfig();
  try {
@@ -843,7 +834,7 @@ export const NewLeadsPage: React.FC = () => {
                       className="w-full px-2.5 py-1.5 pr-7 rounded-xl text-xs font-semibold bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer appearance-none disabled:opacity-50"
                       title="Update lead status"
                     >
-                      {NEW_LEAD_STATUS_OPTIONS.map((st) => (
+                      {LEAD_STATUS_OPTIONS.map((st) => (
                         <option key={st} value={st} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white normal-case font-medium">
                           {st}
                         </option>
@@ -960,7 +951,7 @@ export const NewLeadsPage: React.FC = () => {
  className="w-full px-2.5 py-0.5 pr-6 rounded-full text-xs font-medium bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer appearance-none disabled:opacity-50"
  title="Click to edit status"
  >
- {NEW_LEAD_STATUS_OPTIONS.map((st) => (
+ {LEAD_STATUS_OPTIONS.map((st) => (
  <option key={st} value={st} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white normal-case font-medium">
  {st}
  </option>
@@ -1136,7 +1127,7 @@ export const NewLeadsPage: React.FC = () => {
  onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
  className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white font-bold"
  >
- {NEW_LEAD_STATUS_OPTIONS.map((st) => (
+ {LEAD_STATUS_OPTIONS.map((st) => (
  <option key={st} value={st}>
  {st}
  </option>
@@ -1238,7 +1229,7 @@ export const NewLeadsPage: React.FC = () => {
           if (matched) return handleSendThumbtackToHouzz(matched);
         }}
         isSendingToHouzz={Boolean((selectedLeadForDrawer as any)?.id && sendingHouzzId === (selectedLeadForDrawer as any).id)}
-        statusOptions={NEW_LEAD_STATUS_OPTIONS}
+        statusOptions={LEAD_STATUS_OPTIONS}
         salespeople={config.salespeople}
       />
 
