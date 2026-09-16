@@ -10,3 +10,24 @@ data/service_account.json
 data/google_auth.json
 data/*_backup*.json
 
+# Local troubleshooting and generated extraction artifacts
+all_items.json
+all_items_full.json
+all_strings.json
+chat_messages.txt
+chat_strings.txt
+find_edit.cjs
+fix*.cjs
+found_script.txt
+get_buttons.cjs
+items_overview.txt
+original_drawer.tsx
+outline_secondary.cjs
+overlap.js
+parse_*.cjs
+patch*.cjs
+script7.txt
+stream.txt
+summary_numbers.txt
+temp_chat*.html
+test_parse*.cjs
