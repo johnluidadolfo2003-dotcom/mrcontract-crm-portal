@@ -43,6 +43,12 @@ export interface AppointmentFormData {
  calendarEventId?: string;
  calendarHtmlLink?: string;
   houzzProjectLink?: string;
+ // Original New-lead identity. These fields let scheduling update the exact
+ // spreadsheet row instead of appending a duplicate appointment row.
+ sourceLeadId?: string;
+ sourceRowIndex?: number;
+ sourceStatusColIndex?: number;
+ sourceTabName?: string;
 }
 
 export interface AppConfig {
