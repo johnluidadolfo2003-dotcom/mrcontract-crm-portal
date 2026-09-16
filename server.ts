@@ -1944,6 +1944,7 @@ app.post('/api/leads/manual', async (req, res) => {
       clientEmail: String(body.clientEmail || '').trim(),
       address: String(body.address || '').trim(),
       leadSource,
+      angiAccount: leadSource.toLowerCase() === 'angi' ? 'not_identified' : undefined,
       serviceNeeded: String(body.serviceNeeded || '').trim(),
       leadFee: String(body.leadFee || '').trim(),
       notes: String(body.notes || '').trim(),
