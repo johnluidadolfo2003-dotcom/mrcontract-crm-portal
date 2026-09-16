@@ -1,7 +1,7 @@
 import { AppConfig, SalespersonOption } from './types';
 
 export const DEFAULT_SALESPEOPLE: SalespersonOption[] = [
- { id: 'sp_dg', code: 'DG', name: 'Daniel Grider (DG)' },
+ { id: 'sp_dg', code: 'DG', name: 'DG' },
  { id: 'sp_sb', code: 'SB', name: 'SB' },
  { id: 'sp_js', code: 'JS', name: 'JS' },
  { id: 'sp_bk', code: 'BK', name: 'BK' },
@@ -19,7 +19,7 @@ export function mergeStandardSalespeople(savedSalespeople?: unknown): Salesperso
  return [
  ...DEFAULT_SALESPEOPLE.map((standard) => {
  const existing = savedByCode.get(standard.code);
- return existing ? { ...standard, ...existing, code: standard.code } : standard;
+ return existing ? { ...standard, ...existing, code: standard.code, name: standard.name } : standard;
  }),
  ...saved.filter((sp: any) => {
  const code = typeof sp?.code === 'string' ? sp.code.trim().toUpperCase() : '';
