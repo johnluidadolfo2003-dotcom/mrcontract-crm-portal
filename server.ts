@@ -1438,6 +1438,7 @@ function saveIncomingLeadAndLog(
     clientEmail: parsed.clientEmail,
     address: parsed.address,
     leadSource: parsed.leadSource,
+    angiAccount: parsed.leadSource === 'Angi' ? 'not_identified' : undefined,
     serviceNeeded: parsed.serviceNeeded,
     leadFee: parsed.leadFee,
     notes: parsed.notes,
@@ -1854,7 +1855,11 @@ async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
     };
     const key = canonicalContactKey(sheetLead);
     const metadata = transientByContact.get(key);
-    const merged = metadata ? { ...sheetLead, ...metadata, rowIndex: row.rowIndex, statusColIndex: row.statusColIndex, sheetSynced: true } : sheetLead;
+    const contactMerged = metadata ? { ...sheetLead, ...metadata, rowIndex: row.rowIndex, statusColIndex: row.statusColIndex, sheetSynced: true } : sheetLead;
+    const durableMetadata = durableStore.getLeadMetadata(contactMerged.id);
+    const merged = durableMetadata
+      ? { ...contactMerged, ...durableMetadata, id: contactMerged.id, rowIndex: row.rowIndex, statusColIndex: row.statusColIndex, sheetSynced: true }
+      : contactMerged;
     // Every row explicitly saved in Google Sheets is a real CRM record, even
     // when its name contains "Test". Do not hide form-created validation leads
     // during the background refresh.
@@ -1870,7 +1875,8 @@ async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
     const status = String(lead.status || 'New').trim().toLowerCase();
     if (!seen.has(key) && ['new', 'new lead', 'active'].includes(status) && !isExampleOrTestLead(lead)) {
       seen.add(key);
-      leads.push({ ...lead, sheetSynced: false });
+      const durableMetadata = durableStore.getLeadMetadata(lead.id);
+      leads.push({ ...lead, ...(durableMetadata || {}), id: lead.id, sheetSynced: false });
     }
   }
 
@@ -1890,6 +1896,37 @@ app.get('/api/leads', async (req, res) => {
     return res.json({ success: true, status: 'New', count: leads.length, leads });
   } catch (err: any) {
     return res.status(err.status || 500).json({ success: false, error: err.message || 'Unable to load leads.' });
+  }
+});
+
+app.patch('/api/leads/:id/angi-account', (req, res) => {
+  try {
+    const leadId = String(req.params.id || '').trim();
+    const angiAccount = String(req.body?.angiAccount || '').trim();
+    const allowedAccounts = new Set(['not_identified', 'dxg', 'mr_contract']);
+    if (!leadId) return res.status(400).json({ success: false, error: 'Lead ID is required.' });
+    if (!allowedAccounts.has(angiAccount)) {
+      return res.status(400).json({ success: false, error: 'Invalid Angi account identification.' });
+    }
+
+    const metadata = durableStore.saveLeadMetadata({
+      leadId,
+      angiAccount: angiAccount as 'not_identified' | 'dxg' | 'mr_contract',
+    });
+
+    const incomingFile = path.join(process.cwd(), 'data', 'incoming_leads.json');
+    if (fs.existsSync(incomingFile)) {
+      const incomingLeads = durableStore.safeReadJsonFile<any[]>('incoming_leads.json', []);
+      const index = incomingLeads.findIndex((lead: any) => lead.id === leadId);
+      if (index >= 0) {
+        incomingLeads[index] = { ...incomingLeads[index], angiAccount };
+        durableStore.safeWriteJsonFile('incoming_leads.json', incomingLeads);
+      }
+    }
+
+    return res.json({ success: true, leadId, angiAccount, metadata });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message || 'Unable to update Angi account.' });
   }
 });
 
@@ -2005,7 +2042,7 @@ app.post('/api/webhooks/incoming-leads/:id/send-to-houzz', async (req, res) => {
 app.patch('/api/webhooks/incoming-leads/:id', (req, res) => {
   try {
     const { id } = req.params;
-    const { clientName, clientPhone, clientEmail, address, serviceNeeded, leadSource, leadFee, status, notes, sheetSynced } = req.body;
+    const { clientName, clientPhone, clientEmail, address, serviceNeeded, leadSource, angiAccount, leadFee, status, notes, sheetSynced } = req.body;
     const incomingFile = path.join(process.cwd(), 'data', 'incoming_leads.json');
     if (!fs.existsSync(incomingFile)) {
       return res.status(404).json({ success: false, message: 'Lead not found.' });
@@ -2021,6 +2058,10 @@ app.patch('/api/webhooks/incoming-leads/:id', (req, res) => {
     if (address !== undefined) leads[index].address = address;
     if (serviceNeeded !== undefined) leads[index].serviceNeeded = serviceNeeded;
     if (leadSource !== undefined) leads[index].leadSource = leadSource;
+    if (angiAccount !== undefined && ['not_identified', 'dxg', 'mr_contract'].includes(String(angiAccount))) {
+      leads[index].angiAccount = angiAccount;
+      durableStore.saveLeadMetadata({ leadId: id, angiAccount });
+    }
     if (leadFee !== undefined) leads[index].leadFee = leadFee;
     if (status !== undefined) leads[index].status = status;
     if (notes !== undefined) leads[index].notes = notes;
