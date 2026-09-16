@@ -568,9 +568,20 @@ export function getScheduledClients(calendarEvents?: any[]): ScheduledClientReco
       });
     }
 
-    // Standard salesperson initials are the display names throughout the CRM.
-    // Normalize older saved DG records that still contain the former full name.
+    // Normalize the exact time each lead entered Meeting Scheduled. Manual
+    // status changes use the shared status override; Schedule-button records
+    // keep their locally recorded scheduledAt time. Never use lead creation or
+    // appointment dates for TODAY/YESTERDAY.
     finalCleanList.forEach((rec) => {
+      const statusChangedAt = rec.rowIndex
+       ? getStatusOverrideTimestamp(rec.leadSource || 'tab', rec.rowIndex, rec.clientName)
+       : null;
+      if (statusChangedAt) {
+        rec.scheduledAt = new Date(statusChangedAt).toISOString();
+      } else if (rec.origin !== 'web_portal') {
+        rec.scheduledAt = '';
+      }
+
       const code = String(rec.salespersonCode || '').trim().toUpperCase();
       const name = String(rec.salespersonName || '').trim();
       if (code === 'DG' || /^(?:daniel grider(?: \(dg\))?|dg)$/i.test(name)) {
