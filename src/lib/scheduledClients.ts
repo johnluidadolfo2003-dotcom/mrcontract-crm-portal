@@ -457,7 +457,7 @@ export function getScheduledClients(calendarEvents?: any[]): ScheduledClientReco
  createdAt: r.timestamp || new Date().toISOString(),
  scheduledAt: statusChangedAt
   ? new Date(statusChangedAt).toISOString()
-  : r.scheduledAt || r.updatedAt || r.timestamp || new Date().toISOString(),
+  : r.scheduledAt || '',
  clientName: r.clientName,
  clientPhone: r.clientPhone || '',
  clientEmail: r.clientEmail || '',
@@ -578,8 +578,18 @@ export function getScheduledClients(calendarEvents?: any[]): ScheduledClientReco
        : null;
       if (statusChangedAt) {
         rec.scheduledAt = new Date(statusChangedAt).toISOString();
-      } else if (rec.origin !== 'web_portal') {
-        rec.scheduledAt = '';
+      } else if (rec.origin !== 'web_portal' && rec.scheduledAt) {
+        // Older versions sometimes copied the lead-created timestamp into
+        // scheduledAt. Remove only that false timestamp; preserve a distinct
+        // time recorded by the status-change cache.
+        const scheduledTime = Date.parse(rec.scheduledAt);
+        const createdTime = Date.parse(rec.createdAt || '');
+        if (
+          !Number.isFinite(scheduledTime) ||
+          (Number.isFinite(createdTime) && Math.abs(scheduledTime - createdTime) < 5000)
+        ) {
+          rec.scheduledAt = '';
+        }
       }
 
       const code = String(rec.salespersonCode || '').trim().toUpperCase();
