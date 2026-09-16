@@ -615,6 +615,11 @@ export const NewLeadsPage: React.FC = () => {
  leadType: lead.serviceNeeded || 'Direct',
  serviceNeeded: lead.serviceNeeded,
  notes: lead.notes,
+ status: lead.status,
+ sourceLeadId: lead.id,
+ sourceRowIndex: lead.rowIndex,
+ sourceStatusColIndex: lead.statusColIndex,
+ sourceTabName: lead.leadSource || 'Angi',
  };
  sessionStorage.setItem('prefill_schedule_lead', JSON.stringify(appointmentData));
  navigate('/');
