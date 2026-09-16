@@ -8,6 +8,7 @@ export interface NewLeadRecord {
  clientEmail: string;
  address: string;
  leadSource: string;
+ angiAccount?: 'not_identified' | 'dxg' | 'mr_contract';
  serviceNeeded: string;
  status: string;
  notes: string;
