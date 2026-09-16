@@ -37,7 +37,7 @@ import { ActivityLogModal } from './ActivityLogModal';
 import { useUser } from '../lib/userContext';
 import { logAuditActivity } from '../lib/activityLogger';
 import { buildEventPayload, createGoogleCalendarEvent, checkBackendCalendarStatus, BackendCalendarStatus } from '../lib/calendar';
-import { addOrUpdateScheduledClient } from '../lib/scheduledClients';
+import { addOrUpdateScheduledClient, recordMeetingScheduledTransition } from '../lib/scheduledClients';
 import { addNewLead, getNewLeads, fetchNewLeads, migrateLegacyNewLeads, updateNewLeadStatus } from '../lib/newLeads';
 
 export const MainLayout: React.FC = () => {
@@ -235,6 +235,13 @@ export const MainLayout: React.FC = () => {
  console.warn('Auto-sync to Google Sheet warning:', sheetErr);
  }
  }
+
+ recordMeetingScheduledTransition({
+ clientName: lastSubmittedFormData.clientName,
+ clientPhone: lastSubmittedFormData.clientPhone,
+ leadSource: lastSubmittedFormData.sourceTabName || lastSubmittedFormData.leadSource,
+ rowIndex: lastSubmittedFormData.sourceRowIndex,
+ });
 
  const matchedSp = config.salespeople.find((s) => s.code === lastSubmittedFormData.salespersonCode);
  addOrUpdateScheduledClient(
