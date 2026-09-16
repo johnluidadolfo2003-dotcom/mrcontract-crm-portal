@@ -46,6 +46,7 @@ import {
 import { LeadDrawer } from '../components/ui/LeadDrawer';
 import { sendThumbtackLeadToHouzz } from '../lib/webhooks';
 import { WebhookDiagnosticsModal } from '../components/WebhookDiagnosticsModal';
+import { recordMeetingScheduledTransition } from '../lib/scheduledClients';
 
 const getDateKeyInTimeZone = (date: Date, timeZone: string): string => {
  const parts = new Intl.DateTimeFormat('en-US', {
@@ -357,6 +358,15 @@ export const NewLeadsPage: React.FC = () => {
  },
  newStatus
  );
+ }
+
+ if (newStatus === 'Meeting Scheduled') {
+  recordMeetingScheduledTransition({
+   clientName: lead.clientName,
+   clientPhone: lead.clientPhone,
+   leadSource: lead.leadSource,
+   rowIndex: lead.rowIndex,
+  });
  }
 
  updateNewLeadStatus(lead.id, newStatus);
