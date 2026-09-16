@@ -38,7 +38,7 @@ import { useUser } from '../lib/userContext';
 import { logAuditActivity } from '../lib/activityLogger';
 import { buildEventPayload, createGoogleCalendarEvent, checkBackendCalendarStatus, BackendCalendarStatus } from '../lib/calendar';
 import { addOrUpdateScheduledClient } from '../lib/scheduledClients';
-import { addNewLead, getNewLeads, fetchNewLeads, migrateLegacyNewLeads } from '../lib/newLeads';
+import { addNewLead, getNewLeads, fetchNewLeads, migrateLegacyNewLeads, updateNewLeadStatus } from '../lib/newLeads';
 
 export const MainLayout: React.FC = () => {
  const navigate = useNavigate();
@@ -187,16 +187,42 @@ export const MainLayout: React.FC = () => {
 
  try {
  const calendarResult = await createGoogleCalendarEvent(pendingPayload, config.calendarId);
+ let sheetSynced = false;
 
  if (config.spreadsheetId && config.autoSyncToSheets !== false) {
  try {
- await (await import('../lib/sheets')).appendAppointmentToSheet(
+ const sheets = await import('../lib/sheets');
+ if (lastSubmittedFormData.sourceRowIndex && lastSubmittedFormData.sourceRowIndex > 1) {
+ sheetSynced = await sheets.updateLeadInSpreadsheet(
  undefined,
- config.spreadsheetId!,
+ config.spreadsheetId,
+ {
+ tabName: lastSubmittedFormData.sourceTabName || lastSubmittedFormData.leadSource,
+ rowIndex: lastSubmittedFormData.sourceRowIndex,
+ clientName: lastSubmittedFormData.clientName,
+ clientPhone: lastSubmittedFormData.clientPhone,
+ clientEmail: lastSubmittedFormData.clientEmail,
+ address: lastSubmittedFormData.address,
+ serviceNeeded: lastSubmittedFormData.serviceNeeded || lastSubmittedFormData.leadType,
+ leadFee: lastSubmittedFormData.leadFee,
+ notes: lastSubmittedFormData.notes,
+ status: 'Meeting Scheduled',
+ appointmentDate: lastSubmittedFormData.appointmentDate,
+ startTime: lastSubmittedFormData.startTime,
+ endTime: lastSubmittedFormData.endTime,
+ salespersonCode: lastSubmittedFormData.salespersonCode,
+ }
+ );
+ } else {
+ await sheets.appendAppointmentToSheet(
+ undefined,
+ config.spreadsheetId,
  config.sheetTabName || 'Appointments',
  lastSubmittedFormData,
- 'Scheduled'
+ 'Meeting Scheduled'
  );
+ sheetSynced = true;
+ }
  } catch (sheetErr) {
  console.warn('Auto-sync to Google Sheet warning:', sheetErr);
  }
@@ -209,10 +235,14 @@ export const MainLayout: React.FC = () => {
  null,
  {
  status: 'Meeting Scheduled',
- sheetSynced: !!config.spreadsheetId,
+ sheetSynced,
  salespersonName: matchedSp?.name,
  }
  );
+
+ if (lastSubmittedFormData.sourceLeadId && sheetSynced) {
+ updateNewLeadStatus(lastSubmittedFormData.sourceLeadId, 'Meeting Scheduled');
+ }
 
  // Log action to Team Audit Trail
  logAuditActivity({
