@@ -673,34 +673,123 @@ export const ScheduledClientPage: React.FC = () => {
  const target = scheduledClients.find((client) => client.id === id) || getScheduledClients().find((client) => client.id === id);
  setClientToDelete(null);
 
+ const normalizeText = (value?: string) => String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+ const normalizePhone = (value?: string) => String(value || '').replace(/\D/g, '');
+ const targetName = normalizeText(target?.clientName);
+ const targetPhone = normalizePhone(target?.clientPhone);
+ const targetEmail = normalizeText(target?.clientEmail);
+ const targetAddress = normalizeText(target?.address);
+ const targetSource = normalizeText(target?.leadSource);
+
+ const isSameClient = (candidate: {
+  id?: string;
+  clientName?: string;
+  clientPhone?: string;
+  clientEmail?: string;
+  address?: string;
+  leadSource?: string;
+  tabName?: string;
+  appointmentDate?: string;
+  startTime?: string;
+ }) => {
+  if (candidate.id && candidate.id === id) return true;
+
+  const candidatePhone = normalizePhone(candidate.clientPhone);
+  if (targetPhone.length >= 7 && candidatePhone === targetPhone) return true;
+
+  const candidateEmail = normalizeText(candidate.clientEmail);
+  if (targetEmail && candidateEmail === targetEmail) return true;
+
+  const candidateName = normalizeText(candidate.clientName);
+  if (!targetName || candidateName !== targetName) return false;
+
+  const candidateAddress = normalizeText(candidate.address);
+  if (targetAddress && candidateAddress && candidateAddress === targetAddress) return true;
+
+  const candidateSource = normalizeText(candidate.tabName || candidate.leadSource);
+  if (targetSource && targetSource !== 'google calendar' && candidateSource === targetSource) return true;
+
+  return Boolean(
+   target?.appointmentDate &&
+   candidate.appointmentDate === target.appointmentDate &&
+   (!target.startTime || candidate.startTime === target.startTime)
+  );
+ };
+
  try {
   if (!target) throw new Error('The scheduled client could not be identified.');
 
-  const sourceTab = String(target.leadSource || '').trim();
-  const hasSheetRow = Boolean(
-   config.spreadsheetId &&
-   target.rowIndex &&
-   target.rowIndex > 0 &&
-   sourceTab &&
-   sourceTab.toLowerCase() !== 'google calendar'
-  );
+  let deletedFromSheet = false;
 
-  if (hasSheetRow) {
-   await deleteRowFromSheet(
-    undefined,
-    config.spreadsheetId!,
-    sourceTab,
-    target.rowIndex!,
-    target.clientName,
-    target.clientPhone
+  if (config.spreadsheetId) {
+   let sourceTab = String(target.leadSource || '').trim();
+   let sourceRowIndex = target.rowIndex;
+
+   const hasUsableRow = Boolean(
+    sourceRowIndex &&
+    sourceRowIndex > 0 &&
+    sourceTab &&
+    sourceTab.toLowerCase() !== 'google calendar'
    );
+
+   if (!hasUsableRow) {
+    let allTabs = (config.leadSources && config.leadSources.length > 0
+     ? config.leadSources
+     : DEFAULT_LEAD_SOURCES
+    ).filter(isLeadSourceTab);
+
+    try {
+     const details = await getSpreadsheetDetails(undefined, config.spreadsheetId, true);
+     const discoveredTabs = (details.sheets || []).map((sheet) => sheet.title).filter(isLeadSourceTab);
+     allTabs = Array.from(new Set([...allTabs, ...discoveredTabs]));
+    } catch (detailsError) {
+     console.warn('Could not refresh spreadsheet tabs before deletion:', detailsError);
+    }
+
+    const sheetData = await readAllSpreadsheetTabs(
+     undefined,
+     config.spreadsheetId,
+     allTabs,
+     true
+    );
+
+    const matches = sheetData.rows.filter((row) => isSameClient(row));
+    const exactSourceMatches = matches.filter(
+     (row) => normalizeText(row.tabName || row.leadSource) === targetSource
+    );
+    const selectedRow = exactSourceMatches[0] || matches[0];
+
+    if (selectedRow) {
+     sourceTab = String(selectedRow.tabName || selectedRow.leadSource || '').trim();
+     sourceRowIndex = selectedRow.rowIndex;
+    }
+   }
+
+   if (
+    sourceTab &&
+    sourceTab.toLowerCase() !== 'google calendar' &&
+    sourceRowIndex &&
+    sourceRowIndex > 0
+   ) {
+    await deleteRowFromSheet(
+     undefined,
+     config.spreadsheetId,
+     sourceTab,
+     sourceRowIndex,
+     target.clientName,
+     target.clientPhone
+    );
+    deletedFromSheet = true;
+   }
   }
 
-  deleteScheduledClient(id);
-  setScheduledClients((current) => current.filter((client) => client.id !== id));
+  const remainingClients = getScheduledClients().filter((client) => !isSameClient(client));
+  saveScheduledClientsList(remainingClients);
+  setScheduledClients(remainingClients);
   window.dispatchEvent(new CustomEvent('dashboard_data_refresh'));
+
   setSuccessMessage(
-   hasSheetRow
+   deletedFromSheet
     ? 'Client removed from the CRM and Google Sheets. The Calendar event was not deleted.'
     : 'Client removed from Meeting Scheduled. The Calendar event was not deleted.'
   );
