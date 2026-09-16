@@ -46,7 +46,7 @@ import { AppConfig, AppointmentFormData, LEAD_STATUS_OPTIONS } from '../types';
 import { loadAppConfig, saveAppConfig, DEFAULT_LEAD_SOURCES, isLeadSourceTab } from '../config';
 import { formatPhoneNumber, isMeetingScheduledStatus } from '../lib/utils';
 import { buildEventPayload, createGoogleCalendarEvent, updateGoogleCalendarEvent, fetchGoogleCalendarEvents, getCachedCalendarEvents, matchCalendarEventForLead, formatTime12Hour, formatAppointmentDateTime, formatAppointmentDateNice, getCalendarSyncStatus, CalendarSyncStatus } from '../lib/calendar';
-import { appendAppointmentToSheet, updateLeadInSpreadsheet, updateLeadStatusInSpreadsheet, readAllSpreadsheetTabs, getSpreadsheetDetails, invalidateSpreadsheetCache, getStatusOverrideTimestamp } from '../lib/sheets';
+import { appendAppointmentToSheet, updateLeadInSpreadsheet, updateLeadStatusInSpreadsheet, readAllSpreadsheetTabs, getSpreadsheetDetails, invalidateSpreadsheetCache, getStatusOverrideTimestamp, deleteRowFromSheet } from '../lib/sheets';
 import { sendLeadToHouzzPro } from '../lib/houzz';
 
 const CALENDAR_STATUS_OVERRIDES_KEY = 'mrcontract_calendar_status_overrides';
@@ -667,14 +667,48 @@ export const ScheduledClientPage: React.FC = () => {
  setClientToDelete({ id, name });
  };
 
- const confirmDeleteClient = () => {
+ const confirmDeleteClient = async () => {
  if (!clientToDelete) return;
- const { id, name } = clientToDelete;
+ const { id } = clientToDelete;
+ const target = scheduledClients.find((client) => client.id === id) || getScheduledClients().find((client) => client.id === id);
  setClientToDelete(null);
- deleteScheduledClient(id);
- setScheduledClients(getScheduledClients());
- setSuccessMessage("Client removed");
- setTimeout(() => setSuccessMessage(null), 3000);
+
+ try {
+  if (!target) throw new Error('The scheduled client could not be identified.');
+
+  const sourceTab = String(target.leadSource || '').trim();
+  const hasSheetRow = Boolean(
+   config.spreadsheetId &&
+   target.rowIndex &&
+   target.rowIndex > 0 &&
+   sourceTab &&
+   sourceTab.toLowerCase() !== 'google calendar'
+  );
+
+  if (hasSheetRow) {
+   await deleteRowFromSheet(
+    undefined,
+    config.spreadsheetId!,
+    sourceTab,
+    target.rowIndex!,
+    target.clientName,
+    target.clientPhone
+   );
+  }
+
+  deleteScheduledClient(id);
+  setScheduledClients((current) => current.filter((client) => client.id !== id));
+  window.dispatchEvent(new CustomEvent('dashboard_data_refresh'));
+  setSuccessMessage(
+   hasSheetRow
+    ? 'Client removed from the CRM and Google Sheets. The Calendar event was not deleted.'
+    : 'Client removed from Meeting Scheduled. The Calendar event was not deleted.'
+  );
+  setTimeout(() => setSuccessMessage(null), 4500);
+ } catch (error: any) {
+  setErrorMessage(error?.message || 'The client could not be deleted.');
+  setTimeout(() => setErrorMessage(null), 4500);
+ }
  };
 
  const handleStatusChange = async (target: ScheduledClientRecord, newStatus: string) => {
