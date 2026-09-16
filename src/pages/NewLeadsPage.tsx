@@ -389,7 +389,8 @@ export const NewLeadsPage: React.FC = () => {
     clientName: lead.clientName,
     clientPhone: lead.clientPhone,
     tabName: lead.leadSource || 'Angi',
-    leadId: lead.id,
+    oldValue: getAngiAccountLabel(lead.angiAccount),
+    newValue: getAngiAccountLabel(angiAccount),
     details: `Angi account changed to "${getAngiAccountLabel(angiAccount)}"`,
    });
    setSyncMsg('Angi account identification saved');
