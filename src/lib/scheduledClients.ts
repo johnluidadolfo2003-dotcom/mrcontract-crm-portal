@@ -168,7 +168,7 @@ export function resolveSalespersonForLead(
  if (textToScan.trim()) {
  // Check for"Direct Leads by Daniel"or"by Daniel"or"Daniel Grider"
  if (/\b(?:by\s+daniel|daniel\s+grider|\bdg\b)/i.test(textToScan)) {
- return { code: 'DG', name: 'Daniel Grider (DG)' };
+ return { code: 'DG', name: 'DG' };
  }
  // Check for"Rep: [Name]","Salesperson: [Name]","Assigned to: [Name]"
  const repPattern = /(?:rep|representative|salesperson|sales\s*rep|assigned\s*to|estimator)\s*[:\-]\s*([a-zA-Z0-9\s\(\)]+)/i;
@@ -567,6 +567,17 @@ export function getScheduledClients(calendarEvents?: any[]): ScheduledClientReco
         }
       });
     }
+
+    // Standard salesperson initials are the display names throughout the CRM.
+    // Normalize older saved DG records that still contain the former full name.
+    finalCleanList.forEach((rec) => {
+      const code = String(rec.salespersonCode || '').trim().toUpperCase();
+      const name = String(rec.salespersonName || '').trim();
+      if (code === 'DG' || /^(?:daniel grider(?: \(dg\))?|dg)$/i.test(name)) {
+        rec.salespersonCode = 'DG';
+        rec.salespersonName = 'DG';
+      }
+    });
 
     return sortScheduledClientsNewestFirst(finalCleanList);
  } catch (e) {
