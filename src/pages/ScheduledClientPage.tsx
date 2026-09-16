@@ -46,10 +46,43 @@ import { AppConfig, AppointmentFormData, LEAD_STATUS_OPTIONS } from '../types';
 import { loadAppConfig, saveAppConfig, DEFAULT_LEAD_SOURCES, isLeadSourceTab } from '../config';
 import { formatPhoneNumber, isMeetingScheduledStatus } from '../lib/utils';
 import { buildEventPayload, createGoogleCalendarEvent, updateGoogleCalendarEvent, fetchGoogleCalendarEvents, getCachedCalendarEvents, matchCalendarEventForLead, formatTime12Hour, formatAppointmentDateTime, formatAppointmentDateNice, getCalendarSyncStatus, CalendarSyncStatus } from '../lib/calendar';
-import { appendAppointmentToSheet, updateLeadInSpreadsheet, updateLeadStatusInSpreadsheet, readAllSpreadsheetTabs, getSpreadsheetDetails, invalidateSpreadsheetCache } from '../lib/sheets';
+import { appendAppointmentToSheet, updateLeadInSpreadsheet, updateLeadStatusInSpreadsheet, readAllSpreadsheetTabs, getSpreadsheetDetails, invalidateSpreadsheetCache, getStatusOverrideTimestamp } from '../lib/sheets';
 import { sendLeadToHouzzPro } from '../lib/houzz';
 
 const CALENDAR_STATUS_OVERRIDES_KEY = 'mrcontract_calendar_status_overrides';
+
+function getBusinessDateKey(date: Date, timeZone: string): string {
+ const parts = new Intl.DateTimeFormat('en-US', {
+  timeZone,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+ }).formatToParts(date);
+ const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+ return `${values.year}-${values.month}-${values.day}`;
+}
+
+function getMeetingScheduledBadge(client: ScheduledClientRecord, timeZone: string): 'TODAY' | 'YESTERDAY' | '' {
+ const statusChangedAt = client.rowIndex
+  ? getStatusOverrideTimestamp(client.leadSource || 'tab', client.rowIndex, client.clientName)
+  : null;
+ const enteredAt = statusChangedAt
+  ? new Date(statusChangedAt)
+  : client.origin === 'web_portal' && client.scheduledAt
+   ? new Date(client.scheduledAt)
+   : null;
+ if (!enteredAt || Number.isNaN(enteredAt.getTime())) return '';
+
+ const todayKey = getBusinessDateKey(new Date(), timeZone);
+ const yesterdayBase = new Date(`${todayKey}T12:00:00Z`);
+ yesterdayBase.setUTCDate(yesterdayBase.getUTCDate() - 1);
+ const yesterdayKey = yesterdayBase.toISOString().slice(0, 10);
+ const enteredKey = getBusinessDateKey(enteredAt, timeZone);
+
+ if (enteredKey === todayKey) return 'TODAY';
+ if (enteredKey === yesterdayKey) return 'YESTERDAY';
+ return '';
+}
 
 function getCalendarStatusOverride(eventId?: string): string {
  if (!eventId) return '';
@@ -925,7 +958,18 @@ export const ScheduledClientPage: React.FC = () => {
  <User className="w-4 h-4 text-[#FF5500]" />
  </div>
  <div>
- <div className="font-bold text-black dark:text-white">{client.clientName}</div>
+ <div className="flex items-center gap-2 flex-wrap">
+ <span className="font-bold text-black dark:text-white">{client.clientName}</span>
+ {getMeetingScheduledBadge(client, config.timeZone || 'America/New_York') && (
+ <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${
+  getMeetingScheduledBadge(client, config.timeZone || 'America/New_York') === 'TODAY'
+   ? 'bg-orange-100 dark:bg-orange-900/60 text-orange-800 dark:text-orange-200 border-orange-300 dark:border-orange-700/60'
+   : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700'
+ }`}>
+ {getMeetingScheduledBadge(client, config.timeZone || 'America/New_York')}
+ </span>
+ )}
+ </div>
  <div className="text-[10px] text-zinc-400 dark:text-zinc-500">Source: {client.leadSource || 'Web Portal'}</div>
  </div>
  </div>
@@ -1022,8 +1066,7 @@ export const ScheduledClientPage: React.FC = () => {
  }
  }
 
- const isToday =
- new Date().toISOString().split('T')[0] === client.appointmentDate;
+ const recencyBadge = getMeetingScheduledBadge(client, config.timeZone || 'America/New_York');
 
  return (
  <div
@@ -1060,9 +1103,13 @@ export const ScheduledClientPage: React.FC = () => {
  <h3 className="text-sm font-bold text-black dark:text-white truncate">
  {client.clientName}
  </h3>
- {isToday && (
- <span className="px-2 py-0.5 rounded-md text-xs font-black uppercase tracking-wider bg-orange-100 dark:bg-orange-900/60 text-orange-800 dark:text-orange-200 border border-orange-300 dark:border-orange-700/60">
- TODAY
+ {recencyBadge && (
+ <span className={`px-2 py-0.5 rounded-md text-xs font-black uppercase tracking-wider border ${
+  recencyBadge === 'TODAY'
+   ? 'bg-orange-100 dark:bg-orange-900/60 text-orange-800 dark:text-orange-200 border-orange-300 dark:border-orange-700/60'
+   : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700'
+ }`}>
+ {recencyBadge}
  </span>
  )}
  
