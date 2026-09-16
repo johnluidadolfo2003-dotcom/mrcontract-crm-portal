@@ -35,6 +35,7 @@ export interface SheetRowRecord {
  address?: string;
  salespersonCode?: string;
  leadSource?: string;
+ angiAccount?: 'not_identified' | 'dxg' | 'mr_contract';
  leadType?: string;
  serviceNeeded?: string;
  notes?: string;

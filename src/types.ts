@@ -1,5 +1,6 @@
 export type LeadSource = string;
 export type LeadType = string;
+export type AngiAccount = 'not_identified' | 'dxg' | 'mr_contract';
 
 export const LEAD_STATUS_OPTIONS = [
  'New',
@@ -133,6 +134,7 @@ export interface LeadItem {
  clientEmail?: string;
  address?: string;
  leadSource?: string;
+ angiAccount?: AngiAccount;
  tabName?: string;
  serviceNeeded?: string;
  leadFee?: string;

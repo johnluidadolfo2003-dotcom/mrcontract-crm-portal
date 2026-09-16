@@ -48,6 +48,20 @@ import { sendThumbtackLeadToHouzz } from '../lib/webhooks';
 import { WebhookDiagnosticsModal } from '../components/WebhookDiagnosticsModal';
 import { recordMeetingScheduledTransition } from '../lib/scheduledClients';
 
+const ANGI_ACCOUNT_OPTIONS = [
+ { value: 'not_identified', label: 'Angi (Not Identified)' },
+ { value: 'dxg', label: 'Angi (DXG)' },
+ { value: 'mr_contract', label: 'Angi (Mr. Contract)' },
+] as const;
+
+type AngiAccountValue = (typeof ANGI_ACCOUNT_OPTIONS)[number]['value'];
+
+const isAngiLead = (lead: Pick<NewLeadRecord, 'leadSource' | 'webhookSource'>): boolean =>
+ String(lead.leadSource || lead.webhookSource || '').trim().toLowerCase() === 'angi';
+
+const getAngiAccountLabel = (value?: string): string =>
+ ANGI_ACCOUNT_OPTIONS.find((option) => option.value === value)?.label || 'Angi (Not Identified)';
+
 const getDateKeyInTimeZone = (date: Date, timeZone: string): string => {
  const parts = new Intl.DateTimeFormat('en-US', {
   timeZone,
@@ -132,6 +146,7 @@ export const NewLeadsPage: React.FC = () => {
       serviceNeeded: lead.serviceNeeded,
       leadType: lead.serviceNeeded,
       leadSource: lead.leadSource || 'Angi',
+      angiAccount: lead.angiAccount || 'not_identified',
       tabName: (lead as any).tabName || lead.leadSource || 'Angi',
       status: lead.status || 'New',
       leadFee: lead.leadFee,
@@ -183,6 +198,7 @@ export const NewLeadsPage: React.FC = () => {
           address: updatedLead.address,
           serviceNeeded: updatedLead.serviceNeeded || updatedLead.leadType,
           leadSource: updatedLead.leadSource || updatedLead.tabName,
+          angiAccount: updatedLead.angiAccount,
           leadFee: updatedLead.leadFee,
           status: updatedLead.status,
           notes: updatedLead.notes,
@@ -191,6 +207,17 @@ export const NewLeadsPage: React.FC = () => {
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new Error(error.error || 'The Thumbtack webhook record could not be updated.');
+      }
+    }
+    if (isAngiLead(updatedLead as NewLeadRecord) && updatedLead.angiAccount) {
+      const response = await fetch(`/api/leads/${encodeURIComponent(leadId)}/angi-account`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ angiAccount: updatedLead.angiAccount }),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || 'The Angi account identification could not be saved.');
       }
     }
     setSelectedLeadForDrawer((prev) => (prev ? { ...prev, ...updatedLead } : null));
@@ -338,6 +365,41 @@ export const NewLeadsPage: React.FC = () => {
  } finally {
  setIsSavingEdit(false);
  }
+ };
+
+ const handleAngiAccountChange = async (lead: NewLeadRecord, angiAccount: AngiAccountValue) => {
+  setUpdatingId(lead.id);
+  try {
+   const response = await fetch(`/api/leads/${encodeURIComponent(lead.id)}/angi-account`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ angiAccount }),
+   });
+   const result = await response.json().catch(() => ({}));
+   if (!response.ok || !result.success) {
+    throw new Error(result.error || 'Unable to save Angi account.');
+   }
+   updateNewLeadInfo(lead.id, { angiAccount });
+   setLeads(getNewLeads());
+   setSelectedLeadForDrawer((current) =>
+    current && (current as any).id === lead.id ? { ...current, angiAccount } : current
+   );
+   logAuditActivity({
+    actionType: 'update_lead',
+    clientName: lead.clientName,
+    clientPhone: lead.clientPhone,
+    tabName: lead.leadSource || 'Angi',
+    oldValue: getAngiAccountLabel(lead.angiAccount),
+    newValue: getAngiAccountLabel(angiAccount),
+    details: `Angi account changed to "${getAngiAccountLabel(angiAccount)}"`,
+   });
+   setSyncMsg('Angi account identification saved');
+  } catch (err: any) {
+   setSyncMsg(err.message || 'Unable to save Angi account.');
+  } finally {
+   setUpdatingId(null);
+   setTimeout(() => setSyncMsg(null), 3500);
+  }
  };
 
  const handleStatusChange = async (lead: NewLeadRecord, newStatus: string) => {
@@ -642,17 +704,24 @@ export const NewLeadsPage: React.FC = () => {
 
   const availableSources = Array.from(
  new Set([
- 'Angi',
+ ...ANGI_ACCOUNT_OPTIONS.map((option) => option.label),
  'Thumbtack',
- ...leads.map((l) => l.leadSource).filter((s): s is string => Boolean(s)),
+ ...leads
+  .map((lead) => lead.leadSource)
+  .filter((source): source is string => Boolean(source) && source.toLowerCase() !== 'angi'),
  ])
  );
 
  const filteredLeads = leads
  .filter((lead) => {
  if (sourceFilter !== 'ALL') {
- const src = (lead.leadSource || 'Angi').toLowerCase();
- if (src !== sourceFilter.toLowerCase()) return false;
+ const normalizedFilter = sourceFilter.toLowerCase();
+ if (normalizedFilter.startsWith('angi (')) {
+  if (!isAngiLead(lead) || getAngiAccountLabel(lead.angiAccount).toLowerCase() !== normalizedFilter) return false;
+ } else {
+  const src = (lead.leadSource || 'Angi').toLowerCase();
+  if (src !== normalizedFilter) return false;
+ }
  }
  const query = searchTerm.toLowerCase().trim();
  if (!query) return true;
@@ -662,6 +731,7 @@ export const NewLeadsPage: React.FC = () => {
  (lead.clientEmail || '').toLowerCase().includes(query) ||
  (lead.serviceNeeded || '').toLowerCase().includes(query) ||
  (lead.leadSource || '').toLowerCase().includes(query) ||
+ (isAngiLead(lead) && getAngiAccountLabel(lead.angiAccount).toLowerCase().includes(query)) ||
  (lead.address || '').toLowerCase().includes(query)
  );
  })
@@ -818,9 +888,24 @@ export const NewLeadsPage: React.FC = () => {
 
                     <div className="flex items-center gap-2 mt-1 flex-wrap text-xs">
                       {getStatusBadge(lead.status)}
-                      <span className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-xs font-semibold border border-zinc-200 dark:border-zinc-700">
-                        {lead.leadSource || 'Angi'}
-                      </span>
+                      {isAngiLead(lead) ? (
+                        <select
+                          value={lead.angiAccount || 'not_identified'}
+                          onClick={(event) => event.stopPropagation()}
+                          onChange={(event) => handleAngiAccountChange(lead, event.target.value as AngiAccountValue)}
+                          disabled={updatingId === lead.id}
+                          className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-semibold border border-zinc-200 dark:border-zinc-700 cursor-pointer disabled:opacity-60"
+                          title="Angi account identification only; routing is unchanged"
+                        >
+                          {ANGI_ACCOUNT_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-xs font-semibold border border-zinc-200 dark:border-zinc-700">
+                          {lead.leadSource || 'Other'}
+                        </span>
+                      )}
                       {lead.serviceNeeded && (
                         <span className="text-zinc-500 dark:text-zinc-400 text-xs truncate max-w-[200px]" title={lead.serviceNeeded}>
                           {lead.serviceNeeded}
@@ -944,9 +1029,24 @@ export const NewLeadsPage: React.FC = () => {
  </td>
  <td className="py-3 px-4 whitespace-nowrap">
  <div className="flex items-center gap-1.5">
+ {isAngiLead(lead) ? (
+ <select
+  value={lead.angiAccount || 'not_identified'}
+  onClick={(event) => event.stopPropagation()}
+  onChange={(event) => handleAngiAccountChange(lead, event.target.value as AngiAccountValue)}
+  disabled={updatingId === lead.id}
+  className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 cursor-pointer disabled:opacity-60"
+  title="Angi account identification only; routing is unchanged"
+ >
+  {ANGI_ACCOUNT_OPTIONS.map((option) => (
+   <option key={option.value} value={option.value}>{option.label}</option>
+  ))}
+ </select>
+ ) : (
  <span className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
- {lead.leadSource || 'Angi'}
+  {lead.leadSource || 'Other'}
  </span>
+ )}
  </div>
  </td>
  <td className="py-3 px-4 whitespace-nowrap text-zinc-500 dark:text-zinc-400">
