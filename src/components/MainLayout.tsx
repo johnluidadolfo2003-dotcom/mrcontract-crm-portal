@@ -191,14 +191,15 @@ export const MainLayout: React.FC = () => {
 
  if (config.spreadsheetId && config.autoSyncToSheets !== false) {
  try {
- const sheets = await import('../lib/sheets');
  if (lastSubmittedFormData.sourceRowIndex && lastSubmittedFormData.sourceRowIndex > 1) {
- sheetSynced = await sheets.updateLeadInSpreadsheet(
- undefined,
- config.spreadsheetId,
- {
- tabName: lastSubmittedFormData.sourceTabName || lastSubmittedFormData.leadSource,
+ const sheetResponse = await fetch('/api/sheets/update-lead', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({
+ spreadsheetId: config.spreadsheetId,
+ sheetTab: lastSubmittedFormData.sourceTabName || lastSubmittedFormData.leadSource,
  rowIndex: lastSubmittedFormData.sourceRowIndex,
+ leadData: {
  clientName: lastSubmittedFormData.clientName,
  clientPhone: lastSubmittedFormData.clientPhone,
  clientEmail: lastSubmittedFormData.clientEmail,
@@ -211,9 +212,16 @@ export const MainLayout: React.FC = () => {
  startTime: lastSubmittedFormData.startTime,
  endTime: lastSubmittedFormData.endTime,
  salespersonCode: lastSubmittedFormData.salespersonCode,
+ },
+ }),
+ });
+ if (!sheetResponse.ok) {
+ const sheetError = await sheetResponse.json().catch(() => ({}));
+ throw new Error(sheetError.error || 'Failed to update the scheduled lead in Google Sheets.');
  }
- );
+ sheetSynced = true;
  } else {
+ const sheets = await import('../lib/sheets');
  await sheets.appendAppointmentToSheet(
  undefined,
  config.spreadsheetId,
