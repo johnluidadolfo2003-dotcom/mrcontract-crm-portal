@@ -26,38 +26,8 @@ import { useUser } from '../lib/userContext';
 import { getNewLeads } from '../lib/newLeads';
 import { getScheduledClients } from '../lib/scheduledClients';
 import { isFollowUpStatus, isMeetingScheduledStatus } from '../lib/utils';
-import { isLeadSourceTab, loadAppConfig } from '../config';
+import { isLeadSourceTab } from '../config';
 import { TrashModal } from './TrashModal';
-
-function getBusinessDateKey(date: Date, timeZone: string): string {
- const parts = new Intl.DateTimeFormat('en-US', {
-  timeZone,
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
- }).formatToParts(date);
- const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
- return `${values.year}-${values.month}-${values.day}`;
-}
-
-function getMeetingScheduledIndicator(records: ReturnType<typeof getScheduledClients>): 'TODAY' | 'YESTERDAY' | '' {
- const timeZone = loadAppConfig().timeZone || 'America/New_York';
- const todayKey = getBusinessDateKey(new Date(), timeZone);
- const yesterdayBase = new Date(`${todayKey}T12:00:00Z`);
- yesterdayBase.setUTCDate(yesterdayBase.getUTCDate() - 1);
- const yesterdayKey = yesterdayBase.toISOString().slice(0, 10);
-
- let hasYesterday = false;
- for (const record of records) {
-  if (!record.scheduledAt) continue;
-  const enteredAt = new Date(record.scheduledAt);
-  if (Number.isNaN(enteredAt.getTime())) continue;
-  const enteredKey = getBusinessDateKey(enteredAt, timeZone);
-  if (enteredKey === todayKey) return 'TODAY';
-  if (enteredKey === yesterdayKey) hasYesterday = true;
- }
- return hasYesterday ? 'YESTERDAY' : '';
-}
 
 interface SidebarProps {
  isOpen: boolean;
@@ -81,7 +51,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
  const { currentUser, setIsSwitchUserModalOpen, setIsActivityLogModalOpen } = useUser();
  const [newLeadsCount, setNewLeadsCount] = useState(() => getNewLeads().length);
  const [leadsCount, setLeadsCount] = useState(0);
- const [meetingScheduledIndicator, setMeetingScheduledIndicator] = useState<'TODAY' | 'YESTERDAY' | ''>(() => getMeetingScheduledIndicator(getScheduledClients()));
  const [isFollowUpsOpen, setIsFollowUpsOpen] = useState(false);
  const [isTrashOpen, setIsTrashOpen] = useState(false);
  const [counts, setCounts] = useState<Record<string, number>>({
@@ -167,7 +136,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
  // Ingest scheduled clients records
  try {
  const schedList = getScheduledClients();
- setMeetingScheduledIndicator(getMeetingScheduledIndicator(schedList));
  schedList.forEach((sc) => {
  if (sc && sc.clientName && !sc.clientName.toLowerCase().startsWith('unnamed')) {
  const phoneKey = sc.clientPhone ? String(sc.clientPhone).replace(/\D/g, '') : '';
@@ -311,7 +279,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
  path: '/scheduled-clients',
  icon: CalendarClock,
  badge: counts['Meeting Scheduled'] > 0 ? counts['Meeting Scheduled'] : (getScheduledClients().length > 0 ? getScheduledClients().length : undefined),
- indicator: meetingScheduledIndicator || undefined,
  },
  {
  name: 'Estimate Sent',
@@ -656,18 +623,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
  {showExpanded && (
  <span className="flex-1 truncate tracking-tight text-inherit">
  {item.name}
- </span>
- )}
-
- {showExpanded && item.indicator && (
- <span
- className={`px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wider border ${
-  item.indicator === 'TODAY'
-   ? 'bg-orange-100 dark:bg-orange-900/60 text-orange-800 dark:text-orange-200 border-orange-300 dark:border-orange-700/60'
-   : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700'
- }`}
- >
- {item.indicator}
  </span>
  )}
 
