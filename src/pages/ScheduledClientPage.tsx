@@ -239,12 +239,9 @@ export const ScheduledClientPage: React.FC = () => {
 			let repName = client.salespersonName || '';
 
 			if (matched && matched.formData) {
-				if (!repCode && matched.formData.salespersonCode) {
-					repCode = matched.formData.salespersonCode;
-				}
-				if (!repName && matched.formData.salespersonName) {
-					repName = matched.formData.salespersonName;
-				}
+				// Calendar is authoritative only for appointment timing and salesperson.
+				if (matched.formData.salespersonCode) repCode = matched.formData.salespersonCode;
+				if (matched.formData.salespersonName) repName = matched.formData.salespersonName;
 			}
 
 			if (!repCode) {
@@ -265,7 +262,6 @@ export const ScheduledClientPage: React.FC = () => {
 				appointmentDate: matched?.formData?.appointmentDate || client.appointmentDate,
 				startTime: matched?.formData?.startTime || client.startTime,
 				endTime: matched?.formData?.endTime || client.endTime,
-				notes: matched?.formData?.notes || client.notes,
 				salespersonCode: resolved.code,
 				salespersonName: resolved.name,
 				calendarEventId: matched?.event?.id || client.calendarEventId,
@@ -312,7 +308,10 @@ export const ScheduledClientPage: React.FC = () => {
      client.calendarEventId
     );
 
-    if (matched?.formData?.salespersonCode && !client.salespersonCode) {
+    if (
+     matched?.formData?.salespersonCode &&
+     matched.formData.salespersonCode.toUpperCase() !== String(client.salespersonCode || '').toUpperCase()
+    ) {
      const rep = representativeOptions.find(
       (option) => option.code.toUpperCase() === matched.formData.salespersonCode.toUpperCase()
      );
