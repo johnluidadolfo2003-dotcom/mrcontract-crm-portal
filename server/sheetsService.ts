@@ -66,6 +66,12 @@ export const DEFAULT_SHEET_HEADERS = [
   'Service Needed',
   'Lead Fee',
   'Status',
+  'Lead Source',
+  'Appointment Date',
+  'Start Time',
+  'End Time',
+  'Salesperson',
+  'Notes',
 ];
 
 // In-memory caches to prevent exceeding Google API quota
@@ -465,6 +471,11 @@ export function detectColumnMapping(headerRow: string[]) {
   const typeCol = findBestCol([(h) => h.includes('service') || h.includes('type')]);
   const leadFeeCol = findBestCol([(h) => h.includes('fee') || h.includes('cost')]);
   const statusCol = findBestCol([(h) => h.includes('status') || h.includes('stage')]);
+  const sourceCol = findBestCol([(h) => h.includes('lead source') || h === 'source']);
+  const dateCol = findBestCol([(h) => h.includes('appointment date') || h.includes('scheduled date')]);
+  const startCol = findBestCol([(h) => h.includes('start time') || h === 'start']);
+  const endCol = findBestCol([(h) => h.includes('end time') || h === 'end']);
+  const spCol = findBestCol([(h) => h.includes('salesperson') || h.includes('sales person') || h === 'rep']);
   const carrierCol = findBestCol([(h) => h.includes('carrier')]);
   const notesCol = findBestCol([(h) => h.includes('note') || h.includes('comment') || h.includes('detail')]);
 
@@ -477,8 +488,13 @@ export function detectColumnMapping(headerRow: string[]) {
     typeCol: typeCol !== -1 ? typeCol : 5,
     leadFeeCol: leadFeeCol !== -1 ? leadFeeCol : 6,
     statusCol: statusCol !== -1 ? statusCol : 7,
+    sourceCol: sourceCol !== -1 ? sourceCol : 8,
+    dateCol: dateCol !== -1 ? dateCol : 9,
+    startCol: startCol !== -1 ? startCol : 10,
+    endCol: endCol !== -1 ? endCol : 11,
+    spCol: spCol !== -1 ? spCol : 12,
     carrierCol: carrierCol !== -1 ? carrierCol : -1,
-    notesCol: notesCol !== -1 ? notesCol : -1,
+    notesCol: notesCol !== -1 ? notesCol : 13,
   };
 }
 
@@ -519,6 +535,11 @@ export function parseSheetValuesToRecords(
     let status = getVal(mapping.statusCol) || 'New';
     const serviceNeeded = getVal(mapping.typeCol);
     const timestamp = getVal(mapping.tsCol);
+    const appointmentDate = getVal(mapping.dateCol);
+    const startTime = getVal(mapping.startCol);
+    const endTime = getVal(mapping.endCol);
+    const salespersonCode = getVal(mapping.spCol);
+    const notes = getVal(mapping.notesCol);
     const carrier = mapping.carrierCol !== -1 ? getVal(mapping.carrierCol) : '';
 
     if (!clientName && !clientPhone && !clientEmail && !address) continue;
@@ -533,6 +554,11 @@ export function parseSheetValuesToRecords(
       leadType: serviceNeeded,
       address,
       timestamp,
+      appointmentDate,
+      startTime,
+      endTime,
+      salespersonCode,
+      notes,
       clientPhone,
       clientEmail,
       rawValues: row,
@@ -822,6 +848,10 @@ export async function updateLeadRow(
     status?: string;
     carrier?: string;
     notes?: string;
+    appointmentDate?: string;
+    startTime?: string;
+    endTime?: string;
+    salespersonCode?: string;
   },
   clientName?: string,
   clientPhone?: string
@@ -884,6 +914,18 @@ export async function updateLeadRow(
   }
   if (leadData.notes !== undefined && mapping.notesCol >= 0) {
     updates.push({ col: mapping.notesCol, val: leadData.notes });
+  }
+  if (leadData.appointmentDate !== undefined && mapping.dateCol >= 0) {
+    updates.push({ col: mapping.dateCol, val: leadData.appointmentDate });
+  }
+  if (leadData.startTime !== undefined && mapping.startCol >= 0) {
+    updates.push({ col: mapping.startCol, val: leadData.startTime });
+  }
+  if (leadData.endTime !== undefined && mapping.endCol >= 0) {
+    updates.push({ col: mapping.endCol, val: leadData.endTime });
+  }
+  if (leadData.salespersonCode !== undefined && mapping.spCol >= 0) {
+    updates.push({ col: mapping.spCol, val: leadData.salespersonCode });
   }
 
   // Update cells in Google Sheets
@@ -1002,7 +1044,7 @@ async function executeAppendLeadRow(
   } catch (_) {}
 
   const mapping = detectColumnMapping(headerRow);
-  const totalCols = Math.max(headerRow.length, 8);
+  const totalCols = Math.max(headerRow.length, 14);
   const rowValues: string[] = new Array(totalCols).fill('');
 
   const timestamp = generateTimestamp();
@@ -1020,6 +1062,11 @@ async function executeAppendLeadRow(
 
   if (mapping.leadFeeCol >= 0) rowValues[mapping.leadFeeCol] = leadData.leadFee || '';
   if (mapping.statusCol >= 0) rowValues[mapping.statusCol] = status || 'New';
+  if (mapping.sourceCol >= 0) rowValues[mapping.sourceCol] = leadData.leadSource || targetTab;
+  if (mapping.dateCol >= 0) rowValues[mapping.dateCol] = leadData.appointmentDate || '';
+  if (mapping.startCol >= 0) rowValues[mapping.startCol] = leadData.startTime || '';
+  if (mapping.endCol >= 0) rowValues[mapping.endCol] = leadData.endTime || '';
+  if (mapping.spCol >= 0) rowValues[mapping.spCol] = leadData.salespersonCode || '';
   
   // Weakness 27: Save incoming notes to the Notes column
   if (mapping.notesCol >= 0 && leadData.notes) {
