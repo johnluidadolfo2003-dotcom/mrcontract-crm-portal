@@ -326,6 +326,53 @@ export async function fetchGoogleCalendarEvents(
  }
 }
 
+
+/**
+ * Fetch events from every calendar accessible to the connected Google account.
+ * Source calendar IDs are retained on each event for safe editing/deletion.
+ */
+export async function fetchAllGoogleCalendarEvents(options?: {
+ timeMin?: string;
+ timeMax?: string;
+}): Promise<any[]> {
+ setCalendarSyncStatus({ status: 'syncing' });
+ try {
+  const params = new URLSearchParams();
+  if (options?.timeMin) params.set('timeMin', options.timeMin);
+  if (options?.timeMax) params.set('timeMax', options.timeMax);
+  const query = params.toString() ? `?${params.toString()}` : '';
+
+  const response = await fetch(`/api/calendar/events/all${query}`);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.success || !Array.isArray(data.events)) {
+   throw new Error(data.error || data.message || `Calendar request failed (HTTP ${response.status}).`);
+  }
+
+  setCachedCalendarEvents(data.events);
+  setCalendarSyncStatus({
+   status: 'success',
+   error: null,
+   errorCode: null,
+   eventsCount: data.events.length,
+   calendarId: 'all-accessible',
+   authSource: data.authSource || 'backend',
+   lastSyncAt: new Date().toISOString(),
+  });
+  return data.events;
+ } catch (error: any) {
+  console.warn('[All Calendar Sync Notice]:', error);
+  setCalendarSyncStatus({
+   status: 'error',
+   error: error?.message || 'Failed to load accessible calendars.',
+   errorCode: 'ALL_CALENDARS_FETCH_FAILED',
+   calendarId: 'all-accessible',
+   authSource: 'backend',
+   lastSyncAt: new Date().toISOString(),
+  });
+  return getCachedCalendarEvents();
+ }
+}
+
 /**
  * Creates a Google Calendar appointment event via the backend server proxy.
  */
@@ -614,7 +661,7 @@ export function parseCalendarEventToFormData(
  let clientName = getDescVal('CLIENT NAME');
  const clientPhone = getDescVal('PHONE');
  let clientEmail = getDescVal('EMAIL');
- const address = getDescVal('ADDRESS') || location;
+ const address = location || getDescVal('ADDRESS');
  let leadSource = getDescVal('LEAD SOURCE');
  let leadType = getDescVal('TYPE');
   if (leadType.startsWith('□')) {
@@ -709,7 +756,7 @@ export function parseCalendarEventToFormData(
  const activeSources = config?.leadSources?.length ? config.leadSources : ['Angi', 'Thumbtack', 'Houzz', 'Referral'];
  const activeTypes = config?.leadTypes?.length ? config.leadTypes : ['Direct', 'Insurance', 'Other'];
 
- if (!activeSources.includes(leadSource)) {
+ if (!leadSource) {
  leadSource = activeSources[0] || 'Angi';
  }
  if (!activeTypes.includes(leadType)) {
