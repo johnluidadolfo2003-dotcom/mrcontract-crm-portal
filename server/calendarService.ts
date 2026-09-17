@@ -304,6 +304,24 @@ export async function listCalendarEvents(options: {
   requiredScopes?: string[];
   status?: number;
 }> {
+  if (options.calendarId === 'all-accessible') {
+    const all = await listAllAccessibleCalendarEvents({
+      timeMin: options.timeMin,
+      timeMax: options.timeMax,
+    });
+    return {
+      success: all.success,
+      events: all.events,
+      count: all.count,
+      calendarId: 'all-accessible',
+      authSource: all.authSource,
+      error: all.error,
+      debugReason: all.success ? 'connected' : 'calendar_api_error',
+      errorCode: all.success ? undefined : 'ALL_CALENDARS_FETCH_FAILED',
+      status: all.status,
+    };
+  }
+
   const auth = await getCalendarAccessToken(options.calendarId);
   const calendarId = resolveCalendarId(options.calendarId);
 
