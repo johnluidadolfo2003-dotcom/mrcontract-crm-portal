@@ -342,7 +342,8 @@ export async function fetchAllGoogleCalendarEvents(options?: {
   if (options?.timeMax) params.set('timeMax', options.timeMax);
   const query = params.toString() ? `?${params.toString()}` : '';
 
-  const response = await fetch(`/api/calendar/events/all${query}`);
+  const separator = query ? '&' : '?';
+  const response = await fetch(`/api/calendar/events${query}${separator}calendarId=all-accessible`);
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data.success || !Array.isArray(data.events)) {
    throw new Error(data.error || data.message || `Calendar request failed (HTTP ${response.status}).`);
