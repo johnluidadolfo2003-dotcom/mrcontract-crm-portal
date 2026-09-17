@@ -1627,7 +1627,7 @@ export async function appendAppointmentToSheet(
  status: string = 'New'
 ): Promise<{ updatedRange: string; updatedRows: number }> {
  const cleanId = extractSpreadsheetId(spreadsheetId);
- const targetTab = formData.leadSource?.trim() || sheetTab || 'Angi';
+ const targetTab = formData.sourceTabName?.trim() || formData.leadSource?.trim() || sheetTab || 'Angi';
 
  const res = await fetch('/api/sheets/append-lead', {
  method: 'POST',
