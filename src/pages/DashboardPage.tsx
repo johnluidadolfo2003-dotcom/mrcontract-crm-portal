@@ -6,20 +6,41 @@ import {
  Clock,
  CalendarDays,
  RefreshCw,
- PlusCircle,
- ShieldCheck,
- Database,
- MapPin,
  ArrowUpRight,
+ AlertTriangle,
+ Download,
+ X,
+ MapPin,
+ Phone,
+ Mail,
+ Tag,
 } from 'lucide-react';
-import { AppConfig } from '../types';
-import { loadAppConfig } from '../config';
+import { AppConfig, AppointmentFormData, LEAD_STATUS_OPTIONS } from '../types';
+import { loadAppConfig, DEFAULT_LEAD_SOURCES, isLeadSourceTab } from '../config';
 import { getNewLeads, fetchNewLeads } from '../lib/newLeads';
-import { getScheduledClients, ScheduledClientRecord } from '../lib/scheduledClients';
-import { extractSpreadsheetId, readAllSpreadsheetTabs, SheetRowRecord } from '../lib/sheets';
-import { DEFAULT_LEAD_SOURCES, isLeadSourceTab } from '../config';
+import {
+ getScheduledClients,
+ ScheduledClientRecord,
+ addOrUpdateScheduledClient,
+ deleteScheduledClient,
+} from '../lib/scheduledClients';
+import {
+ extractSpreadsheetId,
+ readAllSpreadsheetTabs,
+ getSpreadsheetDetails,
+ appendAppointmentToSheet,
+ updateLeadStatusInSpreadsheet,
+ deleteRowFromSheet,
+ SheetRowRecord,
+} from '../lib/sheets';
 import { isFollowUpStatus } from '../lib/utils';
-import { formatTime12Hour, formatAppointmentDateTime } from '../lib/calendar';
+import {
+ fetchAllGoogleCalendarEvents,
+ parseCalendarEventToFormData,
+ formatTime12Hour,
+ deleteGoogleCalendarEvent,
+} from '../lib/calendar';
+import { LeadDrawer } from '../components/ui/LeadDrawer';
 
 interface DashboardOutletContext {
  config: AppConfig;
@@ -34,309 +55,662 @@ interface DashboardOutletContext {
  openAddLeadModal?: () => void;
 }
 
+type RepresentativeCode = 'DG' | 'SB' | 'JS' | 'BK';
+
+interface TodayCalendarItem {
+ id: string;
+ calendarId: string;
+ event: any;
+ clientName: string;
+ serviceNeeded: string;
+ representative: RepresentativeCode;
+ appointmentDate: string;
+ startTime: string;
+ endTime: string;
+ clientPhone: string;
+ clientEmail: string;
+ address: string;
+ leadSource: string;
+ leadType: string;
+ notes: string;
+ crmMatches: SheetRowRecord[];
+ duplicateKey: string;
+}
+
+const REPRESENTATIVES: RepresentativeCode[] = ['DG', 'SB', 'JS', 'BK'];
+
+function businessDateKey(date: Date, timeZone: string): string {
+ const parts = new Intl.DateTimeFormat('en-US', {
+  timeZone,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+ }).formatToParts(date);
+ const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+ return `${values.year}-${values.month}-${values.day}`;
+}
+
+function normalizeText(value?: string): string {
+ return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function normalizePhone(value?: string): string {
+ return String(value || '').replace(/\D/g, '');
+}
+
+function parseAppointmentTitle(summary: string): {
+ representative: RepresentativeCode;
+ clientName: string;
+ serviceNeeded: string;
+} | null {
+ const match = String(summary || '').trim().match(
+  /^(?:appt|appointment)\s*[-–—]\s*(DG|SB|JS|BK)\s*[-–—]\s*(.+?)\s*\((.+)\)\s*$/i
+ );
+ if (!match) return null;
+ return {
+  representative: match[1].toUpperCase() as RepresentativeCode,
+  clientName: match[2].trim(),
+  serviceNeeded: match[3].trim(),
+ };
+}
+
+function toSheetRow(record: ScheduledClientRecord): SheetRowRecord {
+ return {
+  ...(record as any),
+  rawValues: (record as any).rawValues || [],
+  tabName: (record as any).tabName || record.leadSource,
+ };
+}
+
+function sameClientAndService(item: {
+ clientName?: string;
+ clientPhone?: string;
+ clientEmail?: string;
+ serviceNeeded?: string;
+ leadType?: string;
+}, lead: {
+ clientName?: string;
+ clientPhone?: string;
+ clientEmail?: string;
+ serviceNeeded?: string;
+ leadType?: string;
+}): boolean {
+ const itemService = normalizeText(item.serviceNeeded || item.leadType);
+ const leadService = normalizeText(lead.serviceNeeded || lead.leadType);
+ if (!itemService || !leadService || itemService !== leadService) return false;
+
+ const itemPhone = normalizePhone(item.clientPhone);
+ const leadPhone = normalizePhone(lead.clientPhone);
+ if (itemPhone.length >= 7 && leadPhone === itemPhone) return true;
+
+ const itemEmail = normalizeText(item.clientEmail);
+ const leadEmail = normalizeText(lead.clientEmail);
+ if (itemEmail && leadEmail === itemEmail) return true;
+
+ return Boolean(
+  normalizeText(item.clientName) &&
+  normalizeText(item.clientName) === normalizeText(lead.clientName)
+ );
+}
+
+function duplicateIdentity(item: {
+ clientName?: string;
+ clientPhone?: string;
+ clientEmail?: string;
+ serviceNeeded?: string;
+}): string {
+ const phone = normalizePhone(item.clientPhone);
+ const email = normalizeText(item.clientEmail);
+ const name = normalizeText(item.clientName);
+ const identity = phone.length >= 7 ? `phone:${phone}` : email ? `email:${email}` : `name:${name}`;
+ return `${identity}|service:${normalizeText(item.serviceNeeded)}`;
+}
+
 export const Dashboard: React.FC = () => {
  const navigate = useNavigate();
  const outletCtx = useOutletContext<DashboardOutletContext | undefined>();
  const config = outletCtx?.config || loadAppConfig();
+ const timeZone = config.timeZone || 'America/New_York';
 
- const [loading, setLoading] = useState(false);
+ const [loading, setLoading] = useState(true);
  const [refreshing, setRefreshing] = useState(false);
- const [scheduledList, setScheduledList] = useState<ScheduledClientRecord[]>(() => getScheduledClients());
  const [sheetRecords, setSheetRecords] = useState<SheetRowRecord[]>([]);
- // Use the exact same canonical list as Sidebar → New.
+ const [scheduledList, setScheduledList] = useState<ScheduledClientRecord[]>(() => getScheduledClients());
+ const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
  const [newLeadsCount, setNewLeadsCount] = useState(() => getNewLeads().length);
+ const [selectedLead, setSelectedLead] = useState<SheetRowRecord | null>(null);
+ const [selectedCalendarOnly, setSelectedCalendarOnly] = useState<TodayCalendarItem | null>(null);
+ const [pullingId, setPullingId] = useState<string | null>(null);
+ const [removingId, setRemovingId] = useState<string | null>(null);
+ const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
- // Open modal handlers
- const handleOpenSchedule = () => {
- if (outletCtx?.openScheduleModal) {
- outletCtx.openScheduleModal();
- } else {
- window.dispatchEvent(new CustomEvent('open_schedule_modal'));
- }
- };
-
- const handleOpenAddLead = () => {
- if (outletCtx?.openAddLeadModal) {
- outletCtx.openAddLeadModal();
- } else {
- window.dispatchEvent(new CustomEvent('open_add_lead_modal'));
- }
- };
-
- // Fetch / Sync Live Data
  const loadDashboardData = useCallback(async () => {
- // 1. Load Local Scheduled Clients
- const localScheduled = getScheduledClients();
- setScheduledList(localScheduled);
+  setRefreshing(true);
+  try {
+   const canonical = await fetchNewLeads().catch(() => getNewLeads());
+   setNewLeadsCount(canonical.length);
 
- // The Overview count comes from the exact same canonical API as Sidebar -> New.
- try {
-  const canonical = await fetchNewLeads();
-  setNewLeadsCount(canonical.length);
- } catch (err) {
-  console.warn('Dashboard New lead count notice:', err);
- }
+   const now = Date.now();
+   const calendarPromise = fetchAllGoogleCalendarEvents({
+    timeMin: new Date(now - 2 * 86400000).toISOString(),
+    timeMax: new Date(now + 3 * 86400000).toISOString(),
+   });
 
- // 2. Load from Google Sheets via Service Account backend
- const spreadsheetId = extractSpreadsheetId(config.spreadsheetId || '');
+   const spreadsheetId = extractSpreadsheetId(config.spreadsheetId || '');
+   let records: SheetRowRecord[] = [];
+   if (spreadsheetId) {
+    let tabs = (config.leadSources?.length ? config.leadSources : DEFAULT_LEAD_SOURCES)
+     .filter(isLeadSourceTab);
+    try {
+     const details = await getSpreadsheetDetails(undefined, spreadsheetId);
+     tabs = Array.from(new Set([
+      ...tabs,
+      ...(details.sheets || []).map((sheet) => sheet.title).filter(isLeadSourceTab),
+     ]));
+    } catch (error) {
+     console.warn('Dashboard spreadsheet-tab notice:', error);
+    }
+    const result = await readAllSpreadsheetTabs(undefined, spreadsheetId, tabs, true);
+    records = (result.rows || []).filter((row) =>
+     isLeadSourceTab(row.tabName || row.leadSource || '')
+    );
+   }
 
- if (!spreadsheetId) {
- setNewLeadsCount(getNewLeads().length);
- setRefreshing(false);
- setLoading(false);
- return;
- }
-
- try {
- setRefreshing(true);
- const validTabs = (config.leadSources && config.leadSources.length > 0
- ? config.leadSources
- : DEFAULT_LEAD_SOURCES).filter(isLeadSourceTab);
-
- const tabsResult = await readAllSpreadsheetTabs(undefined, spreadsheetId, validTabs);
- if (tabsResult && tabsResult.rows) {
- const cleanRows = tabsResult.rows.filter(
- (r) => isLeadSourceTab(r.tabName) && isLeadSourceTab(r.leadSource)
- );
- setSheetRecords(cleanRows);
- setNewLeadsCount(getNewLeads().length);
- }
- } catch (err) {
- console.warn('Dashboard live sheet sync fallback:', err);
- } finally {
- setRefreshing(false);
- setLoading(false);
- }
- }, [config.spreadsheetId, config.leadSources]);
+   const events = await calendarPromise;
+   setCalendarEvents(events);
+   setSheetRecords(records);
+   setScheduledList(getScheduledClients(events));
+  } catch (error: any) {
+   console.warn('Dashboard refresh notice:', error);
+   setMessage({ type: 'error', text: error?.message || 'Dashboard could not refresh.' });
+  } finally {
+   setRefreshing(false);
+   setLoading(false);
+  }
+ }, [config.spreadsheetId, config.leadSources, timeZone]);
 
  useEffect(() => {
- loadDashboardData();
-
- const handleDataRefresh = () => {
- loadDashboardData();
- };
-
- const handleNewLeadsUpdate = (event: Event) => {
- const detail = (event as CustomEvent).detail;
- setNewLeadsCount(Array.isArray(detail) ? detail.length : getNewLeads().length);
- };
-
- window.addEventListener('dashboard_data_refresh', handleDataRefresh);
- window.addEventListener('scheduled_clients_updated', handleDataRefresh);
- window.addEventListener('new_leads_updated', handleNewLeadsUpdate);
-
- return () => {
- window.removeEventListener('dashboard_data_refresh', handleDataRefresh);
- window.removeEventListener('scheduled_clients_updated', handleDataRefresh);
- window.removeEventListener('new_leads_updated', handleNewLeadsUpdate);
- };
+  loadDashboardData();
+  const intervalId = window.setInterval(loadDashboardData, 60000);
+  const handleRefresh = () => loadDashboardData();
+  window.addEventListener('dashboard_data_refresh', handleRefresh);
+  window.addEventListener('scheduled_clients_updated', handleRefresh);
+  window.addEventListener('new_leads_updated', handleRefresh);
+  return () => {
+   window.clearInterval(intervalId);
+   window.removeEventListener('dashboard_data_refresh', handleRefresh);
+   window.removeEventListener('scheduled_clients_updated', handleRefresh);
+   window.removeEventListener('new_leads_updated', handleRefresh);
+  };
  }, [loadDashboardData]);
 
- // Today's date helper (e.g."2026-08-29")
- const todayStr = useMemo(() => {
- const now = new Date();
- const year = now.getFullYear();
- const month = String(now.getMonth() + 1).padStart(2, '0');
- const day = String(now.getDate()).padStart(2, '0');
- return `${year}-${month}-${day}`;
- }, []);
+ const todayKey = businessDateKey(new Date(), timeZone);
+ const formattedTodayHeader = new Intl.DateTimeFormat('en-US', {
+  timeZone,
+  weekday: 'long',
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+ }).format(new Date());
 
- // Formatted date display (e.g."Saturday, Aug 29, 2026")
- const formattedTodayHeader = useMemo(() => {
- return new Date().toLocaleDateString('en-US', {
- weekday: 'long',
- month: 'short',
- day: 'numeric',
- year: 'numeric',
- });
- }, []);
+ const allCrmRecords = useMemo(() => {
+  const combined = [
+   ...sheetRecords,
+   ...scheduledList.map(toSheetRow),
+  ];
+  const seen = new Set<string>();
+  return combined.filter((record) => {
+   const key = record.tabName && record.rowIndex
+    ? `${normalizeText(record.tabName)}:${record.rowIndex}`
+    : `${normalizeText(record.clientName)}:${normalizePhone(record.clientPhone)}:${normalizeText(record.serviceNeeded)}`;
+   if (seen.has(key)) return false;
+   seen.add(key);
+   return true;
+  });
+ }, [sheetRecords, scheduledList]);
 
- // Filter Today's Appointments from Scheduled Clients
- const todayAppointments = useMemo(() => {
- return scheduledList.filter((item) => {
- if (!item.appointmentDate) return false;
- const normalizedDate = item.appointmentDate.trim().slice(0, 10);
- return normalizedDate === todayStr;
- });
- }, [scheduledList, todayStr]);
+ const todayAppointments = useMemo<TodayCalendarItem[]>(() => {
+  return calendarEvents
+   .map((event): TodayCalendarItem | null => {
+    const title = parseAppointmentTitle(event.summary || '');
+    if (!title) return null;
+    const parsed = parseCalendarEventToFormData(event, config).formData;
+    const appointmentDate = parsed.appointmentDate;
+    if (appointmentDate !== todayKey) return null;
 
- // Derive Appointments Today Count
- const appointmentsTodayCount = todayAppointments.length;
+    const candidate = {
+     clientName: title.clientName,
+     clientPhone: parsed.clientPhone,
+     clientEmail: parsed.clientEmail,
+     serviceNeeded: title.serviceNeeded,
+    };
+    const crmMatches = allCrmRecords.filter((lead) => sameClientAndService(candidate, lead));
 
- // Derive Follow-Ups Due Count
- const followUpsCount = useMemo(() => {
- if (sheetRecords.length > 0) {
- return sheetRecords.filter((r) => isFollowUpStatus(r.status)).length;
- }
- return 0;
- }, [sheetRecords]);
+    return {
+     id: `${event.calendarId || 'primary'}:${event.id}`,
+     calendarId: event.calendarId || config.calendarId || 'primary',
+     event,
+     clientName: title.clientName,
+     serviceNeeded: title.serviceNeeded,
+     representative: title.representative,
+     appointmentDate,
+     startTime: parsed.startTime,
+     endTime: parsed.endTime,
+     clientPhone: parsed.clientPhone || '',
+     clientEmail: parsed.clientEmail || '',
+     address: event.location || parsed.address || '',
+     leadSource: parsed.leadSource || '',
+     leadType: parsed.leadType || 'Direct',
+     notes: parsed.notes || '',
+     crmMatches,
+     duplicateKey: duplicateIdentity(candidate),
+    };
+   })
+   .filter((item): item is TodayCalendarItem => Boolean(item))
+   .sort((a, b) => a.startTime.localeCompare(b.startTime));
+ }, [calendarEvents, allCrmRecords, config, todayKey]);
+
+ const duplicateCounts = useMemo(() => {
+  const counts = new Map<string, number>();
+  todayAppointments.forEach((item) => {
+   counts.set(item.duplicateKey, (counts.get(item.duplicateKey) || 0) + 1);
+  });
+  return counts;
+ }, [todayAppointments]);
+
+ const groupedAppointments = useMemo(() => {
+  return Object.fromEntries(
+   REPRESENTATIVES.map((representative) => [
+    representative,
+    todayAppointments.filter((item) => item.representative === representative),
+   ])
+  ) as Record<RepresentativeCode, TodayCalendarItem[]>;
+ }, [todayAppointments]);
+
+ const followUpsCount = useMemo(
+  () => sheetRecords.filter((record) => isFollowUpStatus(record.status)).length,
+  [sheetRecords]
+ );
+
+ const showMessage = (type: 'success' | 'error', text: string) => {
+  setMessage({ type, text });
+  window.setTimeout(() => setMessage(null), 5000);
+ };
+
+ const openAppointment = (item: TodayCalendarItem) => {
+  if (item.crmMatches.length > 0) {
+   setSelectedLead(item.crmMatches[0]);
+   setSelectedCalendarOnly(null);
+  } else {
+   setSelectedCalendarOnly(item);
+   setSelectedLead(null);
+  }
+ };
+
+ const handlePullToCrm = async (item: TodayCalendarItem) => {
+  const spreadsheetId = extractSpreadsheetId(config.spreadsheetId || '');
+  if (!spreadsheetId) {
+   showMessage('error', 'Google Sheets is not configured.');
+   return;
+  }
+
+  setPullingId(item.id);
+  try {
+   const configuredSources = config.leadSources?.length ? config.leadSources : DEFAULT_LEAD_SOURCES;
+   const sourceTab = configuredSources.find((source) =>
+    normalizeText(item.leadSource).startsWith(normalizeText(source))
+   ) || config.sheetTabName || configuredSources[0] || 'Angi';
+
+   const formData: AppointmentFormData = {
+    clientName: item.clientName,
+    appointmentDate: item.appointmentDate,
+    startTime: item.startTime,
+    endTime: item.endTime,
+    salespersonCode: item.representative,
+    salespersonName: item.representative,
+    clientPhone: item.clientPhone,
+    clientEmail: item.clientEmail,
+    address: item.address,
+    leadSource: item.leadSource || sourceTab,
+    leadType: item.leadType || 'Direct',
+    notes: item.notes,
+    status: 'Meeting Scheduled',
+    serviceNeeded: item.serviceNeeded,
+    calendarEventId: item.event.id,
+    calendarHtmlLink: item.event.htmlLink || '',
+    sourceTabName: sourceTab,
+   };
+
+   await appendAppointmentToSheet(
+    undefined,
+    spreadsheetId,
+    sourceTab,
+    formData,
+    'Meeting Scheduled'
+   );
+
+   addOrUpdateScheduledClient(
+    formData,
+    {
+     id: item.event.id,
+     htmlLink: item.event.htmlLink || '',
+     summary: item.event.summary || '',
+     start: item.event.start?.dateTime || item.event.start?.date || '',
+     end: item.event.end?.dateTime || item.event.end?.date || '',
+    },
+    null,
+    {
+     status: 'Meeting Scheduled',
+     sheetSynced: true,
+     salespersonName: item.representative,
+    }
+   );
+
+   setSelectedCalendarOnly(null);
+   showMessage('success', `${item.clientName} was pulled into Meeting Scheduled.`);
+   await loadDashboardData();
+   window.dispatchEvent(new CustomEvent('dashboard_data_refresh'));
+  } catch (error: any) {
+   showMessage('error', error?.message || 'The Calendar client could not be pulled into the CRM.');
+  } finally {
+   setPullingId(null);
+  }
+ };
+
+ const handleRemoveDuplicate = async (item: TodayCalendarItem) => {
+  const lead = item.crmMatches[0];
+  const confirmed = window.confirm(
+   `Remove duplicate appointment?\n\nClient: ${item.clientName}\nRepresentative: ${item.representative}\nDate: ${item.appointmentDate}\nTime: ${formatTime12Hour(item.startTime)}\n\nThis removes the selected CRM record and its Google Calendar event.`
+  );
+  if (!confirmed) return;
+
+  setRemovingId(item.id);
+  try {
+   await deleteGoogleCalendarEvent(item.event.id, item.calendarId);
+
+   const spreadsheetId = extractSpreadsheetId(config.spreadsheetId || '');
+   if (
+    lead &&
+    spreadsheetId &&
+    lead.tabName &&
+    lead.rowIndex &&
+    lead.rowIndex > 0
+   ) {
+    await deleteRowFromSheet(
+     undefined,
+     spreadsheetId,
+     lead.tabName,
+     lead.rowIndex,
+     lead.clientName,
+     lead.clientPhone
+    );
+   }
+   const localId = (lead as any)?.id;
+   if (localId) deleteScheduledClient(localId);
+
+   setSelectedLead(null);
+   setSelectedCalendarOnly(null);
+   showMessage('success', 'Duplicate CRM record and Calendar event removed.');
+   await loadDashboardData();
+   window.dispatchEvent(new CustomEvent('dashboard_data_refresh'));
+  } catch (error: any) {
+   showMessage('error', error?.message || 'The duplicate could not be removed.');
+  } finally {
+   setRemovingId(null);
+  }
+ };
+
+ const handleDrawerStatusChange = async (lead: SheetRowRecord, newStatus: string) => {
+  const spreadsheetId = extractSpreadsheetId(config.spreadsheetId || '');
+  if (!spreadsheetId) throw new Error('Google Sheets is not configured.');
+  await updateLeadStatusInSpreadsheet(
+   undefined,
+   spreadsheetId,
+   {
+    tabName: lead.tabName,
+    rowIndex: lead.rowIndex,
+    clientName: lead.clientName,
+    clientPhone: lead.clientPhone,
+    clientEmail: lead.clientEmail,
+    statusColIndex: lead.statusColIndex,
+   },
+   newStatus
+  );
+  setSelectedLead({ ...lead, status: newStatus });
+  await loadDashboardData();
+ };
 
  return (
- <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6">
- {/* Dashboard Top Header Bar */}
- <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+  <div className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6">
+   {message && (
+    <div className={`fixed top-5 right-5 z-[80] max-w-sm rounded-xl px-4 py-3 text-sm font-bold shadow-xl border ${
+     message.type === 'success'
+      ? 'bg-white dark:bg-zinc-900 text-emerald-600 border-emerald-500/30'
+      : 'bg-white dark:bg-zinc-900 text-red-600 border-red-500/30'
+    }`}>
+     {message.text}
+    </div>
+   )}
 
+   <div className="flex items-center justify-end">
+    <button
+     onClick={loadDashboardData}
+     disabled={refreshing}
+     className="p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 transition-all cursor-pointer disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center"
+     title="Refresh dashboard and Google Calendar"
+    >
+     <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-[#FF5500]' : ''}`} />
+    </button>
+   </div>
 
- {/* Action Buttons */}
- <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap w-full sm:w-auto">
- {/* Refresh Button */}
- <button
- onClick={loadDashboardData}
- disabled={refreshing}
- className="p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 transition-all shadow-2xs cursor-pointer disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center"
- title="Refresh dashboard stats"
- >
- <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-[#FF5500]' : ''}`} />
- </button>
+   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5">
+     <div className="flex items-center justify-between">
+      <Users className="w-5 h-5 text-[#FF5500]" />
+      <button onClick={() => navigate('/new')} className="text-xs font-bold text-zinc-500 flex items-center gap-1">
+       View <ArrowUpRight className="w-3.5 h-3.5" />
+      </button>
+     </div>
+     <div className="mt-4 text-4xl font-black text-zinc-900 dark:text-white">{newLeadsCount}</div>
+     <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">New Leads</div>
+    </div>
 
- 
- </div>
- </div>
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5">
+     <Calendar className="w-5 h-5 text-[#FF5500]" />
+     <div className="mt-4 text-4xl font-black text-zinc-900 dark:text-white">{todayAppointments.length}</div>
+     <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">Appointments Today</div>
+     <div className="text-[11px] text-zinc-500 mt-0.5">From all accessible Google Calendars</div>
+    </div>
 
- {/* KPI Stats Overview Cards (2-Column Grid) */}
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
- {/* Card 1: New Leads */}
- <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/90 rounded-2xl p-5 shadow-2xs hover:border-zinc-300 dark:hover:border-zinc-700 transition-all flex flex-col justify-between">
- <div className="flex items-center justify-between">
- <div className="w-10 h-10 rounded-2xl bg-orange-500/10 flex items-center justify-center text-[#FF5500]">
- <Users className="w-5 h-5"/>
- </div>
- <button
- onClick={() => navigate('/new')}
- className="text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white flex items-center gap-1 cursor-pointer transition-colors group"
- >
- <span>View</span>
- <ArrowUpRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-"/>
- </button>
- </div>
- <div className="mt-4">
- <div className="text-3xl sm:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">
- {newLeadsCount}
- </div>
- <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">
- New Leads
- </div>
- <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
- Needs initial contact call
- </div>
- </div>
- </div>
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5">
+     <Clock className="w-5 h-5 text-[#FF5500]" />
+     <div className="mt-4 text-4xl font-black text-zinc-900 dark:text-white">{followUpsCount}</div>
+     <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">Follow-Ups Due</div>
+    </div>
+   </div>
 
- {/* Card 2: Appointments Today */}
- <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/90 rounded-2xl p-5 shadow-2xs hover:border-zinc-300 dark:hover:border-zinc-700 transition-all flex flex-col justify-between">
- <div className="flex items-center justify-between">
- <div className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-200">
- <Calendar className="w-5 h-5"/>
- </div>
- <button
- onClick={() => navigate('/scheduled-client')}
- className="text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white flex items-center gap-1 cursor-pointer transition-colors group"
- >
- <span>View</span>
- <ArrowUpRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-"/>
- </button>
- </div>
- <div className="mt-4">
- <div className="text-3xl sm:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">
- {appointmentsTodayCount}
- </div>
- <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">
- Appointments Today
- </div>
- <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
- On-site visits scheduled
- </div>
- </div>
- </div>
- </div>
+   <section className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 sm:p-6">
+    <div className="flex items-center justify-between gap-3 pb-4 border-b border-zinc-100 dark:border-zinc-800">
+     <div>
+      <h2 className="text-base font-extrabold text-zinc-900 dark:text-white">
+       Today's Schedule ({todayAppointments.length})
+      </h2>
+      <p className="text-xs text-zinc-500 dark:text-zinc-400">{formattedTodayHeader}</p>
+     </div>
+     <button
+      onClick={() => navigate('/scheduled-clients')}
+      className="text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1"
+     >
+      Meeting Scheduled <ArrowUpRight className="w-3.5 h-3.5" />
+     </button>
+    </div>
 
- {/* Today's Schedule Full Card */}
- <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/90 rounded-2xl p-5 sm:p-6 shadow-2xs">
- {/* Header */}
- <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-zinc-100 dark:border-zinc-800/80">
- <div className="flex items-center gap-3">
- <div className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-200 shrink-0">
- <Calendar className="w-4 h-4"/>
- </div>
- <div>
- <h2 className="text-sm sm:text-base font-extrabold text-zinc-900 dark:text-white leading-tight">
- Today's Schedule ({todayAppointments.length})
- </h2>
- <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
- {formattedTodayHeader}
- </p>
- </div>
- </div>
- <button
- onClick={() => navigate('/scheduled-client')}
- className="text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white flex items-center gap-1 cursor-pointer transition-colors group self-start sm:self-auto"
- >
- <span>Full Calendar</span>
- <ArrowUpRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-"/>
- </button>
- </div>
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 pt-5">
+     {REPRESENTATIVES.map((representative) => (
+      <div key={representative} className="rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden bg-zinc-50/70 dark:bg-zinc-950/40">
+       <div className="px-4 py-3 bg-zinc-100 dark:bg-zinc-800/80 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
+        <span className="font-black text-sm text-zinc-900 dark:text-white">{representative}</span>
+        <span className="text-[10px] font-black rounded-full px-2 py-0.5 bg-[#FF5500]/10 text-[#FF5500]">
+         {groupedAppointments[representative].length}
+        </span>
+       </div>
+       <div className="p-3 space-y-2 min-h-[120px]">
+        {groupedAppointments[representative].length === 0 ? (
+         <div className="h-full min-h-[90px] flex items-center justify-center text-center">
+          <div>
+           <CalendarDays className="w-5 h-5 text-zinc-400 mx-auto mb-2" />
+           <p className="text-xs font-semibold text-zinc-500">No appointments today</p>
+          </div>
+         </div>
+        ) : (
+         groupedAppointments[representative].map((item) => {
+          const inCrm = item.crmMatches.length > 0;
+          const isDuplicate = (duplicateCounts.get(item.duplicateKey) || 0) > 1 || item.crmMatches.length > 1;
+          return (
+           <div
+            key={item.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => openAppointment(item)}
+            onKeyDown={(event) => {
+             if (event.key === 'Enter' || event.key === ' ') openAppointment(item);
+            }}
+            className={`rounded-xl border p-3 cursor-pointer transition-colors ${
+             isDuplicate
+              ? 'border-orange-400 bg-orange-50 dark:bg-orange-500/10'
+              : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-[#FF5500]/50'
+            }`}
+           >
+            <div className="flex items-start justify-between gap-2">
+             <div className="min-w-0">
+              <p className="text-xs font-extrabold text-zinc-900 dark:text-white truncate">{item.clientName}</p>
+              <p className="text-[11px] font-bold text-[#FF5500] mt-1">
+               {formatTime12Hour(item.startTime)}
+               {item.endTime ? ` – ${formatTime12Hour(item.endTime)}` : ''}
+              </p>
+             </div>
+             {!inCrm && (
+              <span className="shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-600">
+               Not in CRM
+              </span>
+             )}
+            </div>
 
- {/* Body */}
- <div className="py-6">
- {todayAppointments.length === 0 ? (
- <div className="flex flex-col items-center justify-center text-center py-8">
- <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-400 dark:text-zinc-500 mb-3">
- <CalendarDays className="w-6 h-6 stroke-[1.5]"/>
- </div>
- <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
- No appointments scheduled for today.
- </p>
+            {isDuplicate && (
+             <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-orange-700 dark:text-orange-400">
+              <AlertTriangle className="w-3 h-3" /> Possible duplicate
+             </div>
+            )}
 
- <div className="flex items-center gap-2.5 mt-4">
- <button
- onClick={handleOpenSchedule}
- className="px-4 py-2 bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold rounded-lg transition-all shadow-xs cursor-pointer"
- >
- Schedule an Appointment
- </button>
- <button
- onClick={() => navigate('/scheduled-client')}
- className="px-4 py-2 bg-transparent border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 text-zinc-700 dark:text-zinc-300 cursor-pointer"
- >
- View Upcoming Calendar
- </button>
- </div>
- </div>
- ) : (
- <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
- {todayAppointments.map((appt) => (
- <div
- key={appt.id}
- onClick={() => navigate('/scheduled-client')}
- className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-all cursor-pointer flex items-center justify-between gap-3"
- >
- <div className="flex items-center gap-3 min-w-0">
- <div className="px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold text-xs shrink-0 flex items-center gap-1">
- <Clock className="w-3 h-3 text-zinc-500 dark:text-zinc-400 shrink-0"/>
- <span>{formatTime12Hour(appt.startTime) || '09:00 AM'}{appt.endTime ? ` - ${formatTime12Hour(appt.endTime)}` : ''}</span>
- </div>
- <div className="min-w-0">
- <p className="font-extrabold text-xs text-zinc-900 dark:text-white truncate">
- {appt.clientName}
- </p>
- <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate flex items-center gap-1">
- <MapPin className="w-3 h-3 shrink-0 text-zinc-400"/>
- <span>{appt.address || appt.serviceNeeded || 'On-site estimate'}</span>
- </p>
- <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">
- {formatAppointmentDateTime(appt.appointmentDate, appt.startTime, appt.endTime)}
- </p>
- </div>
- </div>
- <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
- {appt.status || 'Scheduled'}
- </span>
- </div>
- ))}
- </div>
- )}
- </div>
- </div>
- </div>
+            {!inCrm && (
+             <button
+              type="button"
+              disabled={pullingId === item.id}
+              onClick={(event) => {
+               event.stopPropagation();
+               handlePullToCrm(item);
+              }}
+              className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-lg bg-[#FF5500] hover:bg-[#E64D00] text-white text-[10px] font-black py-2 disabled:opacity-50"
+             >
+              <Download className="w-3 h-3" />
+              {pullingId === item.id ? 'Pulling...' : 'Pull to CRM'}
+             </button>
+            )}
+
+            {isDuplicate && inCrm && (
+             <button
+              type="button"
+              disabled={removingId === item.id}
+              onClick={(event) => {
+               event.stopPropagation();
+               handleRemoveDuplicate(item);
+              }}
+              className="mt-2 w-full rounded-lg border border-red-500/30 text-red-600 hover:bg-red-500/10 text-[10px] font-black py-2 disabled:opacity-50"
+             >
+              {removingId === item.id ? 'Removing...' : 'Remove Duplicate'}
+             </button>
+            )}
+           </div>
+          );
+         })
+        )}
+       </div>
+      </div>
+     ))}
+    </div>
+
+    {loading && (
+     <p className="text-center text-xs text-zinc-500 pt-4">Loading Google Calendar appointments…</p>
+    )}
+   </section>
+
+   <LeadDrawer
+    lead={selectedLead}
+    isOpen={Boolean(selectedLead)}
+    onClose={() => setSelectedLead(null)}
+    onStatusChange={handleDrawerStatusChange}
+    onLeadUpdate={async () => {
+     setSelectedLead(null);
+     await loadDashboardData();
+    }}
+    statusOptions={LEAD_STATUS_OPTIONS}
+    salespeople={config.salespeople}
+    calendarEvents={calendarEvents}
+   />
+
+   {selectedCalendarOnly && (
+    <div className="fixed inset-0 z-[70] bg-black/60 flex items-center justify-center p-4" onClick={() => setSelectedCalendarOnly(null)}>
+     <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+      <div className="flex items-center justify-between p-5 border-b border-zinc-200 dark:border-zinc-800">
+       <div>
+        <div className="flex items-center gap-2">
+         <h3 className="font-black text-zinc-900 dark:text-white">{selectedCalendarOnly.clientName}</h3>
+         <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-red-500/10 text-red-600">Not in CRM</span>
+        </div>
+        <p className="text-xs text-zinc-500 mt-1">Google Calendar appointment</p>
+       </div>
+       <button onClick={() => setSelectedCalendarOnly(null)} className="p-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-white">
+        <X className="w-5 h-5" />
+       </button>
+      </div>
+
+      <div className="p-5 space-y-3 text-sm">
+       <div className="flex gap-3"><Clock className="w-4 h-4 text-[#FF5500] mt-0.5" /><span>{formatTime12Hour(selectedCalendarOnly.startTime)} – {formatTime12Hour(selectedCalendarOnly.endTime)}</span></div>
+       <div className="flex gap-3"><Tag className="w-4 h-4 text-[#FF5500] mt-0.5" /><span>{selectedCalendarOnly.serviceNeeded}</span></div>
+       {selectedCalendarOnly.clientPhone && <div className="flex gap-3"><Phone className="w-4 h-4 text-[#FF5500] mt-0.5" /><span>{selectedCalendarOnly.clientPhone}</span></div>}
+       {selectedCalendarOnly.clientEmail && <div className="flex gap-3"><Mail className="w-4 h-4 text-[#FF5500] mt-0.5" /><span>{selectedCalendarOnly.clientEmail}</span></div>}
+       {selectedCalendarOnly.address && <div className="flex gap-3"><MapPin className="w-4 h-4 text-[#FF5500] mt-0.5" /><span>{selectedCalendarOnly.address}</span></div>}
+       <div className="grid grid-cols-2 gap-3 pt-2">
+        <div className="rounded-xl bg-zinc-50 dark:bg-zinc-800 p-3">
+         <p className="text-[10px] uppercase font-bold text-zinc-500">Representative</p>
+         <p className="font-black mt-1">{selectedCalendarOnly.representative}</p>
+        </div>
+        <div className="rounded-xl bg-zinc-50 dark:bg-zinc-800 p-3">
+         <p className="text-[10px] uppercase font-bold text-zinc-500">Lead Source</p>
+         <p className="font-black mt-1">{selectedCalendarOnly.leadSource || 'Not specified'}</p>
+        </div>
+       </div>
+       {selectedCalendarOnly.notes && (
+        <div className="rounded-xl bg-zinc-50 dark:bg-zinc-800 p-3">
+         <p className="text-[10px] uppercase font-bold text-zinc-500">Notes</p>
+         <p className="text-xs mt-1 whitespace-pre-wrap">{selectedCalendarOnly.notes}</p>
+        </div>
+       )}
+      </div>
+
+      <div className="p-5 border-t border-zinc-200 dark:border-zinc-800">
+       <button
+        disabled={pullingId === selectedCalendarOnly.id}
+        onClick={() => handlePullToCrm(selectedCalendarOnly)}
+        className="w-full rounded-lg bg-[#FF5500] hover:bg-[#E64D00] text-white py-3 text-xs font-black flex items-center justify-center gap-2 disabled:opacity-50"
+       >
+        <Download className="w-4 h-4" />
+        {pullingId === selectedCalendarOnly.id ? 'Pulling to CRM...' : 'Pull to CRM'}
+       </button>
+      </div>
+     </div>
+    </div>
+   )}
+  </div>
  );
 };
