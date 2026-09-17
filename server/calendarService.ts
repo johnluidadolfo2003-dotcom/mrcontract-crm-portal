@@ -413,6 +413,106 @@ export async function listCalendarEvents(options: {
   }
 }
 
+
+/**
+ * Fetch appointment events from every calendar visible to the authorized
+ * Google account. Each event is tagged with its source calendar so updates
+ * and deletions can target the correct calendar.
+ */
+export async function listAllAccessibleCalendarEvents(options: {
+  timeMin?: string;
+  timeMax?: string;
+}): Promise<{
+  success: boolean;
+  events: any[];
+  count: number;
+  calendarsCount: number;
+  authSource: string;
+  error?: string;
+  status?: number;
+}> {
+  const auth = await getCalendarAccessToken('primary');
+  if (!auth.token) {
+    return {
+      success: false,
+      events: [],
+      count: 0,
+      calendarsCount: 0,
+      authSource: auth.source,
+      error: auth.error || 'Google Calendar credentials not configured on backend.',
+      status: 401,
+    };
+  }
+
+  let calendarIds: string[] = [];
+  try {
+    let pageToken: string | undefined;
+    let pageCount = 0;
+    do {
+      pageCount += 1;
+      const params = new URLSearchParams({ maxResults: '250', showDeleted: 'false' });
+      if (pageToken) params.set('pageToken', pageToken);
+      const response = await fetch(
+        `https://www.googleapis.com/calendar/v3/users/me/calendarList?${params.toString()}`,
+        { headers: { Authorization: `Bearer ${auth.token}` } }
+      );
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}));
+        console.warn('[Calendar List Notice]:', errorBody?.error?.message || response.statusText);
+        break;
+      }
+      const data = await response.json();
+      for (const calendar of data.items || []) {
+        if (
+          calendar?.id &&
+          !calendar.deleted &&
+          calendar.accessRole !== 'none'
+        ) {
+          calendarIds.push(String(calendar.id));
+        }
+      }
+      pageToken = data.nextPageToken;
+    } while (pageToken && pageCount < 4);
+  } catch (error: any) {
+    console.warn('[Calendar List Exception]:', error?.message || error);
+  }
+
+  if (calendarIds.length === 0) calendarIds = ['primary'];
+  calendarIds = Array.from(new Set(calendarIds));
+
+  const results = await Promise.all(
+    calendarIds.map(async (calendarId) => {
+      const result = await listCalendarEvents({
+        calendarId,
+        timeMin: options.timeMin,
+        timeMax: options.timeMax,
+      });
+      if (!result.success) return [];
+      return result.events.map((event) => ({
+        ...event,
+        calendarId,
+        calendarSummary: calendarId === 'primary' ? 'Primary' : calendarId,
+      }));
+    })
+  );
+
+  const events = results
+    .flat()
+    .filter((event, index, all) =>
+      all.findIndex((candidate) =>
+        candidate.id === event.id && candidate.calendarId === event.calendarId
+      ) === index
+    );
+
+  return {
+    success: true,
+    events,
+    count: events.length,
+    calendarsCount: calendarIds.length,
+    authSource: auth.source,
+  };
+}
+
 /**
  * Helper to extract salesperson identifier (name or code) from event payload or Google Calendar item
  */
