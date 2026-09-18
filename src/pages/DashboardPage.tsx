@@ -331,14 +331,6 @@ export const Dashboard: React.FC = () => {
    .sort((a, b) => a.startTime.localeCompare(b.startTime));
  }, [calendarEvents, allCrmRecords, config, todayKey]);
 
- const duplicateCounts = useMemo(() => {
-  const counts = new Map<string, number>();
-  todayAppointments.forEach((item) => {
-   counts.set(item.duplicateKey, (counts.get(item.duplicateKey) || 0) + 1);
-  });
-  return counts;
- }, [todayAppointments]);
-
  const groupedAppointments = useMemo(() => {
   return Object.fromEntries(
    REPRESENTATIVES.map((representative) => [
