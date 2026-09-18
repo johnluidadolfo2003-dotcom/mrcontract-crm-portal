@@ -724,8 +724,13 @@ export function parseCalendarEventToFormData(
 	}
 
 	let salespersonName = '';
+	// If the canonical title supplied a code, resolve only that code. Including
+	// the full description here could reintroduce an outdated salesperson.
+	const salespersonResolutionText = canonicalSalespersonMatch?.[1]
+		? salespersonCode
+		: `${salespersonCode || ''} ${summary} ${cleanDesc}`;
 	const matchedSp = resolveCalendarSalesperson(
-		`${salespersonCode || ''} ${summary} ${cleanDesc}`,
+		salespersonResolutionText,
 		config
 	);
 	if (matchedSp) {
