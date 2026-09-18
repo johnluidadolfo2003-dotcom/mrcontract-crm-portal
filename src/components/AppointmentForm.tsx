@@ -40,6 +40,7 @@ import {
  isSameSalesperson,
  getTimezoneOffsetString,
  parseCalendarEventToFormData,
+ parseDateTimeFromISO,
  fetchAllGoogleCalendarEvents,
  formatTime12Hour,
 } from '../lib/calendar';
@@ -296,28 +297,60 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
   loadAvailability();
  }, [showAvailability, availabilityDate]);
 
+ const seenAvailabilityEvents = new Set<string>();
  const availabilityAppointments = availabilityEvents
   .map((event) => {
+   const summary = String(event?.summary || '').trim();
+   const canonicalRepresentative = summary.match(
+    /^(?:appt|appointment)\s*[-–—]\s*(DG|SB|JS|BK)\s*[-–—]/i
+   )?.[1]?.toUpperCase();
+
    const parsed = parseCalendarEventToFormData(event, config).formData;
-   const representative = String(parsed.salespersonCode || '').trim().toUpperCase();
+   const representative = String(canonicalRepresentative || parsed.salespersonCode || '').trim().toUpperCase();
+
+   const startISO = String(event?.start?.dateTime || event?.start?.date || '');
+   const endISO = String(event?.end?.dateTime || event?.end?.date || '');
+   const targetTimeZone = config.timeZone || 'America/New_York';
+   const parsedStart = parseDateTimeFromISO(startISO, targetTimeZone);
+   const parsedEnd = parseDateTimeFromISO(endISO, targetTimeZone);
+
    if (
-    parsed.appointmentDate !== availabilityDate ||
+    parsedStart.date !== availabilityDate ||
     !AVAILABILITY_REPRESENTATIVES.includes(representative as any)
    ) return null;
 
-   const startParts = String(parsed.startTime || '00:00').split(':').map(Number);
-   const endParts = String(parsed.endTime || parsed.startTime || '00:00').split(':').map(Number);
+   // The same invited appointment can appear in the main and a shared
+   // calendar. Use Google's iCalUID to show it only once.
+   const duplicateKey = String(
+    event?.iCalUID || `${summary}|${startISO}|${endISO}|${representative}`
+   ).toLowerCase();
+   if (seenAvailabilityEvents.has(duplicateKey)) return null;
+   seenAvailabilityEvents.add(duplicateKey);
+
+   const startParts = String(parsedStart.time || '00:00').split(':').map(Number);
+   const endParts = String(parsedEnd.time || parsedStart.time || '00:00').split(':').map(Number);
    const startMinutes = Math.max(0, Math.min(1439, (startParts[0] || 0) * 60 + (startParts[1] || 0)));
-   let endMinutes = Math.max(0, Math.min(1440, (endParts[0] || 0) * 60 + (endParts[1] || 0)));
-   if (endMinutes <= startMinutes) endMinutes = Math.min(1440, startMinutes + 60);
+
+   // Preserve Google's exact event duration. Most appointments are two hours,
+   // but the UI must also display shorter or longer Calendar events accurately.
+   const absoluteStart = Date.parse(startISO);
+   const absoluteEnd = Date.parse(endISO);
+   const exactDurationMinutes =
+    Number.isFinite(absoluteStart) && Number.isFinite(absoluteEnd) && absoluteEnd > absoluteStart
+     ? Math.round((absoluteEnd - absoluteStart) / 60000)
+     : 0;
+   const parsedEndMinutes = Math.max(0, Math.min(1440, (endParts[0] || 0) * 60 + (endParts[1] || 0)));
+   const endMinutes = exactDurationMinutes > 0
+    ? Math.min(1440, startMinutes + exactDurationMinutes)
+    : (parsedEndMinutes > startMinutes ? parsedEndMinutes : Math.min(1440, startMinutes + 60));
 
    return {
-    id: `${event.calendarId || 'primary'}:${event.id || event.summary}`,
+    id: `${event.calendarId || 'primary'}:${event.id || event.iCalUID || summary}`,
     representative,
-    clientName: parsed.clientName || event.summary || 'Busy',
+    clientName: parsed.clientName || summary || 'Busy',
     serviceNeeded: parsed.serviceNeeded || '',
-    startTime: parsed.startTime,
-    endTime: parsed.endTime,
+    startTime: parsedStart.time,
+    endTime: parsedEnd.time,
     startMinutes,
     endMinutes,
    };
