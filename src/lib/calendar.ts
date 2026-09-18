@@ -677,7 +677,12 @@ export function parseCalendarEventToFormData(
       serviceNeeded = sMatch[1].trim();
     }
   }
- let salespersonCode =
+ // The canonical Calendar title is authoritative for the assigned salesperson.
+ // Example: Appt - DG - Client Name (Service Needed)
+ const canonicalSalespersonMatch = summary.trim().match(
+ /^(?:appt|appointment)\s*[-–—]\s*(DG|SB|JS|BK)\s*[-–—]/i
+ );
+ let salespersonCode = canonicalSalespersonMatch?.[1]?.toUpperCase() ||
  getDescVal('SALESPERSON') ||
  getDescVal('REPRESENTATIVE') ||
  getDescVal('REP') ||
