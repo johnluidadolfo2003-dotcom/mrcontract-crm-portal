@@ -28,6 +28,9 @@ import {
  Send,
  Upload,
   Link as LinkIcon,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
 } from 'lucide-react';
 import { AppointmentFormData, AppConfig } from '../types';
 import { DEFAULT_LEAD_SOURCES, DEFAULT_LEAD_TYPES, isLeadSourceTab } from '../config';
@@ -37,6 +40,8 @@ import {
  isSameSalesperson,
  getTimezoneOffsetString,
  parseCalendarEventToFormData,
+ fetchAllGoogleCalendarEvents,
+ formatTime12Hour,
 } from '../lib/calendar';
 
 interface AppointmentFormProps {
@@ -173,6 +178,51 @@ const calculateTwoHoursLater = (timeStr: string): string => {
  return `${newH}:${newM}`;
 };
 
+const AVAILABILITY_REPRESENTATIVES = ['DG', 'SB', 'JS', 'BK'] as const;
+const HOUR_ROW_HEIGHT = 64;
+
+function dateKeyFromParts(year: number, monthIndex: number, day: number): string {
+ return `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function addDaysToDateKey(dateKey: string, amount: number): string {
+ const date = new Date(`${dateKey}T12:00:00`);
+ date.setDate(date.getDate() + amount);
+ return dateKeyFromParts(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function calendarMonthDays(dateKey: string): Array<{ key: string; day: number; inMonth: boolean }> {
+ const selected = new Date(`${dateKey}T12:00:00`);
+ const year = selected.getFullYear();
+ const month = selected.getMonth();
+ const firstWeekday = new Date(year, month, 1).getDay();
+ const daysInMonth = new Date(year, month + 1, 0).getDate();
+ const previousMonthDays = new Date(year, month, 0).getDate();
+ const cells: Array<{ key: string; day: number; inMonth: boolean }> = [];
+
+ for (let offset = firstWeekday - 1; offset >= 0; offset -= 1) {
+  const date = new Date(year, month - 1, previousMonthDays - offset);
+  cells.push({
+   key: dateKeyFromParts(date.getFullYear(), date.getMonth(), date.getDate()),
+   day: date.getDate(),
+   inMonth: false,
+  });
+ }
+ for (let day = 1; day <= daysInMonth; day += 1) {
+  cells.push({ key: dateKeyFromParts(year, month, day), day, inMonth: true });
+ }
+ while (cells.length % 7 !== 0 || cells.length < 42) {
+  const nextDay = cells.length - firstWeekday - daysInMonth + 1;
+  const date = new Date(year, month + 1, nextDay);
+  cells.push({
+   key: dateKeyFromParts(date.getFullYear(), date.getMonth(), date.getDate()),
+   day: date.getDate(),
+   inMonth: false,
+  });
+ }
+ return cells;
+}
+
 export const AppointmentForm: React.FC<AppointmentFormProps> = ({
  config,
  onSubmit,
@@ -215,6 +265,87 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
  }, [initialFormData]);
 
  const [validationError, setValidationError] = useState<string | null>(null);
+ const [showAvailability, setShowAvailability] = useState(false);
+ const [availabilityDate, setAvailabilityDate] = useState(
+  initialFormData?.appointmentDate || defaultState.appointmentDate
+ );
+ const [availabilityEvents, setAvailabilityEvents] = useState<any[]>([]);
+ const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
+ const [availabilityError, setAvailabilityError] = useState<string | null>(null);
+
+ const loadAvailability = async () => {
+  if (!showAvailability) return;
+  setIsLoadingAvailability(true);
+  setAvailabilityError(null);
+  try {
+   const anchor = new Date(`${availabilityDate}T12:00:00Z`).getTime();
+   const events = await fetchAllGoogleCalendarEvents({
+    timeMin: new Date(anchor - 36 * 60 * 60 * 1000).toISOString(),
+    timeMax: new Date(anchor + 36 * 60 * 60 * 1000).toISOString(),
+   });
+   setAvailabilityEvents(events);
+  } catch (error: any) {
+   setAvailabilityError(error?.message || 'Could not load Calendar availability.');
+  } finally {
+   setIsLoadingAvailability(false);
+  }
+ };
+
+ useEffect(() => {
+  if (!showAvailability) return;
+  loadAvailability();
+ }, [showAvailability, availabilityDate]);
+
+ const availabilityAppointments = availabilityEvents
+  .map((event) => {
+   const parsed = parseCalendarEventToFormData(event, config).formData;
+   const representative = String(parsed.salespersonCode || '').trim().toUpperCase();
+   if (
+    parsed.appointmentDate !== availabilityDate ||
+    !AVAILABILITY_REPRESENTATIVES.includes(representative as any)
+   ) return null;
+
+   const startParts = String(parsed.startTime || '00:00').split(':').map(Number);
+   const endParts = String(parsed.endTime || parsed.startTime || '00:00').split(':').map(Number);
+   const startMinutes = Math.max(0, Math.min(1439, (startParts[0] || 0) * 60 + (startParts[1] || 0)));
+   let endMinutes = Math.max(0, Math.min(1440, (endParts[0] || 0) * 60 + (endParts[1] || 0)));
+   if (endMinutes <= startMinutes) endMinutes = Math.min(1440, startMinutes + 60);
+
+   return {
+    id: `${event.calendarId || 'primary'}:${event.id || event.summary}`,
+    representative,
+    clientName: parsed.clientName || event.summary || 'Busy',
+    serviceNeeded: parsed.serviceNeeded || '',
+    startTime: parsed.startTime,
+    endTime: parsed.endTime,
+    startMinutes,
+    endMinutes,
+   };
+  })
+  .filter(Boolean) as Array<{
+   id: string;
+   representative: string;
+   clientName: string;
+   serviceNeeded: string;
+   startTime: string;
+   endTime: string;
+   startMinutes: number;
+   endMinutes: number;
+  }>;
+
+ const selectedAvailabilityDate = new Date(`${availabilityDate}T12:00:00`);
+ const availabilityMonthLabel = selectedAvailabilityDate.toLocaleDateString('en-US', {
+  month: 'long',
+  year: 'numeric',
+ });
+ const availabilityDayLabel = selectedAvailabilityDate.toLocaleDateString('en-US', {
+  weekday: 'long',
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+ });
+ const availabilityMonthCells = calendarMonthDays(availabilityDate);
+
  
  // Smart Extraction & Copy Client Link State
  const [isExtracting, setIsExtracting] = useState(false);
@@ -464,7 +595,8 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
  const labelStyle ="block text-[11px] sm:text-xs font-bold text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 uppercase tracking-wider text-wrap leading-tight";
 
  return (
- <div className="bg-white dark:bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-6 shadow-xl transition-all space-y-4 sm:space-y-5 w-full">
+ <div className={`w-full gap-4 ${showAvailability ? 'grid grid-cols-1 xl:grid-cols-[minmax(0,0.9fr)_minmax(680px,1.1fr)]' : 'max-w-4xl mx-auto'}`}>
+ <div className="bg-white dark:bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-6 shadow-xl transition-all space-y-4 sm:space-y-5 w-full min-w-0">
  <form onSubmit={handleSubmit} className="space-y-4 w-full">
  {/* Import Details Bar */}
  <div className="bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800/80 rounded-2xl p-3.5 sm:p-4 space-y-3">
@@ -495,15 +627,18 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
  <span>Clear form</span>
  </button>
 
- <a
- href="https://calendar.google.com/calendar/r"
- target="_blank"
- rel="noopener noreferrer"
- title="Open Google Calendar"
- className="w-8 h-8 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-all cursor-pointer flex items-center justify-center text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white shadow-2xs"
+ <button
+ type="button"
+ onClick={() => setShowAvailability((current) => !current)}
+ title={showAvailability ? 'Close salesperson availability' : 'Check salesperson availability'}
+ className={`w-8 h-8 border rounded-lg transition-all cursor-pointer flex items-center justify-center shadow-2xs ${
+  showAvailability
+   ? 'bg-[#FF5500] border-[#FF5500] text-white'
+   : 'bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white'
+ }`}
  >
  <Calendar className="w-4 h-4"/>
- </a>
+ </button>
 
  <button
  type="button"
@@ -941,6 +1076,156 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
  </button>
  </div>
  </form>
+ </div>
+
+ {showAvailability && (
+  <section className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-xl overflow-hidden min-w-0">
+   <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-3">
+    <div>
+     <h3 className="text-sm font-black text-zinc-900 dark:text-white">Salesperson Availability</h3>
+     <p className="text-[11px] text-zinc-500 mt-0.5">Google Calendar · viewing only</p>
+    </div>
+    <div className="flex items-center gap-2">
+     <button
+      type="button"
+      onClick={loadAvailability}
+      disabled={isLoadingAvailability}
+      title="Refresh availability"
+      className="w-9 h-9 rounded-lg border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-300 disabled:opacity-50"
+     >
+      <RefreshCw className={`w-4 h-4 ${isLoadingAvailability ? 'animate-spin text-[#FF5500]' : ''}`} />
+     </button>
+     <button
+      type="button"
+      onClick={() => setShowAvailability(false)}
+      title="Close availability"
+      className="w-9 h-9 rounded-lg border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-300"
+     >
+      <X className="w-4 h-4" />
+     </button>
+    </div>
+   </div>
+
+   <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
+    <div className="flex items-center justify-between mb-3">
+     <button
+      type="button"
+      onClick={() => {
+       const date = new Date(`${availabilityDate}T12:00:00`);
+       date.setMonth(date.getMonth() - 1, 1);
+       setAvailabilityDate(dateKeyFromParts(date.getFullYear(), date.getMonth(), 1));
+      }}
+      className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+     >
+      <ChevronLeft className="w-4 h-4" />
+     </button>
+     <span className="text-xs font-black text-zinc-900 dark:text-white">{availabilityMonthLabel}</span>
+     <button
+      type="button"
+      onClick={() => {
+       const date = new Date(`${availabilityDate}T12:00:00`);
+       date.setMonth(date.getMonth() + 1, 1);
+       setAvailabilityDate(dateKeyFromParts(date.getFullYear(), date.getMonth(), 1));
+      }}
+      className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+     >
+      <ChevronRight className="w-4 h-4" />
+     </button>
+    </div>
+    <div className="grid grid-cols-7 gap-1 text-center">
+     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+      <div key={day} className="text-[9px] uppercase font-bold text-zinc-400 py-1">{day}</div>
+     ))}
+     {availabilityMonthCells.map((cell) => (
+      <button
+       type="button"
+       key={cell.key}
+       onClick={() => setAvailabilityDate(cell.key)}
+       className={`h-8 rounded-lg text-xs font-bold transition-colors ${
+        cell.key === availabilityDate
+         ? 'bg-[#FF5500] text-white'
+         : cell.inMonth
+          ? 'text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+          : 'text-zinc-300 dark:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+       }`}
+      >
+       {cell.day}
+      </button>
+     ))}
+    </div>
+    <div className="flex items-center justify-between mt-3">
+     <button type="button" onClick={() => setAvailabilityDate(addDaysToDateKey(availabilityDate, -1))} className="text-[10px] font-bold text-zinc-500 hover:text-[#FF5500]">Previous day</button>
+     <p className="text-xs font-black text-zinc-900 dark:text-white">{availabilityDayLabel}</p>
+     <button type="button" onClick={() => setAvailabilityDate(addDaysToDateKey(availabilityDate, 1))} className="text-[10px] font-bold text-zinc-500 hover:text-[#FF5500]">Next day</button>
+    </div>
+   </div>
+
+   {availabilityError && (
+    <div className="m-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-xs font-bold">
+     {availabilityError}
+    </div>
+   )}
+
+   <div className="overflow-auto max-h-[58vh]">
+    <div className="min-w-[650px]">
+     <div className="sticky top-0 z-20 flex bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="w-16 shrink-0 p-2 text-[10px] font-bold text-zinc-400">Time</div>
+      {AVAILABILITY_REPRESENTATIVES.map((representative) => (
+       <div key={representative} className="flex-1 min-w-0 p-2 text-center text-xs font-black text-zinc-900 dark:text-white border-l border-zinc-200 dark:border-zinc-800">
+        {representative}
+       </div>
+      ))}
+     </div>
+
+     <div className="flex">
+      <div className="w-16 shrink-0">
+       {Array.from({ length: 24 }, (_, hour) => (
+        <div key={hour} style={{ height: HOUR_ROW_HEIGHT }} className="border-b border-zinc-200 dark:border-zinc-800 pr-2 pt-1 text-right text-[9px] font-semibold text-zinc-400">
+         {formatTime12Hour(`${String(hour).padStart(2, '0')}:00`)}
+        </div>
+       ))}
+      </div>
+      <div className="grid grid-cols-4 flex-1">
+       {AVAILABILITY_REPRESENTATIVES.map((representative) => (
+        <div
+         key={representative}
+         className="relative border-l border-zinc-200 dark:border-zinc-800"
+         style={{ height: 24 * HOUR_ROW_HEIGHT }}
+        >
+         {Array.from({ length: 24 }, (_, hour) => (
+          <div
+           key={hour}
+           className="absolute left-0 right-0 border-b border-zinc-200 dark:border-zinc-800"
+           style={{ top: hour * HOUR_ROW_HEIGHT, height: HOUR_ROW_HEIGHT }}
+          />
+         ))}
+         {availabilityAppointments
+          .filter((appointment) => appointment.representative === representative)
+          .map((appointment) => (
+           <div
+            key={appointment.id}
+            className="absolute left-1 right-1 z-10 rounded-lg border border-[#FF5500]/40 bg-[#FF5500]/15 dark:bg-[#FF5500]/20 px-2 py-1 overflow-hidden shadow-sm"
+            style={{
+             top: (appointment.startMinutes / 60) * HOUR_ROW_HEIGHT + 2,
+             height: Math.max(30, ((appointment.endMinutes - appointment.startMinutes) / 60) * HOUR_ROW_HEIGHT - 4),
+            }}
+            title={`${appointment.clientName} · ${formatTime12Hour(appointment.startTime)}–${formatTime12Hour(appointment.endTime)}`}
+           >
+            <p className="text-[10px] font-black text-zinc-900 dark:text-white truncate">{appointment.clientName}</p>
+            <p className="text-[9px] font-bold text-[#E64D00] dark:text-orange-300 truncate">
+             {formatTime12Hour(appointment.startTime)}–{formatTime12Hour(appointment.endTime)}
+            </p>
+            {appointment.serviceNeeded && <p className="text-[9px] text-zinc-600 dark:text-zinc-300 truncate">{appointment.serviceNeeded}</p>}
+           </div>
+          ))}
+        </div>
+       ))}
+      </div>
+     </div>
+    </div>
+   </div>
+  </section>
+ )}
  </div>
  );
 };
