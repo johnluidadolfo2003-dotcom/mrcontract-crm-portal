@@ -468,7 +468,13 @@ export async function listAllAccessibleCalendarEvents(options: {
     let pageCount = 0;
     do {
       pageCount += 1;
-      const params = new URLSearchParams({ maxResults: '250', showDeleted: 'false' });
+      const params = new URLSearchParams({
+        maxResults: '250',
+        showDeleted: 'false',
+        // Include shared calendars even when the user has hidden them from the
+        // Google Calendar sidebar. Access is still limited by Google sharing.
+        showHidden: 'true',
+      });
       if (pageToken) params.set('pageToken', pageToken);
       const response = await fetch(
         `https://www.googleapis.com/calendar/v3/users/me/calendarList?${params.toString()}`,
