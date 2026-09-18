@@ -601,7 +601,7 @@ export const MainLayout: React.FC = () => {
  {/* Schedule Appointment Modal Dialog */}
  {isScheduleModalOpen && (
  <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 overflow-y-auto">
- <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-4xl p-5 sm:p-8 max-h-[94vh] overflow-y-auto shadow-2xl relative">
+ <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-[1500px] p-5 sm:p-8 max-h-[94vh] overflow-y-auto shadow-2xl relative">
  <div className="flex items-center justify-between pb-4 mb-4 border-b border-zinc-100 dark:border-zinc-800">
  <div className="flex items-center gap-3">
  <div className="w-10 h-10 rounded-xl bg-[#FF5500]/10 flex items-center justify-center text-[#FF5500]">
