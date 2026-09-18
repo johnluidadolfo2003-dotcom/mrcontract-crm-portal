@@ -558,6 +558,17 @@ export function extractSalesperson(payloadOrEvent: any): string {
     return payloadOrEvent.representative.trim();
   }
 
+  // The canonical event title is authoritative for Calendar-to-CRM mapping.
+  // Example: "Appt - DG - Jane Smith (Service)". This prevents a stale
+  // SALESPERSON line in the description from overriding the current title.
+  const summary = typeof payloadOrEvent.summary === 'string' ? payloadOrEvent.summary : '';
+  const canonicalTitleMatch = summary.trim().match(
+    /^(?:appt|appointment)\s*[-–—]\s*(DG|SB|JS|BK)\s*[-–—]/i
+  );
+  if (canonicalTitleMatch?.[1]) {
+    return canonicalTitleMatch[1].toUpperCase();
+  }
+
   const desc = typeof payloadOrEvent.description === 'string' ? payloadOrEvent.description : '';
   if (desc) {
     const cleanDesc = desc.replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ');
@@ -568,7 +579,6 @@ export function extractSalesperson(payloadOrEvent: any): string {
     }
   }
 
-  const summary = typeof payloadOrEvent.summary === 'string' ? payloadOrEvent.summary : '';
   if (summary) {
     const cleanSum = summary.trim();
 
