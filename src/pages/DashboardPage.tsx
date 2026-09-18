@@ -60,6 +60,7 @@ type RepresentativeCode = 'DG' | 'SB' | 'JS' | 'BK';
 interface TodayCalendarItem {
  id: string;
  calendarId: string;
+ calendarName: string;
  event: any;
  clientName: string;
  serviceNeeded: string;
@@ -154,16 +155,29 @@ function sameClientAndService(item: {
 }
 
 function duplicateIdentity(item: {
+ calendarId?: string;
  clientName?: string;
  clientPhone?: string;
  clientEmail?: string;
  serviceNeeded?: string;
+ appointmentDate?: string;
+ startTime?: string;
+ endTime?: string;
 }): string {
  const phone = normalizePhone(item.clientPhone);
  const email = normalizeText(item.clientEmail);
  const name = normalizeText(item.clientName);
  const identity = phone.length >= 7 ? `phone:${phone}` : email ? `email:${email}` : `name:${name}`;
- return `${identity}|service:${normalizeText(item.serviceNeeded)}`;
+ // Different calendars and different appointment times are valid and must not
+ // be treated as duplicates.
+ return [
+  `calendar:${normalizeText(item.calendarId)}`,
+  identity,
+  `service:${normalizeText(item.serviceNeeded)}`,
+  `date:${item.appointmentDate || ''}`,
+  `start:${item.startTime || ''}`,
+  `end:${item.endTime || ''}`,
+ ].join('|');
 }
 
 export const Dashboard: React.FC = () => {
@@ -289,6 +303,7 @@ export const Dashboard: React.FC = () => {
     return {
      id: `${event.calendarId || 'primary'}:${event.id}`,
      calendarId: event.calendarId || config.calendarId || 'primary',
+     calendarName: event.calendarSummary || event.calendarId || config.calendarId || 'Primary',
      event,
      clientName: title.clientName,
      serviceNeeded: title.serviceNeeded,
@@ -303,7 +318,13 @@ export const Dashboard: React.FC = () => {
      leadType: parsed.leadType || 'Direct',
      notes: parsed.notes || '',
      crmMatches,
-     duplicateKey: duplicateIdentity(candidate),
+     duplicateKey: duplicateIdentity({
+      ...candidate,
+      calendarId: event.calendarId || config.calendarId || 'primary',
+      appointmentDate,
+      startTime: parsed.startTime,
+      endTime: parsed.endTime,
+     }),
     };
    })
    .filter((item): item is TodayCalendarItem => Boolean(item))
@@ -565,7 +586,14 @@ export const Dashboard: React.FC = () => {
         ) : (
          groupedAppointments[representative].map((item) => {
           const inCrm = item.crmMatches.length > 0;
-          const isDuplicate = (duplicateCounts.get(item.duplicateKey) || 0) > 1 || item.crmMatches.length > 1;
+          const matchingCalendarEvents = todayAppointments.filter(
+           (candidate) => candidate.id !== item.id && candidate.duplicateKey === item.duplicateKey
+          );
+          const exactLinkedCrmMatches = item.crmMatches.filter((lead: any) =>
+           String(lead.calendarEventId || '').trim() === String(item.event.id || '').trim()
+          );
+          const duplicateCrmCount = exactLinkedCrmMatches.length > 1 ? exactLinkedCrmMatches.length : 0;
+          const isDuplicate = matchingCalendarEvents.length > 0 || duplicateCrmCount > 0;
           return (
            <div
             key={item.id}
@@ -597,8 +625,21 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {isDuplicate && (
-             <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-orange-700 dark:text-orange-400">
-              <AlertTriangle className="w-3 h-3" /> Possible duplicate
+             <div className="mt-2 rounded-lg border border-orange-300/70 bg-orange-100/70 dark:bg-orange-500/10 p-2 text-[10px] text-orange-800 dark:text-orange-300">
+              <div className="flex items-center gap-1 font-black">
+               <AlertTriangle className="w-3 h-3" /> Possible duplicate found
+              </div>
+              <p className="mt-1">
+               Calendar: <span className="font-bold">{item.calendarName}</span>
+              </p>
+              {matchingCalendarEvents.map((duplicate) => (
+               <p key={duplicate.id} className="mt-0.5">
+                Matches: <span className="font-bold">{duplicate.clientName}</span> · {formatTime12Hour(duplicate.startTime)}–{formatTime12Hour(duplicate.endTime)} · same calendar
+               </p>
+              ))}
+              {duplicateCrmCount > 0 && (
+               <p className="mt-0.5">Matches {duplicateCrmCount} CRM rows linked to this exact Calendar event.</p>
+              )}
              </div>
             )}
 
