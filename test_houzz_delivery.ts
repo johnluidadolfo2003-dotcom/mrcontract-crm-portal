@@ -30,7 +30,7 @@ async function runTests() {
   if (destHouzz.displayName !== 'Houzz Pro') throw new Error('Expected Houzz Pro destination');
 
   const destAutomation = getHouzzDestinationInfo(webhookUrlAutomation);
-  if (destAutomation.displayName !== 'Houzz Automation') throw new Error('Expected Houzz Automation destination');
+  if (destAutomation.displayName !== 'Zapier') throw new Error('Expected Zapier destination');
   console.log('✓ Destination label resolution passed.');
 
   // 2. Test Payload Construction (Requirement 5)
