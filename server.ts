@@ -3595,7 +3595,7 @@ app.get('/api/tasks/today', async (req, res) => {
 });
 
 // 5. BACKGROUND QUEUE RETRY WORKER (Runs every 2 minutes for resilient delivery)
-setInterval(async () => {
+if (!process.env.VERCEL) setInterval(async () => {
   try {
     await durableStore.processPendingQueueItems(async (item) => {
       if (item.destination === 'houzz') {
@@ -3698,8 +3698,10 @@ function runBackgroundFollowUpScheduler() {
   }
 }
 
-setTimeout(runBackgroundFollowUpScheduler, 5000);
-setInterval(runBackgroundFollowUpScheduler, 15 * 60 * 1000);
+if (!process.env.VERCEL) {
+  setTimeout(runBackgroundFollowUpScheduler, 5000);
+  setInterval(runBackgroundFollowUpScheduler, 15 * 60 * 1000);
+}
 
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
@@ -3735,7 +3737,8 @@ async function startServer() {
 }
 
 export { extractAngiServiceFromSubject, parseIncomingLeadPayload };
+export default app;
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
   startServer();
 }
