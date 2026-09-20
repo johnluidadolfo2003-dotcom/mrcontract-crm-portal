@@ -209,7 +209,7 @@ export const NewLeadsPage: React.FC = () => {
         throw new Error(error.error || 'The Thumbtack webhook record could not be updated.');
       }
     }
-    if (isAngiLead(updatedLead as NewLeadRecord) && updatedLead.angiAccount) {
+    if (isAngiLead(updatedLead as unknown as NewLeadRecord) && updatedLead.angiAccount) {
       const response = await fetch(`/api/leads/${encodeURIComponent(leadId)}/angi-account`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
