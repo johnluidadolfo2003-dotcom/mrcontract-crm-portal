@@ -42,6 +42,7 @@ import {
 import { LeadDrawer } from '../components/ui/LeadDrawer';
 import {
  resolveDashboardAppointmentIdentity,
+ dedupeDashboardAppointments,
  DashboardRepresentativeCode,
 } from '../lib/dashboardSchedule';
 
@@ -155,12 +156,10 @@ function duplicateIdentity(item: {
  const email = normalizeText(item.clientEmail);
  const name = normalizeText(item.clientName);
  const identity = phone.length >= 7 ? `phone:${phone}` : email ? `email:${email}` : `name:${name}`;
- // Different calendars and different appointment times are valid and must not
- // be treated as duplicates.
+ // The same client appointment copied to another salesperson calendar is one
+ // Overview item. Different dates or times remain separate appointments.
  return [
-  `calendar:${normalizeText(item.calendarId)}`,
   identity,
-  `service:${normalizeText(item.serviceNeeded)}`,
   `date:${item.appointmentDate || ''}`,
   `start:${item.startTime || ''}`,
   `end:${item.endTime || ''}`,
@@ -271,7 +270,7 @@ export const Dashboard: React.FC = () => {
  }, [sheetRecords, scheduledList]);
 
  const todayAppointments = useMemo<TodayCalendarItem[]>(() => {
-  return calendarEvents
+  const appointments = calendarEvents
    .map((event): TodayCalendarItem | null => {
     const parsed = parseCalendarEventToFormData(event, config).formData;
     const title = resolveDashboardAppointmentIdentity(event.summary || '', parsed);
@@ -314,7 +313,9 @@ export const Dashboard: React.FC = () => {
      }),
     };
    })
-   .filter((item): item is TodayCalendarItem => Boolean(item))
+   .filter((item): item is TodayCalendarItem => Boolean(item));
+
+  return dedupeDashboardAppointments(appointments)
    .sort((a, b) => a.startTime.localeCompare(b.startTime));
  }, [calendarEvents, allCrmRecords, config, todayKey]);
 
