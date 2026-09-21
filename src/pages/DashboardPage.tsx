@@ -33,7 +33,6 @@ import {
  deleteRowFromSheet,
  SheetRowRecord,
 } from '../lib/sheets';
-import { isFollowUpStatus } from '../lib/utils';
 import {
  fetchAllGoogleCalendarEvents,
  parseCalendarEventToFormData,
@@ -340,11 +339,6 @@ export const Dashboard: React.FC = () => {
   ) as Record<RepresentativeCode, TodayCalendarItem[]>;
  }, [todayAppointments]);
 
- const followUpsCount = useMemo(
-  () => sheetRecords.filter((record) => isFollowUpStatus(record.status)).length,
-  [sheetRecords]
- );
-
  const showMessage = (type: 'success' | 'error', text: string) => {
   setMessage({ type, text });
   window.setTimeout(() => setMessage(null), 5000);
@@ -516,7 +510,7 @@ export const Dashboard: React.FC = () => {
     </button>
    </div>
 
-   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-5">
      <div className="flex items-center justify-between">
       <Users className="w-5 h-5 text-[#FF5500]" />
@@ -535,11 +529,6 @@ export const Dashboard: React.FC = () => {
      <div className="text-[11px] text-zinc-500 mt-0.5">From all accessible Google Calendars</div>
     </div>
 
-    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-5">
-     <Clock className="w-5 h-5 text-[#FF5500]" />
-     <div className="mt-4 text-4xl font-black text-zinc-900 dark:text-white tabular-nums">{followUpsCount}</div>
-     <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">Follow-Ups Due</div>
-    </div>
    </div>
 
    <section className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-5 sm:p-6">
