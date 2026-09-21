@@ -54,3 +54,14 @@ export function resolveDashboardAppointmentIdentity(
   serviceNeeded: serviceNeeded || 'Appointment',
  };
 }
+
+export function dedupeDashboardAppointments<T extends { duplicateKey: string }>(appointments: T[]): T[] {
+ const seen = new Set<string>();
+ return appointments.filter((appointment) => {
+  const key = String(appointment.duplicateKey || '').trim();
+  if (!key) return true;
+  if (seen.has(key)) return false;
+  seen.add(key);
+  return true;
+ });
+}
