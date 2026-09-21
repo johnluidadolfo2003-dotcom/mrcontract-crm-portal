@@ -401,9 +401,9 @@ export const ScheduleClientPage: React.FC = () => {
               aria-label={config.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {config.theme === 'dark' ? (
-                <Sun className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
-              ) : (
                 <Moon className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+              ) : (
+                <Sun className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
               )}
             </button>
 

@@ -20,7 +20,11 @@ interface UserContextType {
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
-const ADMIN_EMAIL = String(import.meta.env.VITE_CRM_INITIAL_ADMIN_EMAIL || '').trim().toLowerCase();
+const ADMIN_EMAIL = String(
+  import.meta.env.VITE_CRM_INITIAL_ADMIN_EMAIL ||
+  (import.meta as any).env?.CRM_INITIAL_ADMIN_EMAIL ||
+  ''
+).trim().toLowerCase();
 
 function toAppUser(user: User): AppUser {
   return {
@@ -38,11 +42,30 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isSwitchUserModalOpen, setIsSwitchUserModalOpen] = useState(false);
   const [isActivityLogModalOpen, setIsActivityLogModalOpen] = useState(false);
 
-  useEffect(() => onAuthStateChanged(auth, (user) => {
-    const email = user?.email?.trim().toLowerCase();
-    setCurrentUser(user && user.emailVerified && ADMIN_EMAIL && email === ADMIN_EMAIL ? toAppUser(user) : null);
-    setIsLoading(false);
-  }), []);
+  useEffect(() => {
+    return onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setCurrentUser(null);
+        setIsLoading(false);
+        return;
+      }
+
+      const email = user.email?.trim().toLowerCase();
+      const isAuthorized = Boolean(
+        user.emailVerified &&
+        ADMIN_EMAIL &&
+        email === ADMIN_EMAIL
+      );
+
+      if (isAuthorized) {
+        setCurrentUser(toAppUser(user));
+      } else {
+        await signOutUser().catch(() => {});
+        setCurrentUser(null);
+      }
+      setIsLoading(false);
+    });
+  }, []);
 
   const reject = async (): Promise<null> => { throw new Error('CRM profiles are managed by Google authentication.'); };
   const deleteUser = async (_id: string): Promise<boolean> => reject() as any;

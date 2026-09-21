@@ -111,7 +111,7 @@ export const ClientForm: React.FC = () => {
         title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
       >
-        {theme === 'dark' ? <Sun className="w-4 h-4 text-zinc-300" /> : <Moon className="w-4 h-4 text-zinc-600" />}
+        {theme === 'dark' ? <Moon className="w-4 h-4 text-zinc-300" /> : <Sun className="w-4 h-4 text-zinc-600" />}
       </button>
 
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 sm:p-6 max-w-sm w-full shadow-2xl space-y-4">

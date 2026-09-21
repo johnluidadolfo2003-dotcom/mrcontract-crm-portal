@@ -467,7 +467,7 @@ export const MainLayout: React.FC = () => {
  title={config.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
  aria-label={config.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
  >
- {config.theme === 'dark' ? <Sun className="w-4 h-4 text-zinc-700 dark:text-zinc-300"/> : <Moon className="w-4 h-4 text-zinc-700 dark:text-zinc-300"/>}
+ {config.theme === 'dark' ? <Moon className="w-4 h-4 text-zinc-700 dark:text-zinc-300"/> : <Sun className="w-4 h-4 text-zinc-700 dark:text-zinc-300"/>}
  </button>
  </div>
  </header>
