@@ -6,7 +6,7 @@ let cachedCredentialsKey = '';
 
 export interface CalendarAuthInfo {
   token: string | null;
-  source: 'oauth_refresh_token' | 'service_account' | 'env_token' | 'none';
+  source: 'oauth_refresh_token' | 'service_account' | 'env_token' | 'client_oauth_token' | 'none';
   email: string | null;
   error?: string;
 }
@@ -49,11 +49,21 @@ export function resolveCalendarId(reqCalendarId?: string): string {
 
 /**
  * Obtain a valid Google Calendar access token on the backend.
+ * Priority 0: Client provided OAuth access token from user's Google Sign-In
  * Priority 1: Backend OAuth2Client with refresh token
  * Priority 2: Service Account JWT client
  * Priority 3: Static env token
  */
-export async function getCalendarAccessToken(reqCalendarId?: string): Promise<CalendarAuthInfo> {
+export async function getCalendarAccessToken(reqCalendarId?: string, clientToken?: string): Promise<CalendarAuthInfo> {
+  // 0. Client provided Google Sign-in OAuth access token
+  if (clientToken && typeof clientToken === 'string' && clientToken.trim()) {
+    return {
+      token: clientToken.trim(),
+      source: 'client_oauth_token',
+      email: null,
+    };
+  }
+
   const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_OAUTH_CLIENT_ID || '').trim();
   const clientSecret = (process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_OAUTH_CLIENT_SECRET || '').trim();
   const refreshToken = (
@@ -288,6 +298,7 @@ export async function listCalendarEvents(options: {
   calendarId?: string;
   timeMin?: string;
   timeMax?: string;
+  clientToken?: string;
 }): Promise<{
   success: boolean;
   events: any[];
@@ -308,6 +319,7 @@ export async function listCalendarEvents(options: {
     const all = await listAllAccessibleCalendarEvents({
       timeMin: options.timeMin,
       timeMax: options.timeMax,
+      clientToken: options.clientToken,
     });
     return {
       success: all.success,
@@ -322,7 +334,7 @@ export async function listCalendarEvents(options: {
     };
   }
 
-  const auth = await getCalendarAccessToken(options.calendarId);
+  const auth = await getCalendarAccessToken(options.calendarId, options.clientToken);
   const calendarId = resolveCalendarId(options.calendarId);
 
   if (!auth.token) {
@@ -440,6 +452,7 @@ export async function listCalendarEvents(options: {
 export async function listAllAccessibleCalendarEvents(options: {
   timeMin?: string;
   timeMax?: string;
+  clientToken?: string;
 }): Promise<{
   success: boolean;
   events: any[];
@@ -449,7 +462,7 @@ export async function listAllAccessibleCalendarEvents(options: {
   error?: string;
   status?: number;
 }> {
-  const auth = await getCalendarAccessToken('primary');
+  const auth = await getCalendarAccessToken('primary', options.clientToken);
   if (!auth.token) {
     return {
       success: false,
@@ -862,7 +875,8 @@ export async function checkSalespersonScheduleOverlap(
  */
 export async function createCalendarEvent(
   payload: any,
-  reqCalendarId?: string
+  reqCalendarId?: string,
+  clientToken?: string
 ): Promise<{
   success: boolean;
   event?: any;
@@ -879,7 +893,7 @@ export async function createCalendarEvent(
   status?: number;
 }> {
   payload = normalizeCalendarPayloadTimes(payload);
-  const auth = await getCalendarAccessToken(reqCalendarId);
+  const auth = await getCalendarAccessToken(reqCalendarId, clientToken);
   const calendarId = resolveCalendarId(reqCalendarId);
 
   if (!auth.token) {
@@ -996,7 +1010,8 @@ export async function createCalendarEvent(
 export async function updateCalendarEvent(
   eventId: string,
   payload: any,
-  reqCalendarId?: string
+  reqCalendarId?: string,
+  clientToken?: string
 ): Promise<{
   success: boolean;
   event?: any;
@@ -1013,7 +1028,7 @@ export async function updateCalendarEvent(
   status?: number;
 }> {
   payload = normalizeCalendarPayloadTimes(payload);
-  const auth = await getCalendarAccessToken(reqCalendarId);
+  const auth = await getCalendarAccessToken(reqCalendarId, clientToken);
   const calendarId = resolveCalendarId(reqCalendarId);
 
   if (!auth.token) {
@@ -1128,7 +1143,8 @@ export async function updateCalendarEvent(
  */
 export async function deleteCalendarEvent(
   eventId: string,
-  reqCalendarId?: string
+  reqCalendarId?: string,
+  clientToken?: string
 ): Promise<{
   success: boolean;
   calendarId: string;
@@ -1142,7 +1158,7 @@ export async function deleteCalendarEvent(
   requiredScopes?: string[];
   status?: number;
 }> {
-  const auth = await getCalendarAccessToken(reqCalendarId);
+  const auth = await getCalendarAccessToken(reqCalendarId, clientToken);
   const calendarId = resolveCalendarId(reqCalendarId);
 
   if (!auth.token) {
@@ -1211,7 +1227,7 @@ export async function deleteCalendarEvent(
 /**
  * Perform a thorough health check on Google Calendar backend credentials & API access.
  */
-export async function getCalendarHealthStatus(reqCalendarId?: string): Promise<{
+export async function getCalendarHealthStatus(reqCalendarId?: string, clientToken?: string): Promise<{
   connected: boolean;
   authSource: string;
   calendarId: string;
@@ -1225,6 +1241,70 @@ export async function getCalendarHealthStatus(reqCalendarId?: string): Promise<{
   currentScopes?: string[];
   requiredScopes?: string[];
 }> {
+  const calendarId = resolveCalendarId(reqCalendarId);
+
+  // If client provides a valid OAuth access token from user sign-in
+  if (clientToken && typeof clientToken === 'string' && clientToken.trim()) {
+    const token = clientToken.trim();
+    const scopeInspection = await inspectTokenScopes(token);
+    try {
+      const testRes = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?maxResults=1`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!testRes.ok) {
+        const errData = await testRes.json().catch(() => ({}));
+        const parsedErr = parseAndLogGoogleError(
+          testRes.status,
+          errData,
+          calendarId,
+          'client_oauth_token',
+          'getCalendarHealthStatus',
+          scopeInspection
+        );
+
+        return {
+          connected: false,
+          authSource: 'client_oauth_token',
+          calendarId,
+          debugReason: parsedErr.debugReason,
+          reason: parsedErr.debugReason,
+          requiresAdminAction: false,
+          error: parsedErr.error,
+          googleReason: parsedErr.googleReason,
+          googleMessage: parsedErr.googleMessage,
+          currentScopes: parsedErr.currentScopes,
+          requiredScopes: parsedErr.requiredScopes,
+        };
+      }
+
+      return {
+        connected: true,
+        authSource: 'client_oauth_token',
+        calendarId,
+        debugReason: 'connected',
+        reason: 'connected',
+        requiresAdminAction: false,
+        email: scopeInspection.email || null,
+        currentScopes: scopeInspection.scopes,
+        requiredScopes: ['https://www.googleapis.com/auth/calendar', 'https://www.googleapis.com/auth/calendar.events'],
+      };
+    } catch (err: any) {
+      return {
+        connected: false,
+        authSource: 'client_oauth_token',
+        calendarId,
+        debugReason: 'calendar_api_error',
+        reason: 'network_error',
+        requiresAdminAction: false,
+        error: err.message || 'Network error connecting to Google Calendar API.',
+      };
+    }
+  }
+
   const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_OAUTH_CLIENT_ID || '').trim();
   const clientSecret = (process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_OAUTH_CLIENT_SECRET || '').trim();
   const refreshToken = (
@@ -1233,8 +1313,6 @@ export async function getCalendarHealthStatus(reqCalendarId?: string): Promise<{
     process.env.GOOGLE_OAUTH_REFRESH_TOKEN ||
     ''
   ).trim();
-
-  const calendarId = resolveCalendarId(reqCalendarId);
 
   if (!clientId) {
     return {

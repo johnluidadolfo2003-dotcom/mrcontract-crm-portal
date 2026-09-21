@@ -1,7 +1,17 @@
 import { AppointmentFormData, AppConfig, GoogleCalendarEventPayload, CreatedCalendarEvent } from '../types';
 import { loadAppConfig } from '../config';
+import { getCachedAccessToken } from './firebase';
 
 export const BUSINESS_TIME_ZONE = 'America/New_York';
+
+export function getCalendarAuthHeaders(customHeaders: Record<string, string> = {}): Record<string, string> {
+  const headers: Record<string, string> = { ...customHeaders };
+  const token = getCachedAccessToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
 
 /**
  * Calculates the exact RFC 3339 timezone offset string (e.g."-04:00"or"-05:00")
@@ -228,7 +238,9 @@ export interface BackendCalendarStatus {
 export async function checkBackendCalendarStatus(calendarId?: string): Promise<BackendCalendarStatus> {
   try {
     const query = calendarId ? `?calendarId=${encodeURIComponent(calendarId)}` : '';
-    const res = await fetch(`/api/calendar/status${query}`);
+    const res = await fetch(`/api/calendar/status${query}`, {
+      headers: getCalendarAuthHeaders(),
+    });
     const data = await res.json().catch(() => ({}));
     const result: BackendCalendarStatus = {
       connected: res.ok && !!data.connected,
@@ -285,7 +297,9 @@ export async function fetchGoogleCalendarEvents(
  if (actualCalId) params.append('calendarId', actualCalId);
  const queryString = params.toString() ? `?${params.toString()}` : '';
 
- const serverRes = await fetch(`/api/calendar/events${queryString}`);
+ const serverRes = await fetch(`/api/calendar/events${queryString}`, {
+  headers: getCalendarAuthHeaders(),
+ });
  const serverData = await serverRes.json().catch(() => ({}));
 
  if (serverRes.ok && serverData.success && Array.isArray(serverData.events)) {
@@ -343,7 +357,9 @@ export async function fetchAllGoogleCalendarEvents(options?: {
   const query = params.toString() ? `?${params.toString()}` : '';
 
   const separator = query ? '&' : '?';
-  const response = await fetch(`/api/calendar/events${query}${separator}calendarId=all-accessible`);
+  const response = await fetch(`/api/calendar/events${query}${separator}calendarId=all-accessible`, {
+   headers: getCalendarAuthHeaders(),
+  });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data.success || !Array.isArray(data.events)) {
    throw new Error(data.error || data.message || `Calendar request failed (HTTP ${response.status}).`);
@@ -449,11 +465,11 @@ export async function createGoogleCalendarEvent(
 
  const query = calendarId ? `?calendarId=${encodeURIComponent(calendarId)}` : '';
  const res = await fetch(`/api/calendar/events${query}`, {
- method: 'POST',
- headers: {
- 'Content-Type': 'application/json',
- },
- body: JSON.stringify(payload),
+  method: 'POST',
+  headers: getCalendarAuthHeaders({
+   'Content-Type': 'application/json',
+  }),
+  body: JSON.stringify(payload),
  });
 
  const data = await res.json().catch(() => ({}));
@@ -516,11 +532,11 @@ export async function updateGoogleCalendarEvent(
 
  const query = calendarId ? `?calendarId=${encodeURIComponent(calendarId)}` : '';
  const response = await fetch(`/api/calendar/events/${encodeURIComponent(eventId)}${query}`, {
- method: 'PUT',
- headers: {
- 'Content-Type': 'application/json',
- },
- body: JSON.stringify(payload),
+  method: 'PUT',
+  headers: getCalendarAuthHeaders({
+   'Content-Type': 'application/json',
+  }),
+  body: JSON.stringify(payload),
  });
 
  const data = await response.json().catch(() => ({}));
@@ -568,7 +584,8 @@ export async function deleteGoogleCalendarEvent(
 ): Promise<boolean> {
  const query = calendarId ? `?calendarId=${encodeURIComponent(calendarId)}` : '';
  const response = await fetch(`/api/calendar/events/${encodeURIComponent(eventId)}${query}`, {
- method: 'DELETE',
+  method: 'DELETE',
+  headers: getCalendarAuthHeaders(),
  });
  const data = await response.json().catch(() => ({}));
  if (!response.ok || !data.success) {

@@ -2172,10 +2172,20 @@ async function getCalendarAuthDetails(req: any) {
   return { token: null, source: 'none', email: null };
 }
 
+function getClientOAuthToken(req: express.Request): string | undefined {
+  const authHeader = req.headers.authorization || '';
+  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7).trim();
+    return token || undefined;
+  }
+  return undefined;
+}
+
 // Calendar Diagnostics & Health Endpoint
 app.get('/api/calendar/status', async (req, res) => {
   try {
-    const health = await calendarService.getCalendarHealthStatus(req.query.calendarId as string);
+    const clientToken = getClientOAuthToken(req);
+    const health = await calendarService.getCalendarHealthStatus(req.query.calendarId as string, clientToken);
     res.json({
       success: health.connected,
       ...health,
@@ -2188,10 +2198,12 @@ app.get('/api/calendar/status', async (req, res) => {
 
 app.get('/api/calendar/events', async (req, res) => {
   try {
+    const clientToken = getClientOAuthToken(req);
     const result = await calendarService.listCalendarEvents({
       calendarId: req.query.calendarId as string,
       timeMin: req.query.timeMin as string,
       timeMax: req.query.timeMax as string,
+      clientToken,
     });
     if (!result.success && result.status) {
       return res.status(result.status).json(result);
@@ -2204,7 +2216,8 @@ app.get('/api/calendar/events', async (req, res) => {
 
 app.post('/api/calendar/events', async (req, res) => {
   try {
-    const result = await calendarService.createCalendarEvent(req.body, req.query.calendarId as string);
+    const clientToken = getClientOAuthToken(req);
+    const result = await calendarService.createCalendarEvent(req.body, req.query.calendarId as string, clientToken);
     if (!result.success && result.status) {
       return res.status(result.status).json(result);
     }
@@ -2216,7 +2229,8 @@ app.post('/api/calendar/events', async (req, res) => {
 
 app.put('/api/calendar/events/:eventId', async (req, res) => {
   try {
-    const result = await calendarService.updateCalendarEvent(req.params.eventId, req.body, req.query.calendarId as string);
+    const clientToken = getClientOAuthToken(req);
+    const result = await calendarService.updateCalendarEvent(req.params.eventId, req.body, req.query.calendarId as string, clientToken);
     if (!result.success && result.status) {
       return res.status(result.status).json(result);
     }
@@ -2228,7 +2242,8 @@ app.put('/api/calendar/events/:eventId', async (req, res) => {
 
 app.delete('/api/calendar/events/:eventId', async (req, res) => {
   try {
-    const result = await calendarService.deleteCalendarEvent(req.params.eventId, req.query.calendarId as string);
+    const clientToken = getClientOAuthToken(req);
+    const result = await calendarService.deleteCalendarEvent(req.params.eventId, req.query.calendarId as string, clientToken);
     if (!result.success && result.status) {
       return res.status(result.status).json(result);
     }

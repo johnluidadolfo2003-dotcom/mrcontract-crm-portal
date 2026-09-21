@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useUser, ADMIN_EMAIL } from '../lib/userContext';
+import { useUser, isAuthorizedAdminEmail, ALLOWED_ADMIN_EMAILS } from '../lib/userContext';
 import { googleSignIn, signOutUser } from '../lib/firebase';
 import { loadAppConfig, saveAppConfig, applyTheme } from '../config';
 import { ShieldCheck, AlertCircle, Sun, Moon, Loader2, Lock } from 'lucide-react';
@@ -34,7 +34,7 @@ export const UserGatekeeper: React.FC<{ children: React.ReactNode }> = ({ childr
         throw new Error('No user profile returned from Google sign-in.');
       }
 
-      if (!ADMIN_EMAIL) {
+      if (ALLOWED_ADMIN_EMAILS.length === 0) {
         await signOutUser().catch(() => {});
         setAuthError(
           'Access restriction error: CRM_INITIAL_ADMIN_EMAIL is not configured in the environment.'
@@ -50,10 +50,10 @@ export const UserGatekeeper: React.FC<{ children: React.ReactNode }> = ({ childr
         return;
       }
 
-      if (email !== ADMIN_EMAIL) {
+      if (!isAuthorizedAdminEmail(email)) {
         await signOutUser().catch(() => {});
         setAuthError(
-          `Access Denied: Google account "${user.email || 'unknown'}" is not authorized. Only the designated administrator account (${ADMIN_EMAIL}) has access to Mr. Contract CRM.`
+          `Access Denied: Google account "${user.email || 'unknown'}" is not authorized. Only designated administrator accounts (${ALLOWED_ADMIN_EMAILS.join(', ')}) have access to Mr. Contract CRM.`
         );
         return;
       }

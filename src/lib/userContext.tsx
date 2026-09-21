@@ -20,11 +20,31 @@ interface UserContextType {
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
-const ADMIN_EMAIL = String(
+const DEFAULT_ALLOWED_EMAILS = ['info@mrcontract.us', 'johnluidadolfo2003@gmail.com'];
+const CONFIGURED_ADMIN_EMAIL = String(
   import.meta.env.VITE_CRM_INITIAL_ADMIN_EMAIL ||
   (import.meta as any).env?.CRM_INITIAL_ADMIN_EMAIL ||
   ''
 ).trim().toLowerCase();
+
+export const ALLOWED_ADMIN_EMAILS: string[] = Array.from(
+  new Set(
+    [
+      ...DEFAULT_ALLOWED_EMAILS,
+      ...(CONFIGURED_ADMIN_EMAIL ? [CONFIGURED_ADMIN_EMAIL] : []),
+    ]
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean)
+  )
+);
+
+export const ADMIN_EMAIL = CONFIGURED_ADMIN_EMAIL || ALLOWED_ADMIN_EMAILS[0] || 'info@mrcontract.us';
+
+export function isAuthorizedAdminEmail(email?: string | null): boolean {
+  if (!email) return false;
+  const normalized = email.trim().toLowerCase();
+  return ALLOWED_ADMIN_EMAILS.includes(normalized);
+}
 
 function toAppUser(user: User): AppUser {
   return {
@@ -53,8 +73,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const email = user.email?.trim().toLowerCase();
       const isAuthorized = Boolean(
         user.emailVerified &&
-        ADMIN_EMAIL &&
-        email === ADMIN_EMAIL
+        isAuthorizedAdminEmail(email)
       );
 
       if (isAuthorized) {
@@ -94,4 +113,4 @@ export const useUser = () => {
   return context;
 };
 
-export { ADMIN_EMAIL, googleSignIn };
+export { googleSignIn };
