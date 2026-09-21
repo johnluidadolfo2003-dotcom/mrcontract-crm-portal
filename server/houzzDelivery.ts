@@ -197,6 +197,52 @@ export function constructHouzzPayload(leadId: string, leadData: any): any {
     timeZone: 'America/New_York',
   }).format(safeCreatedAt).toUpperCase();
 
+  // Keep one canonical CRM record and repeat that same object under the common
+  // Zapier/Houzz containers. Existing Zaps may read top-level or nested fields;
+  // every path must resolve to the exact information entered in the CRM.
+  const canonicalLead = {
+    clientName: resolvedName,
+    client_name: resolvedName,
+    name: resolvedName,
+    fullName: resolvedName,
+    full_name: resolvedName,
+    customerName: resolvedName,
+    customer_name: resolvedName,
+    leadName: resolvedName,
+    lead_name: resolvedName,
+    firstName,
+    lastName,
+    first_name: firstName,
+    last_name: lastName,
+    clientPhone: phone,
+    phone,
+    phoneNumber: phone,
+    clientEmail: email,
+    email,
+    address: addrStr,
+    clientAddress: addrStr,
+    fullAddress: addrStr,
+    propertyAddress: addrStr,
+    location: addrStr,
+    street: parsedAddr.street || addrStr,
+    streetAddress: parsedAddr.streetAddress || addrStr,
+    address1: parsedAddr.address1 || addrStr,
+    address_line_1: parsedAddr.address1 || addrStr,
+    city: parsedAddr.city || '',
+    state: parsedAddr.state || '',
+    zip: parsedAddr.zip || '',
+    zipCode: parsedAddr.zip || '',
+    postalCode: parsedAddr.postalCode || '',
+    serviceNeeded,
+    service: serviceNeeded,
+    leadSource,
+    source: leadSource,
+    leadFee: String(leadData.leadFee || '').trim(),
+    notes,
+    message: notes,
+    status: String(leadData.status || 'New').trim(),
+  };
+
   return {
     leadId: leadId || leadData.id || `lead_${Date.now()}`,
     submissionId: leadId || leadData.id || `lead_${Date.now()}`,
@@ -207,7 +253,16 @@ export function constructHouzzPayload(leadId: string, leadData: any): any {
     createNewRecord: true,
     createFreshLead: true,
     action: 'create_new_lead',
-    payloadVersion: 'crm-houzz-v2',
+    payloadVersion: 'crm-houzz-v3',
+    crmSource: 'mrcontract-crm',
+    // Do not let Zapier fall back to an old trigger sample. All supported
+    // containers carry the same canonical values from this submission.
+    lead: { ...canonicalLead },
+    data: { ...canonicalLead },
+    payload: { ...canonicalLead },
+    client: { ...canonicalLead },
+    contact: { ...canonicalLead },
+    crmLead: { ...canonicalLead },
     // Use houzzClientName in the Zapier Houzz Pro "Client Name" field.
     // All aliases intentionally contain the exact same authoritative value.
     houzzClientName: resolvedName,
@@ -428,6 +483,23 @@ export async function dispatchLeadToHouzz(params: {
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   const fullPayload = constructHouzzPayload(params.leadId, params.payload);
+  const expectedClientName = String(params.payload?.clientName || '').trim().replace(/\s+/g, ' ');
+  if (!expectedClientName || fullPayload.clientName !== expectedClientName) {
+    clearTimeout(timeoutId);
+    const safeErr = 'CRM lead validation failed before delivery: client name did not match the submitted record.';
+    const result: DispatchResult = {
+      success: false,
+      destinationLabel: destInfo.displayName,
+      activityStatus: destInfo.failedLabel,
+      statusCode: null,
+      error: safeErr,
+      safeSummary: `Failed to send to ${destInfo.displayName} (${safeErr})`,
+      attemptAt,
+    };
+    setHouzzDispatchFailed(phone, name, params.leadId, safeErr);
+    updateLeadHouzzState(params.leadId, result);
+    return result;
+  }
 
   try {
     const response = await fetchFn(url, {

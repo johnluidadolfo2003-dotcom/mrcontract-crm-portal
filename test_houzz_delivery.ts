@@ -45,7 +45,30 @@ async function runTests() {
   if (builtPayload.serviceNeeded !== 'Brick Chimney Repair' || builtPayload.leadId !== 'lead_test_123') {
     throw new Error('serviceNeeded or leadId mapping failed');
   }
-  console.log('✓ Payload construction verified.');
+  const canonicalContainers = ['lead', 'data', 'payload', 'client', 'contact', 'crmLead'];
+  for (const container of canonicalContainers) {
+    const nested = builtPayload[container];
+    if (!nested || nested.clientName !== testPayload.clientName) {
+      throw new Error(`${container}.clientName did not preserve the CRM name`);
+    }
+    if (
+      nested.clientPhone !== testPayload.clientPhone ||
+      nested.clientEmail !== testPayload.clientEmail ||
+      nested.address !== testPayload.address ||
+      nested.serviceNeeded !== testPayload.serviceNeeded ||
+      nested.notes !== testPayload.notes
+    ) {
+      throw new Error(`${container} did not preserve the complete CRM lead information`);
+    }
+  }
+  if (
+    builtPayload.houzzClientName !== testPayload.clientName ||
+    builtPayload.authoritativeClientName !== testPayload.clientName ||
+    builtPayload.payloadVersion !== 'crm-houzz-v3'
+  ) {
+    throw new Error('Authoritative Houzz name or payload version is incorrect');
+  }
+  console.log('✓ Payload construction and canonical field parity verified.');
 
   // 3. Test Sanitization (Requirement 3 & 6)
   console.log('\n[Test 3] Secret Sanitization');
@@ -66,7 +89,7 @@ async function runTests() {
     customFetch: mockFetch201 as any,
   });
 
-  if (!res201.success || res201.activityStatus !== 'Sent to Houzz Pro' || res201.statusCode !== 201) {
+  if (!res201.success || res201.activityStatus !== 'Created in Houzz Pro' || res201.statusCode !== 201) {
     throw new Error(`201 test failed: ${JSON.stringify(res201)}`);
   }
   console.log('✓ 201 Accepted response passed with activity status:', res201.activityStatus);
