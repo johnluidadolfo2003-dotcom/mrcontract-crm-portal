@@ -160,7 +160,6 @@ function duplicateIdentity(item: {
  // Overview item. Different dates or times remain separate appointments.
  return [
   identity,
-  `service:${normalizeText(item.serviceNeeded)}`,
   `date:${item.appointmentDate || ''}`,
   `start:${item.startTime || ''}`,
   `end:${item.endTime || ''}`,
