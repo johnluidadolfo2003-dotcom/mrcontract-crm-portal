@@ -30,7 +30,7 @@ async function runTests() {
   if (destHouzz.displayName !== 'Houzz Pro') throw new Error('Expected Houzz Pro destination');
 
   const destAutomation = getHouzzDestinationInfo(webhookUrlAutomation);
-  if (destAutomation.displayName !== 'Houzz Automation') throw new Error('Expected Houzz Automation destination');
+  if (destAutomation.displayName !== 'Zapier') throw new Error('Expected Zapier destination');
   console.log('✓ Destination label resolution passed.');
 
   // 2. Test Payload Construction (Requirement 5)
@@ -81,7 +81,7 @@ async function runTests() {
     customFetch: mockFetch200Error as any,
   });
 
-  if (res200Err.success || res200Err.activityStatus !== 'Failed to send to Houzz Automation' || !res200Err.error?.includes('Duplicate lead')) {
+  if (res200Err.success || res200Err.activityStatus !== 'Failed to send to Zapier' || !res200Err.error?.includes('Duplicate lead')) {
     throw new Error(`200 rejected body test failed: ${JSON.stringify(res200Err)}`);
   }
   console.log('✓ 200 Rejected body test passed with activity status:', res200Err.activityStatus);

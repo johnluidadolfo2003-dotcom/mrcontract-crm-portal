@@ -20,7 +20,6 @@ import {
  UserCheck,
  User,
  ListTodo,
- Activity,
 } from 'lucide-react';
 import { useUser } from '../lib/userContext';
 import { getNewLeads } from '../lib/newLeads';
@@ -768,32 +767,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
  </span>
  )}
  </button>
-
-  {/* Lead Hook Activity */}
-  <button
-    type="button"
-    onClick={() => {
-      navigate('/angi-email-activity');
-      if (isMobileView) setIsMobileOpen && setIsMobileOpen(false);
-    }}
-    className={`flex items-center ${
-      showExpanded ? 'w-full px-3.5 py-2.5 gap-3.5' : 'w-11 h-11 mx-auto justify-center'
-    } ${
-      location.pathname === '/angi-email-activity'
-        ? 'bg-[#FF5500]/10 text-[#FF5500] font-bold'
-        : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
-    } rounded-2xl transition-colors font-semibold text-xs cursor-pointer`}
-    title={!showExpanded ? 'Lead Hook Activity' : undefined}
-  >
-    <Activity className="w-4 h-4 shrink-0 text-zinc-500 dark:text-zinc-400"/>
-    {showExpanded && (
-      <span className="flex-1 text-left truncate tracking-tight">
-        Lead Hook Activity
-      </span>
-    )}
-  </button>
-
-  
 
  {/* Trash & Deleted Leads */}
  <button
