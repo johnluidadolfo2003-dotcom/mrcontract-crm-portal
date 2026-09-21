@@ -1425,7 +1425,8 @@ function saveIncomingLeadAndLog(
   ].map((value) => String(value || '').trim().toLowerCase()).join('|');
   const stableHash = createHash('sha256').update(stableInput).digest('hex').slice(0, 20);
   const leadId = `wh_lead_${stableHash}`;
-  const now = new Date().toISOString();
+  const newestOrder = Date.now();
+  const now = new Date(newestOrder).toISOString();
 
   const existingLead = existingLeads.find((item: any) => item.id === leadId);
   if (existingLead) return existingLead;
@@ -1433,6 +1434,7 @@ function saveIncomingLeadAndLog(
   const newLeadRecord = {
     id: leadId,
     createdAt: now,
+    newestOrder,
     clientName: parsed.clientName,
     clientPhone: parsed.clientPhone,
     clientEmail: parsed.clientEmail,
@@ -1448,6 +1450,12 @@ function saveIncomingLeadAndLog(
     sheetSynced: false,
     rawPayload: parsed.rawPayload,
   };
+
+  durableStore.saveLeadMetadata({
+    leadId: `order_${canonicalContactKey(newLeadRecord)}`,
+    createdAt: newLeadRecord.createdAt,
+    newestOrder: newLeadRecord.newestOrder,
+  });
 
   existingLeads.unshift(newLeadRecord);
   // Weakness 9: If storage exceeds 500 leads, archive synced leads instead of dropping unsynced leads
@@ -1791,6 +1799,14 @@ function canonicalContactKey(lead: any): string {
   return `name_${String(lead?.clientName || '').trim().toLowerCase()}`;
 }
 
+function getLeadNewestOrder(lead: any): number {
+  const explicitOrder = Number(lead?.newestOrder || 0);
+  if (Number.isFinite(explicitOrder) && explicitOrder > 0) return explicitOrder;
+
+  const parsedTime = new Date(String(lead?.createdAt || '')).getTime();
+  return Number.isFinite(parsedTime) && parsedTime > 0 ? parsedTime : 0;
+}
+
 function configuredLeadSourceTabs(): string[] {
   const fallback = ['Angi', 'Thumbtack', 'Referral', 'Big Fish', 'Houzz Pro', 'Roof R', 'Home Launch', 'Website', 'Yard Sign', 'Other'];
   try {
@@ -1854,8 +1870,25 @@ async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
       sheetSynced: true,
     };
     const key = canonicalContactKey(sheetLead);
+    const orderMetadata = durableStore.getLeadMetadata(`order_${key}`);
+    const orderedSheetLead = orderMetadata
+      ? {
+          ...sheetLead,
+          createdAt: orderMetadata.createdAt || sheetLead.createdAt,
+          newestOrder: orderMetadata.newestOrder,
+        }
+      : sheetLead;
     const metadata = transientByContact.get(key);
-    const contactMerged = metadata ? { ...sheetLead, ...metadata, rowIndex: row.rowIndex, statusColIndex: row.statusColIndex, sheetSynced: true } : sheetLead;
+    const contactMerged = metadata
+      ? {
+          ...orderedSheetLead,
+          ...metadata,
+          newestOrder: metadata.newestOrder || orderMetadata?.newestOrder,
+          rowIndex: row.rowIndex,
+          statusColIndex: row.statusColIndex,
+          sheetSynced: true,
+        }
+      : orderedSheetLead;
     const durableMetadata = durableStore.getLeadMetadata(contactMerged.id);
     const merged = durableMetadata
       ? { ...contactMerged, ...durableMetadata, id: contactMerged.id, rowIndex: row.rowIndex, statusColIndex: row.statusColIndex, sheetSynced: true }
@@ -1881,9 +1914,8 @@ async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
   }
 
   return leads.sort((a, b) => {
-    const at = new Date(a.createdAt || 0).getTime();
-    const bt = new Date(b.createdAt || 0).getTime();
-    if (at !== bt) return bt - at;
+    const orderDifference = getLeadNewestOrder(b) - getLeadNewestOrder(a);
+    if (orderDifference !== 0) return orderDifference;
     return Number(b.rowIndex || 0) - Number(a.rowIndex || 0);
   });
 }
@@ -1936,9 +1968,11 @@ app.post('/api/leads/manual', async (req, res) => {
     const clientName = String(body.clientName || '').trim();
     const leadSource = String(body.leadSource || 'Other').trim();
     if (!clientName) return res.status(400).json({ success: false, error: 'Client name is required.' });
+    const newestOrder = Date.now();
     const lead = {
-      id: `manual_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      createdAt: new Date().toISOString(),
+      id: `manual_${newestOrder}_${Math.random().toString(36).slice(2, 7)}`,
+      createdAt: new Date(newestOrder).toISOString(),
+      newestOrder,
       clientName,
       clientPhone: String(body.clientPhone || '').trim(),
       clientEmail: String(body.clientEmail || '').trim(),
@@ -1951,6 +1985,11 @@ app.post('/api/leads/manual', async (req, res) => {
       status: 'New',
       sourceEventId: String(body.id || ''),
     };
+    durableStore.saveLeadMetadata({
+      leadId: `order_${canonicalContactKey(lead)}`,
+      createdAt: lead.createdAt,
+      newestOrder: lead.newestOrder,
+    });
     const result = await sheetsService.appendLeadRow(sheetsService.getDefaultSpreadsheetId(), leadSource, lead, 'New');
     sheetsService.invalidateServerCache();
 
