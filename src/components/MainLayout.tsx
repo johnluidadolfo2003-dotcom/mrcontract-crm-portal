@@ -148,15 +148,21 @@ export const MainLayout: React.FC = () => {
  if (e?.detail?.subTab) setSettingsInitialSubTab(e.detail.subTab);
  setIsSettingsOpen(true);
  };
+ const handleOpenSwitchUser = () => setIsSwitchUserModalOpen(true);
+ const handleOpenActivityLog = () => setIsActivityLogModalOpen(true);
 
  window.addEventListener('open_schedule_modal', handleOpenSchedule);
  window.addEventListener('open_add_lead_modal', handleOpenAddLead);
  window.addEventListener('open_settings', handleOpenSettings);
+ window.addEventListener('open_switch_user_modal', handleOpenSwitchUser);
+ window.addEventListener('open_activity_log_modal', handleOpenActivityLog);
 
  return () => {
  window.removeEventListener('open_schedule_modal', handleOpenSchedule);
  window.removeEventListener('open_add_lead_modal', handleOpenAddLead);
  window.removeEventListener('open_settings', handleOpenSettings);
+ window.removeEventListener('open_switch_user_modal', handleOpenSwitchUser);
+ window.removeEventListener('open_activity_log_modal', handleOpenActivityLog);
  };
  }, []);
 
@@ -386,7 +392,7 @@ export const MainLayout: React.FC = () => {
  {/* Main Content Area */}
  <div className="flex-1 relative flex flex-col min-w-0 overflow-y-auto pb-20 md:pb-6 bg-white dark:bg-black">
  {/* Global Top Navbar */}
- <header className="sticky top-0 z-30 flex items-center justify-between px-3 sm:px-6 md:px-8 py-3 bg-white dark:bg-black border-b border-zinc-200 dark:border-zinc-800 shadow-2xs">
+ <header className="sticky top-0 z-30 flex items-center justify-between px-3 sm:px-6 md:px-8 py-2.5 bg-white dark:bg-black border-b border-zinc-200 dark:border-zinc-800 shadow-2xs">
  {/* Left: Mobile Hamburger Menu & Breadcrumb / Brand */}
  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
  {/* Hamburger button on mobile screens */}
@@ -394,21 +400,21 @@ export const MainLayout: React.FC = () => {
  type="button"
  onClick={() => setIsMobileSidebarOpen(true)}
  aria-label="Open navigation menu"
- className="md:hidden p-2 -ml-1 rounded-xl text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
+ className="md:hidden p-1.5 -ml-1 rounded-md text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors duration-120 min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer"
  >
  <Menu className="w-5 h-5"/>
  </button>
 
  <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm truncate">
- <span className="font-extrabold text-zinc-900 dark:text-white tracking-tight shrink-0">Mr.</span>
- <span className="font-extrabold text-[#FF5500] tracking-tight shrink-0">Contract</span>
+ <span className="font-black text-zinc-900 dark:text-white tracking-tight shrink-0">Mr.</span>
+ <span className="font-black text-[#FF5500] tracking-tight shrink-0">Contract</span>
  <span className="text-zinc-400 dark:text-zinc-600 font-medium">/</span>
  <span className="font-bold text-black dark:text-zinc-300 truncate">{getPageBreadcrumb()}</span>
  </div>
  </div>
 
  {/* Right Action Controls */}
- <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+ <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
  {/* Calendar Connection Status Badge */}
  {isCheckingCalendar ? (
  <button
@@ -418,7 +424,7 @@ export const MainLayout: React.FC = () => {
  setSettingsInitialSubTab('connections');
  setIsSettingsOpen(true);
  }}
- className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-600 dark:text-zinc-300 text-xs font-semibold cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+ className="flex items-center gap-1.5 px-2.5 h-[34px] bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-zinc-600 dark:text-zinc-300 text-xs font-semibold cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors duration-120"
  title="Checking backend calendar status..."
  >
  <span className="w-2 h-2 rounded-full bg-zinc-400" />
@@ -432,7 +438,7 @@ export const MainLayout: React.FC = () => {
  setSettingsInitialSubTab('connections');
  setIsSettingsOpen(true);
  }}
- className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl text-emerald-800 dark:text-emerald-300 text-xs font-semibold cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+ className="flex items-center gap-1.5 px-2.5 h-[34px] bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-md text-emerald-800 dark:text-emerald-300 text-xs font-semibold cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors duration-120"
  title="Google Calendar connected securely via backend. Click to view settings."
  >
  <span className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -446,7 +452,7 @@ export const MainLayout: React.FC = () => {
  setSettingsInitialSubTab('connections');
  setIsSettingsOpen(true);
  }}
- className="flex items-center gap-1.5 px-2.5 py-1.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-xl text-red-700 dark:text-red-300 text-xs font-semibold cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+ className="flex items-center gap-1.5 px-2.5 h-[34px] bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-md text-red-700 dark:text-red-300 text-xs font-semibold cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors duration-120"
  title="Calendar is currently unavailable. Click to configure backend integration."
  >
  <span className="w-2 h-2 rounded-full bg-red-500" />
@@ -457,7 +463,7 @@ export const MainLayout: React.FC = () => {
  {/* Theme Toggle */}
  <button
  onClick={toggleTheme}
- className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer shadow-2xs min-h-[44px] min-w-[44px] flex items-center justify-center"
+ className="p-2 rounded-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors duration-120 cursor-pointer shadow-2xs h-[34px] w-[34px] flex items-center justify-center"
  title={config.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
  aria-label={config.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
  >
@@ -513,23 +519,23 @@ export const MainLayout: React.FC = () => {
  {/* Mobile Bottom Navigation Bar (Phone thumb-friendly) */}
  <nav
  aria-label="Mobile Navigation"
- className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white dark:bg-black border-t border-zinc-200 dark:border-zinc-800 px-2 py-1 pb-safe flex items-center justify-around shadow-lg"
+ className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white dark:bg-black border-t border-zinc-200 dark:border-zinc-800 px-2 py-1 pb-safe flex items-center justify-around shadow-md"
  >
  {/* NEW Leads */}
  <NavLink
  to="/new"
  className={({ isActive }) =>
- `flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-colors min-w-[54px] min-h-[48px] relative ${
+ `flex flex-col items-center justify-center py-1 px-1.5 rounded-md transition-colors duration-120 min-w-[50px] min-h-[44px] relative ${
  isActive
- ? 'text-[#FF5500] font-black'
+ ? 'text-[#FF5500] font-bold'
  : 'text-zinc-500 dark:text-zinc-400 font-medium'
  }`
  }
  >
  <div className="relative">
- <User className="w-5 h-5"/>
+ <User className="w-4.5 h-4.5"/>
  {newLeadsCount > 0 && (
- <span className="absolute -top-1.5 -right-2 px-1 min-w-[18px] h-4.5 rounded-full bg-[#FF5500] text-white text-xs font-black flex items-center justify-center">
+ <span className="absolute -top-1.5 -right-2 px-1 min-w-[16px] h-4 rounded-md bg-[#FF5500] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">
  {newLeadsCount}
  </span>
  )}
@@ -542,14 +548,14 @@ export const MainLayout: React.FC = () => {
  to="/"
  end
  className={({ isActive }) =>
- `flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-colors min-w-[54px] min-h-[48px] ${
+ `flex flex-col items-center justify-center py-1 px-1.5 rounded-md transition-colors duration-120 min-w-[50px] min-h-[44px] ${
  isActive
- ? 'text-[#FF5500] font-black'
+ ? 'text-[#FF5500] font-bold'
  : 'text-zinc-500 dark:text-zinc-400 font-medium'
  }`
  }
  >
- <LayoutGrid className="w-5 h-5"/>
+ <LayoutGrid className="w-4.5 h-4.5"/>
  <span className="text-[10px] tracking-tight mt-0.5">Overview</span>
  </NavLink>
 
@@ -557,11 +563,11 @@ export const MainLayout: React.FC = () => {
  <button
  type="button"
  onClick={() => setIsAddLeadModalOpen(true)}
- className="flex flex-col items-center justify-center -mt-4 group cursor-pointer transition-transform"
+ className="flex flex-col items-center justify-center -mt-3 group cursor-pointer transition-colors duration-120"
  aria-label="Add Lead"
  >
- <div className="w-12 h-12 rounded-2xl bg-[#FF5500] group-hover:bg-[#E64D00] text-white flex items-center justify-center shadow-md">
- <Plus className="w-6 h-6 stroke-[3]"/>
+ <div className="w-10 h-10 rounded-md bg-[#FF5500] group-hover:bg-[#E64D00] text-white flex items-center justify-center shadow-xs">
+ <Plus className="w-5 h-5 stroke-[2.5]"/>
  </div>
  <span className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 mt-0.5">Add Lead</span>
  </button>
@@ -570,14 +576,14 @@ export const MainLayout: React.FC = () => {
  <NavLink
  to="/leads"
  className={({ isActive }) =>
- `flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-colors min-w-[54px] min-h-[48px] relative ${
+ `flex flex-col items-center justify-center py-1 px-1.5 rounded-md transition-colors duration-120 min-w-[50px] min-h-[44px] relative ${
  isActive
- ? 'text-[#FF5500] font-black'
+ ? 'text-[#FF5500] font-bold'
  : 'text-zinc-500 dark:text-zinc-400 font-medium'
  }`
  }
  >
- <Users className="w-5 h-5"/>
+ <Users className="w-4.5 h-4.5"/>
  <span className="text-[10px] tracking-tight mt-0.5">Leads</span>
  </NavLink>
 
@@ -585,14 +591,14 @@ export const MainLayout: React.FC = () => {
  <NavLink
  to="/follow-ups"
  className={({ isActive }) =>
- `flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-colors min-w-[54px] min-h-[48px] ${
+ `flex flex-col items-center justify-center py-1 px-1.5 rounded-md transition-colors duration-120 min-w-[50px] min-h-[44px] ${
  isActive
- ? 'text-[#FF5500] font-black'
+ ? 'text-[#FF5500] font-bold'
  : 'text-zinc-500 dark:text-zinc-400 font-medium'
  }`
  }
  >
- <Clock className="w-5 h-5"/>
+ <Clock className="w-4.5 h-4.5"/>
  <span className="text-[10px] tracking-tight mt-0.5">Follow-Ups</span>
  </NavLink>
  </nav>
@@ -600,15 +606,15 @@ export const MainLayout: React.FC = () => {
 
  {/* Schedule Appointment Modal Dialog */}
  {isScheduleModalOpen && (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 overflow-y-auto">
- <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-[1500px] p-5 sm:p-8 max-h-[94vh] overflow-y-auto shadow-2xl relative">
- <div className="flex items-center justify-between pb-4 mb-4 border-b border-zinc-100 dark:border-zinc-800">
- <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-xl bg-[#FF5500]/10 flex items-center justify-center text-[#FF5500]">
- <CalendarClock className="w-5 h-5"/>
+ <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 overflow-y-auto">
+ <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md w-full max-w-[1500px] p-4 sm:p-6 max-h-[94vh] overflow-y-auto shadow-lg relative">
+ <div className="flex items-center justify-between pb-3 mb-3 border-b border-zinc-100 dark:border-zinc-800">
+ <div className="flex items-center gap-2.5">
+ <div className="w-8 h-8 rounded-md bg-[#FF5500]/10 flex items-center justify-center text-[#FF5500]">
+ <CalendarClock className="w-4 h-4"/>
  </div>
  <div>
- <h2 className="text-lg font-bold text-zinc-900 dark:text-white leading-tight">Schedule Appointment</h2>
+ <h2 className="text-base font-bold text-zinc-900 dark:text-white leading-tight">Schedule Appointment</h2>
  </div>
  </div>
  <button
@@ -616,9 +622,9 @@ export const MainLayout: React.FC = () => {
  setIsScheduleModalOpen(false);
  setSchedulePrefillData(null);
  }}
- className="p-2 rounded-xl text-zinc-400 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors"
+ className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors duration-120"
  >
- <X className="w-5 h-5"/>
+ <X className="w-4 h-4"/>
  </button>
  </div>
 
@@ -634,22 +640,22 @@ export const MainLayout: React.FC = () => {
 
  {/* Add Lead Modal Dialog */}
  {isAddLeadModalOpen && (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 overflow-y-auto">
- <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-2xl p-5 sm:p-8 max-h-[94vh] overflow-y-auto shadow-2xl relative">
- <div className="flex items-center justify-between pb-4 mb-4 border-b border-zinc-100 dark:border-zinc-800">
- <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-xl bg-[#FF5500]/10 flex items-center justify-center text-[#FF5500]">
- <PlusCircle className="w-5 h-5"/>
+ <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 overflow-y-auto">
+ <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md w-full max-w-2xl p-4 sm:p-6 max-h-[94vh] overflow-y-auto shadow-lg relative">
+ <div className="flex items-center justify-between pb-3 mb-3 border-b border-zinc-100 dark:border-zinc-800">
+ <div className="flex items-center gap-2.5">
+ <div className="w-8 h-8 rounded-md bg-[#FF5500]/10 flex items-center justify-center text-[#FF5500]">
+ <PlusCircle className="w-4 h-4"/>
  </div>
  <div>
- <h2 className="text-lg font-bold text-zinc-900 dark:text-white leading-tight">Add New Lead</h2>
+ <h2 className="text-base font-bold text-zinc-900 dark:text-white leading-tight">Add New Lead</h2>
  </div>
  </div>
  <button
  onClick={() => setIsAddLeadModalOpen(false)}
- className="p-2 rounded-xl text-zinc-400 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors"
+ className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors duration-120"
  >
- <X className="w-5 h-5"/>
+ <X className="w-4 h-4"/>
  </button>
  </div>
 

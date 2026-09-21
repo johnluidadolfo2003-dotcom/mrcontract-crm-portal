@@ -1268,12 +1268,12 @@ export const SpreadsheetPage: React.FC = () => {
 
 
  {/* Main Content */}
- <main className={`pt-5 space-y-4 transition-all bg-white dark:bg-black ${viewMode === 'table' ? 'w-full max-w-none px-4 sm:px-6 md:px-8' : 'max-w-6xl mx-auto px-4 sm:px-6'}`}>
+ <main className={`pt-4 space-y-3 bg-white dark:bg-black ${viewMode === 'table' ? 'w-full max-w-none px-3 sm:px-5 md:px-6' : 'max-w-6xl mx-auto px-3 sm:px-5'}`}>
 
 
         {/* Error Alert */}
         {error && (
-          <div className={`p-4 rounded-xl flex items-start justify-between shadow-xs animate-in fade-in ${
+          <div className={`p-3.5 rounded-md flex items-start justify-between shadow-xs ${
             error.includes('Google Service Account credentials not found') || error.includes('credentials')
               ? 'bg-orange-50 dark:bg-orange-950/80 border border-orange-200 dark:border-orange-700/80 text-orange-900 dark:text-orange-200'
               : 'bg-red-50 dark:bg-red-950/80 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-200'
@@ -1300,7 +1300,7 @@ export const SpreadsheetPage: React.FC = () => {
                       setLoading(true);
                       fetchRows('env', selectedTab);
                     }}
-                    className="text-xs bg-zinc-900 dark:bg-zinc-800 hover:bg-zinc-800 dark:hover:bg-zinc-700 text-white font-bold px-3 py-1.5 rounded-lg border border-zinc-700 transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                    className="text-xs bg-zinc-900 dark:bg-zinc-800 hover:bg-zinc-800 dark:hover:bg-zinc-700 text-white font-bold px-3 h-[32px] rounded-md border border-zinc-700 transition-colors duration-120 cursor-pointer inline-flex items-center gap-1.5"
                   >
                     <RefreshCw className="w-3.5 h-3.5 text-brand-orange"/>
                     <span>Retry</span>
@@ -1309,7 +1309,7 @@ export const SpreadsheetPage: React.FC = () => {
                     onClick={() => {
                       window.dispatchEvent(new CustomEvent('open_settings', { detail: { tab: 'integrations', subTab: 'connections' } }));
                     }}
-                    className="text-xs bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold px-3 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                    className="text-xs bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold px-3 h-[32px] rounded-md border border-zinc-300 dark:border-zinc-700 transition-colors duration-120 cursor-pointer inline-flex items-center gap-1.5"
                   >
                     <span>Settings &amp; Troubleshooting</span>
                   </button>
@@ -1327,19 +1327,19 @@ export const SpreadsheetPage: React.FC = () => {
 
  {/* If no rows loaded yet */}
  {!rows.length && !loading && !error && (
- <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 text-center space-y-4 max-w-xl mx-auto my-12 shadow-xl">
- <div className="w-16 h-16 rounded-2xl bg-brand-orange/20 border border-brand-orange/40 flex items-center justify-center mx-auto text-brand-orange shadow-lg">
- <FileSpreadsheet className="w-8 h-8"/>
+ <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-6 text-center space-y-3 max-w-xl mx-auto my-8 shadow-sm">
+ <div className="w-12 h-12 rounded-md bg-brand-orange/20 border border-brand-orange/40 flex items-center justify-center mx-auto text-brand-orange shadow-xs">
+ <FileSpreadsheet className="w-6 h-6"/>
  </div>
- <div className="space-y-1.5">
-          <h2 className="text-lg font-black text-zinc-900 dark:text-white">No Leads in Tab</h2>
+ <div className="space-y-1">
+          <h2 className="text-base font-bold text-zinc-900 dark:text-white">No Leads in Tab</h2>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">There are currently no rows in the selected sheet tab.</p>
         </div>
       </div>
       )}
 
  {/* Client Data View: Compact (Name & Status) or Full Table */}
- <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
+ <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md overflow-hidden shadow-sm">
  {loading ? (
  <SkeletonTable />
  ) : rows.length === 0 ? (
@@ -1351,18 +1351,18 @@ export const SpreadsheetPage: React.FC = () => {
  No records match
  </div>
 ) : viewMode === 'kanban' ? (
-              <div className="p-6 overflow-x-auto h-[calc(100vh-200px)] flex flex-col bg-zinc-50 dark:bg-zinc-950">
-                <div className="flex gap-4 min-w-max pb-4 h-full">
+              <div className="p-4 overflow-x-auto h-[calc(100vh-200px)] flex flex-col bg-zinc-50 dark:bg-zinc-950">
+                <div className="flex gap-3 min-w-max pb-4 h-full">
                   {LEAD_STATUS_OPTIONS.map(status => {
                     const colRows = filteredRows.filter(r => (r.status || 'New') === status);
                     if (colRows.length === 0) return null;
                     return (
-                      <div key={status} className="w-84 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex flex-col h-full shadow-lg">
-                        <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between sticky top-0 bg-white dark:bg-zinc-900 rounded-t-2xl z-10 shrink-0">
-                          <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{status}</h3>
-                          <span className="text-xs font-black text-white bg-[#FF5500] px-2 py-0.5 rounded-full">{colRows.length}</span>
+                      <div key={status} className="w-80 bg-white dark:bg-zinc-900 rounded-md border border-zinc-200 dark:border-zinc-800 flex flex-col h-full shadow-xs">
+                        <div className="px-3.5 py-2.5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between sticky top-0 bg-white dark:bg-zinc-900 rounded-t-md z-10 shrink-0">
+                          <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-xs">{status}</h3>
+                          <span className="text-[11px] font-bold text-white bg-[#FF5500] px-1.5 py-0.5 rounded-md tabular-nums">{colRows.length}</span>
                         </div>
-                        <div className="p-3 flex-1 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-zinc-800">
+                        <div className="p-2.5 flex-1 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-zinc-800">
                           {colRows.map((r, rIdx) => {
                             const isOverdue = isFollowUpOverdue(r.status || '', r.timestamp);
                             const cardKey = `${r.tabName || selectedTab || 'lead'}_${r.rowIndex !== undefined ? r.rowIndex : rIdx}_${rIdx}`;
@@ -1370,11 +1370,10 @@ export const SpreadsheetPage: React.FC = () => {
                               <div
                                 key={cardKey}
                                 onClick={() => setSelectedLead(r)}
-                                className={`bg-zinc-50 dark:bg-zinc-900 border ${isOverdue ? 'border-brand-orange/50' : 'border-zinc-200 dark:border-zinc-700/50'} rounded-xl p-4 shadow-sm hover:border-brand-orange/50 transition-colors cursor-pointer group relative`}
+                                className={`bg-zinc-50 dark:bg-zinc-900 border ${isOverdue ? 'border-brand-orange/50' : 'border-zinc-200 dark:border-zinc-700/50'} rounded-md p-3 shadow-2xs hover:border-brand-orange/50 transition-colors duration-120 cursor-pointer group relative`}
                               >
-                                
-                                <h4 className="font-bold text-zinc-900 dark:text-white mb-1">{r.clientName || 'Unnamed Client'}</h4>
-                                <div className="text-xs text-zinc-400 space-y-1">
+                                <h4 className="font-bold text-zinc-900 dark:text-white text-xs mb-1">{r.clientName || 'Unnamed Client'}</h4>
+                                <div className="text-xs text-zinc-400 space-y-1 tabular-nums">
                                   {r.clientPhone && <div className="flex items-center gap-1.5"><Phone className="w-3 h-3" />{formatPhoneNumber(r.clientPhone)}</div>}
                                   <div className="flex items-center gap-1.5"><Tag className="w-3 h-3 text-brand-orange" />{resolveLeadSource(r, r.tabName || selectedTab)}{r.leadType ? ` • ${r.leadType}` : ''}</div>
                                 </div>
@@ -1403,20 +1402,20 @@ export const SpreadsheetPage: React.FC = () => {
  <div
  key={rowKey}
  onClick={() => setSelectedLead(r)}
- className="p-2.5 sm:p-4 flex items-center justify-between gap-2 sm:gap-3 transition-colors cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/30"
+ className="p-2 sm:p-2.5 flex items-center justify-between gap-2 sm:gap-3 transition-colors duration-120 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/30"
  >
  {/* NAME & AGING / OVERDUE BADGES */}
- <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
- <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#FF5500]/10 border border-[#FF5500]/20 flex items-center justify-center shrink-0 text-[#FF5500]">
- <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#FF5500]"/>
+ <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
+ <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-[#FF5500]/10 border border-[#FF5500]/20 flex items-center justify-center shrink-0 text-[#FF5500]">
+ <User className="w-3.5 h-3.5 text-[#FF5500]"/>
  </div>
  <div className="min-w-0 flex-1">
- <h3 className="font-bold text-zinc-900 dark:text-white text-xs sm:text-base truncate">
+ <h3 className="font-bold text-zinc-900 dark:text-white text-xs truncate">
  {r.clientName || 'Unnamed Client'}
  </h3>
  {/* Lead Aging & Overdue Indicators (Features 1 & 6) */}
- <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap mt-0.5">
- <span className="px-1.5 py-0.5 rounded text-xs font-bold tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700/80">
+ <div className="flex items-center gap-1 flex-wrap mt-0.5">
+ <span className="px-1.5 py-0.2 text-[10px] rounded-md font-bold tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700/80">
  {resolveLeadSource(r, r.tabName || selectedTab)}
  </span>
                     </div>
@@ -1424,15 +1423,15 @@ export const SpreadsheetPage: React.FC = () => {
                 </div>
 
                 {/* STATUS & ACTION */}
- <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
+ <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
  {/* Status Selector Dropdown */}
- <div className="relative w-28 xs:w-36 sm:w-48"onClick={(e) => e.stopPropagation()}>
+ <div className="relative w-28 xs:w-36 sm:w-44"onClick={(e) => e.stopPropagation()}>
  <select
  value={selectedStatus}
  disabled={isUpdating}
  onClick={(e) => e.stopPropagation()}
  onChange={(e) => handleStatusChange(r, e.target.value)}
- className={`w-full py-1.5 sm:py-2 pl-2 sm:pl-3 pr-6 sm:pr-7 rounded-xl text-[11px] sm:text-xs font-black border transition-all cursor-pointer focus:outline-none appearance-none truncate bg-white dark:bg-black text-zinc-900 dark:text-white border-zinc-200 dark:border-zinc-800 ${
+ className={`w-full py-1 pl-2 pr-6 rounded-md text-[11px] font-bold border transition-colors duration-120 cursor-pointer focus:outline-none appearance-none truncate bg-white dark:bg-black text-zinc-900 dark:text-white border-zinc-200 dark:border-zinc-800 ${
  isUpdating ? 'opacity-50 cursor-wait' : ''
  }`}
  >
@@ -1446,21 +1445,21 @@ export const SpreadsheetPage: React.FC = () => {
  </option>
  ))}
  </select>
- <div className="pointer-events-none absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-white/80">
+ <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-white/80">
  {isUpdating ? (
- <RefreshCw className="w-3 h-3 animate-spin text-brand-orange"/>
+ <RefreshCw className="w-2.5 h-2.5 animate-spin text-brand-orange"/>
  ) : (
- <ChevronDown className="w-3 sm:w-3.5 h-3 sm:h-3.5"/>
+ <ChevronDown className="w-3 h-3"/>
  )}
  </div>
  </div>
 
  <button
  onClick={(e) => { e.stopPropagation(); handleDeleteRow(r); }}
- className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors inline-flex items-center cursor-pointer shrink-0"
+ className="p-1 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors duration-120 inline-flex items-center cursor-pointer shrink-0"
  title="Delete Lead"
  >
- <Trash2 className="w-4 h-4"/>
+ <Trash2 className="w-3.5 h-3.5"/>
  </button>
  </div>
  </div>
@@ -1473,16 +1472,16 @@ export const SpreadsheetPage: React.FC = () => {
  <div className="overflow-x-auto">
  <table className="w-full text-left text-xs border-collapse">
  <thead>
- <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/80 text-[11px] font-black uppercase tracking-wider text-zinc-600 dark:text-white">
- <th className="py-3 px-3.5">Source</th>
- <th className="py-3 px-3.5">Date Lead Generated</th>
- <th className="py-3 px-3.5">Client Name</th>
- <th className="py-3 px-3.5">Phone Number</th>
- <th className="py-3 px-3.5">Email</th>
- <th className="py-3 px-3.5">Address</th>
- <th className="py-3 px-3.5">Service Needed</th>
- <th className="py-3 px-3.5">Status</th>
- <th className="py-3 px-3.5 text-right">Action</th>
+ <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/80 text-[11px] font-bold uppercase tracking-wider text-zinc-600 dark:text-white">
+ <th className="py-2 px-3">Source</th>
+ <th className="py-2 px-3">Date Lead Generated</th>
+ <th className="py-2 px-3">Client Name</th>
+ <th className="py-2 px-3">Phone Number</th>
+ <th className="py-2 px-3">Email</th>
+ <th className="py-2 px-3">Address</th>
+ <th className="py-2 px-3">Service Needed</th>
+ <th className="py-2 px-3">Status</th>
+ <th className="py-2 px-3 text-right">Action</th>
  </tr>
  </thead>
  <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/60 font-medium">
@@ -1496,41 +1495,41 @@ export const SpreadsheetPage: React.FC = () => {
  return (
  <tr
  key={rowKey}
- className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
+ className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors duration-120"
  >
  {/* Lead Source */}
- <td className="py-3 px-3.5 whitespace-nowrap text-zinc-300 text-xs">
- <span className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-[11px] font-bold">
+ <td className="py-2 px-3 whitespace-nowrap text-zinc-300 text-xs">
+ <span className="px-1.5 py-0.2 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-[10px] font-bold">
  {resolveLeadSource(r, r.tabName || selectedTab)}
  </span>
  </td>
 
  {/* Date Lead Generated (Timestamp) */}
- <td className="py-3 px-3.5 whitespace-nowrap text-zinc-500 dark:text-zinc-400 font-sans text-[11px]">
+ <td className="py-2 px-3 whitespace-nowrap text-zinc-500 dark:text-zinc-400 tabular-nums text-[11px]">
  {r.timestamp || '—'}
  </td>
 
  {/* Client Name */}
- <td className="py-3 px-3.5 font-extrabold text-zinc-900 dark:text-zinc-100 text-xs whitespace-nowrap">
+ <td className="py-2 px-3 font-bold text-zinc-900 dark:text-zinc-100 text-xs whitespace-nowrap">
  {r.clientName || '—'}
  </td>
 
  {/* Phone Number */}
- <td className="py-3 px-3.5 text-zinc-700 dark:text-zinc-200 text-xs whitespace-nowrap">
+ <td className="py-2 px-3 text-zinc-700 dark:text-zinc-200 text-xs whitespace-nowrap tabular-nums">
  {r.clientPhone || '—'}
  </td>
 
  {/* Email */}
- <td className="py-3 px-3.5 text-zinc-700 dark:text-zinc-200 text-xs whitespace-nowrap">
+ <td className="py-2 px-3 text-zinc-700 dark:text-zinc-200 text-xs whitespace-nowrap">
  {r.clientEmail ? (
- <div className="flex items-center justify-between gap-2">
- <span>{r.clientEmail}</span>
+ <div className="flex items-center justify-between gap-1.5">
+ <span className="truncate max-w-[150px]">{r.clientEmail}</span>
  <a
  href={`mailto:${r.clientEmail}?subject=${encodeURIComponent(`Following up on your ${r.leadType || 'request'} - Mr Contract`)}&body=${encodeURIComponent(`Hi ${r.clientName ? r.clientName.split(' ')[0] : 'there'},\n\nJust checking in regarding the ${r.leadType || 'services'} you requested.\n\nLet me know if you have any questions!\n\nBest,\nMr Contract`)}`}
- className="p-1.5 bg-transparent border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 text-zinc-700 dark:text-zinc-300 rounded-md transition-colors"
+ className="p-1 bg-transparent border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 text-zinc-700 dark:text-zinc-300 rounded-md transition-colors duration-120"
  title="Send follow-up email"
  >
- <svg xmlns="http://www.w3.org/2000/svg"width="14"height="14"viewBox="0 0 24 24"fill="none"stroke="currentColor"strokeWidth="2"strokeLinecap="round"strokeLinejoin="round"><rect width="20"height="16"x="2"y="4"rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+ <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
  </a>
  </div>
  ) : (
@@ -1539,18 +1538,18 @@ export const SpreadsheetPage: React.FC = () => {
  </td>
 
  {/* Address */}
- <td className="py-3 px-3.5 max-w-[200px] truncate text-zinc-700 dark:text-zinc-300 text-xs"title={r.address}>
+ <td className="py-2 px-3 max-w-[170px] truncate text-zinc-700 dark:text-zinc-300 text-xs" title={r.address}>
  {r.address ? (
- <div className="flex items-center justify-between gap-2">
+ <div className="flex items-center justify-between gap-1.5">
  <span className="truncate">{r.address}</span>
  <a
  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(r.address)}`}
  target="_blank"
  rel="noopener noreferrer"
- className="shrink-0 p-1.5 bg-brand-orange/10 hover:bg-brand-orange/20 text-brand-orange rounded-md transition-colors text-white"
+ className="shrink-0 p-1 bg-brand-orange/10 hover:bg-brand-orange/20 text-brand-orange rounded-md transition-colors duration-120 text-white"
  title="Get directions in Google Maps"
  >
- <svg xmlns="http://www.w3.org/2000/svg"width="14"height="14"viewBox="0 0 24 24"fill="none"stroke="currentColor"strokeWidth="2"strokeLinecap="round"strokeLinejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9"x2="9"y1="3"y2="18"/><line x1="15"x2="15"y1="6"y2="21"/></svg>
+ <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>
  </a>
  </div>
  ) : (
@@ -1559,18 +1558,18 @@ export const SpreadsheetPage: React.FC = () => {
  </td>
 
  {/* Service Needed */}
- <td className="py-3 px-3.5 text-zinc-700 dark:text-zinc-200 text-xs">
+ <td className="py-2 px-3 text-zinc-700 dark:text-zinc-200 text-xs">
  {r.leadType || '—'}
  </td>
 
  {/* Status Selector */}
- <td className="py-3 px-3.5">
- <div className="relative inline-block min-w-[130px]">
+ <td className="py-2 px-3">
+ <div className="relative inline-block min-w-[125px]">
  <select
  value={selectedStatus}
  disabled={isUpdating}
  onChange={(e) => handleStatusChange(r, e.target.value)}
- className={`w-full py-1.5 pl-2.5 pr-6 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer focus:outline-none appearance-none truncate ${
+ className={`w-full py-1 pl-2 pr-5 rounded-md text-[11px] font-bold border transition-colors duration-120 cursor-pointer focus:outline-none appearance-none truncate ${
  statusStyle.bg
  } ${statusStyle.text} ${statusStyle.border} ${
  isUpdating ? 'opacity-50 cursor-wait' : ''
@@ -1582,7 +1581,7 @@ export const SpreadsheetPage: React.FC = () => {
  </option>
  ))}
  </select>
- <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-current opacity-80">
+ <div className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-current opacity-80">
  {isUpdating ? (
  <RefreshCw className="w-2.5 h-2.5 animate-spin text-brand-orange"/>
  ) : (
@@ -1593,14 +1592,14 @@ export const SpreadsheetPage: React.FC = () => {
  </td>
 
  {/* Action Buttons */}
-                  <td className="py-3 px-3.5 text-right whitespace-nowrap">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
+ <td className="py-2 px-3 text-right whitespace-nowrap">
+ <div className="flex items-center justify-end gap-1">
+ <button
  onClick={() => handleDeleteRow(r)}
- className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors inline-flex items-center cursor-pointer"
+ className="p-1 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors duration-120 inline-flex items-center cursor-pointer"
  title="Delete Lead"
  >
- <Trash2 className="w-4 h-4"/>
+ <Trash2 className="w-3.5 h-3.5"/>
  </button>
  </div>
  </td>
@@ -1619,23 +1618,23 @@ export const SpreadsheetPage: React.FC = () => {
  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
  <form
  onSubmit={handleAppendRow}
- className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+ className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md w-full max-w-lg overflow-hidden shadow-xl flex flex-col max-h-[90vh]"
  >
- <div className="px-6 py-4 bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+ <div className="px-5 py-3.5 bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
  <div className="flex items-center space-x-2">
- <Plus className="w-5 h-5 text-brand-orange"/>
- <h2 className="text-base font-bold text-zinc-900 dark:text-white">Add Lead</h2>
+ <Plus className="w-4 h-4 text-brand-orange"/>
+ <h2 className="text-sm font-bold text-zinc-900 dark:text-white">Add Lead</h2>
  </div>
  <button
  type="button"
  onClick={() => setIsAddModalOpen(false)}
- className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+ className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors duration-120 cursor-pointer"
  >
  ✕
  </button>
  </div>
 
- <div className="p-6 overflow-y-auto space-y-4 text-xs">
+ <div className="p-5 overflow-y-auto space-y-3.5 text-xs">
  <div className="space-y-1">
  <label className="block font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider text-[11px]">
  Client Name *
@@ -1646,7 +1645,7 @@ export const SpreadsheetPage: React.FC = () => {
  placeholder="Enter full name"
  value={newRowData.clientName}
  onChange={(e) => setNewRowData({ ...newRowData, clientName: e.target.value })}
- className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-brand-orange/50"
+ className="w-full px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-zinc-900 dark:text-white focus:outline-none focus:border-brand-orange/50 transition-colors duration-120"
  />
  </div>
 
@@ -1660,7 +1659,7 @@ export const SpreadsheetPage: React.FC = () => {
  placeholder="(000) 000-0000"
  value={newRowData.clientPhone}
  onChange={(e) => setNewRowData({ ...newRowData, clientPhone: e.target.value })}
- className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-brand-orange/50"
+ className="w-full px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-zinc-900 dark:text-white focus:outline-none focus:border-brand-orange/50 transition-colors duration-120 tabular-nums"
  />
  </div>
 
@@ -1673,7 +1672,7 @@ export const SpreadsheetPage: React.FC = () => {
  placeholder="client@example.com"
  value={newRowData.clientEmail}
  onChange={(e) => setNewRowData({ ...newRowData, clientEmail: e.target.value })}
- className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-brand-orange/50"
+ className="w-full px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-zinc-900 dark:text-white focus:outline-none focus:border-brand-orange/50 transition-colors duration-120"
  />
  </div>
  </div>
@@ -1687,7 +1686,7 @@ export const SpreadsheetPage: React.FC = () => {
  placeholder="Full street address, city, state"
  value={newRowData.address}
  onChange={(e) => setNewRowData({ ...newRowData, address: e.target.value })}
- className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-brand-orange/50"
+ className="w-full px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-zinc-900 dark:text-white focus:outline-none focus:border-brand-orange/50 transition-colors duration-120"
  />
  </div>
 
@@ -1700,7 +1699,7 @@ export const SpreadsheetPage: React.FC = () => {
  placeholder="e.g. Chimney Repair, Brick Flatwork"
  value={newRowData.serviceNeeded}
  onChange={(e) => setNewRowData({ ...newRowData, serviceNeeded: e.target.value })}
- className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-brand-orange/50"
+ className="w-full px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-zinc-900 dark:text-white focus:outline-none focus:border-brand-orange/50 transition-colors duration-120"
  />
  </div>
 
@@ -1712,7 +1711,7 @@ export const SpreadsheetPage: React.FC = () => {
  <select
  value={newRowData.status}
  onChange={(e) => setNewRowData({ ...newRowData, status: e.target.value })}
- className="w-full px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-700 rounded-xl font-bold text-xs focus:outline-none focus:border-brand-orange/50 cursor-pointer"
+ className="w-full px-3 py-1.5 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-700 rounded-md font-bold text-xs focus:outline-none focus:border-brand-orange/50 transition-colors duration-120 cursor-pointer"
  >
  {LEAD_STATUS_OPTIONS.map((opt) => (
  <option key={opt} value={opt} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">
@@ -1729,7 +1728,7 @@ export const SpreadsheetPage: React.FC = () => {
  <select
  value={newRowData.leadSource}
  onChange={(e) => setNewRowData({ ...newRowData, leadSource: e.target.value })}
- className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-brand-orange/50 cursor-pointer"
+ className="w-full px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-zinc-900 dark:text-white focus:outline-none focus:border-brand-orange/50 transition-colors duration-120 cursor-pointer"
  >
  {(config.leadSources || standardTabs).filter(isLeadSourceTab).map((s) => (
  <option key={s} value={s} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">
@@ -1741,18 +1740,18 @@ export const SpreadsheetPage: React.FC = () => {
  </div>
  </div>
 
- <div className="px-6 py-4 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end space-x-3">
+ <div className="px-5 py-3 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end space-x-2.5">
  <button
  type="button"
  onClick={() => setIsAddModalOpen(false)}
- className="px-4 py-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white font-bold rounded-xl transition-colors cursor-pointer"
+ className="px-3.5 py-1.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white font-bold rounded-md transition-colors duration-120 cursor-pointer text-xs"
  >
  Cancel
  </button>
  <button
  type="submit"
  disabled={isAppending}
- className="px-5 py-2 bg-[#FF5500] hover:bg-[#E64D00] disabled:opacity-50 text-white font-bold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+ className="px-4 py-1.5 bg-[#FF5500] hover:bg-[#E64D00] disabled:opacity-50 text-white font-bold rounded-md flex items-center gap-1.5 transition-colors duration-120 cursor-pointer shadow-xs text-xs"
  >
  {isAppending ? (
  <>
@@ -1790,16 +1789,16 @@ export const SpreadsheetPage: React.FC = () => {
  {/* CS Estimate Call & Message Center Modal */}
  {isCSModalOpen && (
  <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
- <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+ <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md w-full max-w-5xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
  {/* Modal Header */}
- <div className="px-6 py-4 bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-4">
+ <div className="px-5 py-3.5 bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-4">
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-xl bg-[#FF5500] flex items-center justify-center text-white shadow-md">
- <Clock className="w-5 h-5"/>
+ <div className="w-9 h-9 rounded-md bg-[#FF5500] flex items-center justify-center text-white shadow-xs">
+ <Clock className="w-4 h-4"/>
  </div>
  <div>
- <h2 className="text-base font-bold text-black dark:text-white">Customer service</h2>
- <p className="text-xs text-zinc-400">Client follow-up messages & email scripts</p>
+ <h2 className="text-sm font-bold text-black dark:text-white">Customer service</h2>
+ <p className="text-[11px] text-zinc-400">Client follow-up messages & email scripts</p>
  </div>
  </div>
  <div className="flex items-center gap-2">
@@ -1808,7 +1807,7 @@ export const SpreadsheetPage: React.FC = () => {
  setIsCSModalOpen(false);
  setViewMode('table');
  }}
- className="px-3.5 py-1.5 bg-[#FF5500] hover:bg-[#E64D00] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+ className="px-3 py-1.5 bg-[#FF5500] hover:bg-[#E64D00] text-white font-bold text-xs rounded-md shadow-xs transition-colors duration-120 cursor-pointer flex items-center gap-1.5"
  title="Close CS Center and View leads Table"
  >
  <TableIcon className="w-3.5 h-3.5"/>
@@ -1816,7 +1815,7 @@ export const SpreadsheetPage: React.FC = () => {
  </button>
  <button
  onClick={() => setIsCSModalOpen(false)}
- className="w-8 h-8 rounded-full bg-transparent border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300 flex items-center justify-center font-bold transition-colors cursor-pointer"
+ className="w-7 h-7 rounded-md bg-transparent border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300 flex items-center justify-center font-bold transition-colors duration-120 cursor-pointer"
  >
  ✕
  </button>
@@ -1867,7 +1866,7 @@ export const SpreadsheetPage: React.FC = () => {
  <select
  value={csSourceFilter}
  onChange={(e) => setCsSourceFilter(e.target.value)}
- className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 hover:border-brand-orange rounded-xl text-xs font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-brand-orange cursor-pointer shadow-xs transition-colors"
+ className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 hover:border-brand-orange rounded-md text-xs font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-brand-orange cursor-pointer shadow-xs transition-colors duration-120"
  >
  <option value="ALL">All Sources ({allFollowUps.length})</option>
  {csLeadSources.map((src) => {
@@ -1890,7 +1889,7 @@ export const SpreadsheetPage: React.FC = () => {
  value={csSearchQuery}
  onChange={(e) => setCsSearchQuery(e.target.value)}
  placeholder="Search"
- className="w-full pl-8 pr-7 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-brand-orange"
+ className="w-full pl-8 pr-7 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-brand-orange transition-colors duration-120"
  />
  {csSearchQuery && (
  <button
@@ -1904,7 +1903,7 @@ export const SpreadsheetPage: React.FC = () => {
  </div>
 
  {activeFollowUps.length === 0 ? (
- <div className="p-8 text-center text-zinc-500 text-xs bg-zinc-100/60 dark:bg-zinc-900/40 rounded-2xl border border-zinc-200 dark:border-zinc-800/80">
+ <div className="p-8 text-center text-zinc-500 text-xs bg-zinc-100/60 dark:bg-zinc-900/40 rounded-md border border-zinc-200 dark:border-zinc-800/80">
  {csSourceFilter !== 'ALL' || csSearchQuery
  ? 'No follow-up leads match your filter criteria.'
  : 'No active estimate follow-up leads found across any source tabs.'}
@@ -1926,7 +1925,7 @@ export const SpreadsheetPage: React.FC = () => {
  setCsSelectedLead(lead);
  setCsSelectedScriptDay(info.targetScriptDay);
  }}
- className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col gap-2 ${
+ className={`p-3 rounded-md border transition-colors duration-120 cursor-pointer flex flex-col gap-2 ${
  isSelected
  ? 'bg-orange-500/10 border-orange-500/40 ring-1 ring-orange-500/40'
  : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700'
@@ -1936,9 +1935,9 @@ export const SpreadsheetPage: React.FC = () => {
  <span className="font-bold text-black dark:text-white text-xs truncate">{lead.clientName || 'Unnamed Lead'}</span>
  <div className="flex items-center gap-1 shrink-0">
  <span
- className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+ className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border tabular-nums ${
  isExactMilestone
- ? 'bg-[#FF5500] text-white border-[#FF5500] shadow-sm'
+ ? 'bg-[#FF5500] text-white border-[#FF5500] shadow-xs'
  : info.dayCount >= 3
  ? 'bg-brand-orange/15 text-orange-700 dark:text-orange-300 border-brand-orange/30'
  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700'
@@ -2039,58 +2038,59 @@ export const SpreadsheetPage: React.FC = () => {
  .replace(/\[Your Name\]/g, salespersonName);
 
  return (
- <div className="space-y-4">
+ <div className="space-y-3.5">
  {/* Selected Lead Banner */}
- <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 space-y-2.5">
+ <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md p-3.5 space-y-2.5">
  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
  <div>
  <div className="flex items-center gap-2">
- <span className="text-[10px] font-black uppercase text-brand-orange tracking-wider">Selected Client</span>
- <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-brand-orange/20 text-brand-orange border border-brand-orange/40">
+ <span className="text-[10px] font-bold uppercase text-brand-orange tracking-wider">Selected Client</span>
+ <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-brand-orange/20 text-brand-orange border border-brand-orange/40 tabular-nums">
  Day {info.dayCount} ({info.stageBadgeText})
  </span>
  </div>
- <h3 className="text-base font-black text-zinc-900 dark:text-white">{clientName}</h3>
+ <h3 className="text-sm font-bold text-zinc-900 dark:text-white">{clientName}</h3>
  </div>
  
  {/* Visible Lead Source, Service Badges and Travel Button */}
  <div className="flex items-center gap-2 flex-wrap">
- <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-xl bg-brand-orange/15 border border-brand-orange/40 text-brand-orange">
- <span className="text-zinc-400 font-semibold">Source:</span>
- <strong className="text-zinc-900 dark:text-white font-black">{leadSrc}</strong>
+ <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md bg-brand-orange/15 border border-brand-orange/40 text-brand-orange">
+ <span className="text-zinc-400 font-medium">Source:</span>
+ <strong className="text-zinc-900 dark:text-white font-bold">{leadSrc}</strong>
  </span>
- <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-xl bg-orange-500/15 border border-orange-500/40 text-orange-700 dark:text-orange-300">
-                  <strong className="text-zinc-900 dark:text-white font-black">{leadSvc}</strong>
-                </span>
-                <button
-                  onClick={() => {}}
-                  className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-orange-500/30 hover:border-orange-500/50 text-orange-700 dark:text-orange-300 hover:text-orange-800 dark:hover:text-orange-200 transition-all cursor-pointer shadow-xs"
-                  title={`View ${clientName} in Leads Table`}
-                >
-                  <ArrowRight className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400"/>
-                  <span>View lead</span>
-                </button>
-              </div>
-            </div>
- <span className="text-zinc-400 font-semibold">Service:</span>
+ <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md bg-orange-500/15 border border-orange-500/40 text-orange-700 dark:text-orange-300">
+ <span className="text-zinc-400 font-medium">Service:</span>
+ <strong className="text-zinc-900 dark:text-white font-bold">{leadSvc}</strong>
+ </span>
+ <button
+ onClick={() => {}}
+ className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-orange-500/30 hover:border-orange-500/50 text-orange-700 dark:text-orange-300 transition-colors duration-120 cursor-pointer shadow-xs"
+ title={`View ${clientName} in Leads Table`}
+ >
+ <ArrowRight className="w-3 h-3 text-orange-600 dark:text-orange-400"/>
+ <span>View lead</span>
+ </button>
+ </div>
+ </div>
+
  {/* Contact details & Estimate Date tracking */}
- <div className="flex items-center flex-wrap gap-2.5 text-xs text-zinc-400 pt-2 border-t border-zinc-900">
+ <div className="flex items-center flex-wrap gap-2 text-xs text-zinc-400 pt-2 border-t border-zinc-200 dark:border-zinc-800">
  {csSelectedLead.clientPhone ? (
  <a
  href={`tel:${csSelectedLead.clientPhone}`}
- className="inline-flex items-center gap-1.5 text-orange-700 dark:text-orange-300 hover:text-orange-800 dark:hover:text-orange-200 font-bold bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 px-3 py-1 rounded-lg transition-all cursor-pointer shadow-xs"
+ className="inline-flex items-center gap-1 text-orange-700 dark:text-orange-300 hover:text-orange-800 dark:hover:text-orange-200 font-bold bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 px-2.5 py-0.5 rounded-md transition-colors duration-120 cursor-pointer shadow-xs tabular-nums"
  title="Click to Call"
  >
- <Phone className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400"/>
+ <Phone className="w-3 h-3 text-orange-600 dark:text-orange-400"/>
  <span>{csSelectedLead.clientPhone}</span>
  </a>
  ) : (
  <span className="text-zinc-500">No Phone</span>
  )}
  <span className="text-zinc-700">•</span>
- <span className="truncate text-zinc-300">{csSelectedLead.clientEmail || 'No email'}</span>
+ <span className="truncate text-zinc-700 dark:text-zinc-300">{csSelectedLead.clientEmail || 'No email'}</span>
  <span className="text-zinc-700">•</span>
- <span className="text-xs text-zinc-400 font-semibold">
+ <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium tabular-nums">
  Estimate Sent: <strong className="text-orange-700 dark:text-orange-300">{info.formattedSentDate}</strong>{info.hasKnownEstimateDate ? ` (${info.daysSinceSent} days ago)` : ''}
  </span>
  </div>
@@ -2098,7 +2098,7 @@ export const SpreadsheetPage: React.FC = () => {
 
  {/* Milestone Tabs */}
  <div>
- <div className="flex items-center justify-between text-[11px] text-zinc-400 mb-1.5 px-1 font-semibold">
+ <div className="flex items-center justify-between text-[11px] text-zinc-400 mb-1 px-1 font-medium">
  <span>Follow-up template</span>
  <span className="text-orange-700 dark:text-orange-300 font-bold">Recommended for Day {info.dayCount}: {info.followUpMilestone}</span>
  </div>
@@ -2111,9 +2111,9 @@ export const SpreadsheetPage: React.FC = () => {
  <button
  key={d}
  onClick={() => setCsSelectedScriptDay(d)}
- className={`py-2 px-1 rounded-xl text-xs font-black transition-all text-center cursor-pointer relative ${
+ className={`py-1.5 px-1 rounded-md text-xs font-bold transition-colors duration-120 text-center cursor-pointer relative tabular-nums ${
  isSelected
- ? 'bg-[#FF5500] text-white ring-2 ring-[#FF5500]/50'
+ ? 'bg-[#FF5500] text-white'
  : isRecommended
  ? 'bg-orange-500/15 text-orange-700 dark:text-orange-300 border border-orange-500/40 hover:bg-orange-500/25'
  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border border-zinc-200 dark:border-zinc-700'
@@ -2121,7 +2121,7 @@ export const SpreadsheetPage: React.FC = () => {
  >
  <div>{d} Days</div>
  {isRecommended && (
- <div className="text-[11px] font-bold opacity-90 leading-tight">
+ <div className="text-[10px] font-bold opacity-90 leading-tight">
  {info.dayCount === d ? '• DUE' : 'Target'}
  </div>
  )}
@@ -2132,9 +2132,9 @@ export const SpreadsheetPage: React.FC = () => {
  </div>
 
  {/* Email Message Card */}
- <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 space-y-3">
+ <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md p-3.5 space-y-2.5">
  <div className="flex items-center justify-between">
- <span className="text-xs font-black uppercase text-brand-orange flex items-center gap-1.5">
+ <span className="text-xs font-bold uppercase text-brand-orange flex items-center gap-1.5">
  <Mail className="w-3.5 h-3.5"/> Email Message ({activeScript.days} Days)
  </span>
  <button
@@ -2143,21 +2143,21 @@ export const SpreadsheetPage: React.FC = () => {
  setCopiedType('email');
  setTimeout(() => setCopiedType(null), 2500);
  }}
- className="px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold text-[11px] rounded-lg border border-zinc-200 dark:border-zinc-700 transition-colors cursor-pointer"
+ className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold text-[11px] rounded-md border border-zinc-200 dark:border-zinc-700 transition-colors duration-120 cursor-pointer"
  >
  {copiedType === 'email' ? 'Copied Email!' : 'Copy Email'}
  </button>
  </div>
  <div className="space-y-1.5 text-xs">
- <div className="font-bold text-zinc-300">Subject: <span className="font-normal text-white">{filledEmailSub}</span></div>
- <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 whitespace-pre-wrap text-zinc-800 dark:text-zinc-300 font-sans text-[11.5px] max-h-40 overflow-y-auto leading-relaxed">
+ <div className="font-bold text-zinc-700 dark:text-zinc-300">Subject: <span className="font-normal text-zinc-900 dark:text-white">{filledEmailSub}</span></div>
+ <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-2.5 whitespace-pre-wrap text-zinc-800 dark:text-zinc-300 font-sans text-[11px] max-h-36 overflow-y-auto leading-relaxed">
  {filledEmailBody}
  </div>
  </div>
 
  {/* Direct Send Result Messages */}
  {emailSendResult && (
- <div className={`p-3 rounded-xl text-xs font-bold border ${
+ <div className={`p-2.5 rounded-md text-xs font-bold border ${
  emailSendResult.success 
  ? 'bg-orange-50 dark:bg-orange-500/15 border-orange-200 dark:border-orange-500/30 text-orange-800 dark:text-orange-300' 
  : 'bg-red-500/10 border-red-500/30 text-red-400'
@@ -2177,9 +2177,9 @@ export const SpreadsheetPage: React.FC = () => {
  csSelectedLead,
  activeScript.key
  )}
- className="flex-1 py-2.5 bg-[#FF5500] hover:bg-[#E64D00] disabled:bg-zinc-800 text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg disabled:cursor-not-allowed"
+ className="flex-1 py-2 bg-[#FF5500] hover:bg-[#E64D00] disabled:bg-zinc-800 text-white font-bold text-xs rounded-md flex items-center justify-center gap-1.5 transition-colors duration-120 cursor-pointer shadow-xs disabled:cursor-not-allowed"
  >
- <Mail className={`w-4 h-4 ${isSendingEmail ? 'animate-spin' : ''}`} />
+ <Mail className={`w-3.5 h-3.5 ${isSendingEmail ? 'animate-spin' : ''}`} />
  <span>{isSendingEmail ? 'Sending…' : 'Send email'}</span>
  </button>
  
@@ -2187,9 +2187,9 @@ export const SpreadsheetPage: React.FC = () => {
  href={`mailto:${csSelectedLead.clientEmail}?subject=${encodeURIComponent(filledEmailSub)}&body=${encodeURIComponent(filledEmailBody)}`}
  target="_blank"
  rel="noopener noreferrer"
- className="py-2.5 px-3 bg-transparent border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 text-zinc-700 dark:text-zinc-300 font-bold text-xs rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer border border-zinc-700 shrink-0"
+ className="py-2 px-3 bg-transparent border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 text-zinc-700 dark:text-zinc-300 font-bold text-xs rounded-md flex items-center justify-center gap-1.5 transition-colors duration-120 cursor-pointer shrink-0"
  >
- <ExternalLink className="w-4 h-4"/>
+ <ExternalLink className="w-3.5 h-3.5"/>
  <span>Open in email app</span>
  </a>
  </div>
@@ -2197,9 +2197,9 @@ export const SpreadsheetPage: React.FC = () => {
  </div>
 
  {/* SMS Text Message Card */}
- <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 space-y-3">
+ <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md p-3.5 space-y-2.5">
  <div className="flex items-center justify-between">
- <span className="text-xs font-black uppercase text-orange-600 dark:text-orange-400 flex items-center gap-1.5">
+ <span className="text-xs font-bold uppercase text-orange-600 dark:text-orange-400 flex items-center gap-1.5">
  <Phone className="w-3.5 h-3.5"/> Text Message (SMS)
  </span>
  <button
@@ -2208,12 +2208,12 @@ export const SpreadsheetPage: React.FC = () => {
  setCopiedType('sms');
  setTimeout(() => setCopiedType(null), 2500);
  }}
- className="px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold text-[11px] rounded-lg border border-zinc-200 dark:border-zinc-700 transition-colors cursor-pointer"
+ className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold text-[11px] rounded-md border border-zinc-200 dark:border-zinc-700 transition-colors duration-120 cursor-pointer"
  >
  {copiedType === 'sms' ? 'Copied Text!' : 'Copy Text'}
  </button>
  </div>
- <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 whitespace-pre-wrap text-zinc-800 dark:text-zinc-300 font-sans text-[11.5px] leading-relaxed">
+ <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-2.5 whitespace-pre-wrap text-zinc-800 dark:text-zinc-300 font-sans text-[11px] leading-relaxed">
  {filledSmsBody}
  </div>
 
@@ -2221,9 +2221,9 @@ export const SpreadsheetPage: React.FC = () => {
  <div className="pt-1">
  <a
  href={`sms:${csSelectedLead.clientPhone}?body=${encodeURIComponent(filledSmsBody)}`}
- className="bg-[#FF5500] hover:bg-[#E64D00] text-white w-full py-3 text-white font-black text-sm rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+ className="bg-[#FF5500] hover:bg-[#E64D00] text-white w-full py-2 text-white font-bold text-xs rounded-md flex items-center justify-center gap-1.5 transition-colors duration-120 cursor-pointer shadow-xs"
  >
- <Phone className="w-4 h-4"/>
+ <Phone className="w-3.5 h-3.5"/>
  <span>Open SMS App</span>
  </a>
  </div>
@@ -2246,28 +2246,28 @@ export const SpreadsheetPage: React.FC = () => {
  {/* Delete Confirmation Modal */}
  {rowToDelete && (
  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
- <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4">
- <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
- <Trash2 className="w-6 h-6"/>
+ <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-5 max-w-sm w-full shadow-xl text-center space-y-3.5">
+ <div className="w-10 h-10 rounded-md bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
+ <Trash2 className="w-5 h-5"/>
  </div>
  <div>
- <h3 className="text-base font-black text-zinc-900 dark:text-white">Delete Lead</h3>
+ <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Delete Lead</h3>
  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
  Are you sure you want to delete lead <span className="font-bold text-zinc-800 dark:text-zinc-200">"{rowToDelete.clientName || 'Lead'}"</span> from Google Sheets and the app?
  </p>
  </div>
- <div className="flex items-center gap-2 pt-2">
+ <div className="flex items-center gap-2 pt-1">
  <button
  type="button"
  onClick={() => setRowToDelete(null)}
- className="flex-1 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+ className="flex-1 py-2 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors duration-120 cursor-pointer"
  >
  Cancel
  </button>
  <button
  type="button"
  onClick={confirmDeleteRow}
- className="flex-1 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-black shadow-sm transition-all cursor-pointer"
+ className="flex-1 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-xs transition-colors duration-120 cursor-pointer"
  >
  Delete Lead
  </button>

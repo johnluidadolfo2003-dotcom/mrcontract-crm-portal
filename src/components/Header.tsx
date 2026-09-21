@@ -43,7 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
  {onToggleTheme && (
  <button
  onClick={onToggleTheme}
- className="p-2 sm:p-2.5 text-zinc-600 dark:text-zinc-300 hover:text-black dark:hover:text-white bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-800 rounded-lg transition-all cursor-pointer shadow-xs shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center focus-visible:outline-2 focus-visible:outline-[#FF5500]"
+ className="p-2 sm:p-2 text-zinc-600 dark:text-zinc-300 hover:text-black dark:hover:text-white bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-800 rounded-md transition-colors duration-120 cursor-pointer shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center focus-visible:outline-2 focus-visible:outline-[#FF5500]"
  title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
  aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
  >

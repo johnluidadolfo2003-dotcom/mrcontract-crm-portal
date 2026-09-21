@@ -270,7 +270,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
     setNewNote('');
   };
 
-  const inputClass = "w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#FF5500] dark:focus:border-[#FF5500] rounded-xl px-3.5 py-2 text-sm text-zinc-900 dark:text-white font-medium outline-none transition-colors placeholder-zinc-400";
+  const inputClass = "w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#FF5500] dark:focus:border-[#FF5500] rounded-md px-3.5 py-2 text-sm text-zinc-900 dark:text-white font-medium outline-none transition-colors duration-120 placeholder-zinc-400";
   const houzzState = String((lead as any).houzzStatus || (lead as any).houzzResult || '').trim().toLowerCase();
   const isConfirmedInHouzz = houzzState.includes('created in houzz pro');
   const isHouzzAccepted = houzzState.includes('accepted by zapier');
@@ -291,40 +291,40 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
       {/* Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-40 transition-opacity"
+          className="fixed inset-0 bg-black/60 z-40 transition-opacity duration-120"
           onClick={onClose}
         />
       )}
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-md bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
+        className={`fixed top-0 right-0 h-full w-full max-w-md bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-800 shadow-md z-50 transform transition-transform duration-120 ease-out flex flex-col ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {/* Header */}
-        <div className="px-6 py-5 border-b border-zinc-200 dark:border-zinc-800 flex items-start justify-between bg-zinc-50 dark:bg-zinc-950">
-          <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-11 h-11 rounded-2xl bg-[#FF5500]/15 border border-[#FF5500]/30 flex items-center justify-center shrink-0">
-              <User className="w-5 h-5 text-[#FF5500]" />
+        <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-start justify-between bg-zinc-50 dark:bg-zinc-950">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-md bg-[#FF5500]/15 border border-[#FF5500]/30 flex items-center justify-center shrink-0">
+              <User className="w-4.5 h-4.5 text-[#FF5500]" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate">
                   {isEditing ? (editName || 'Edit Client') : (lead.clientName || 'Unnamed Client')}
                 </h2>
                 {saveSuccess && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                     <Check className="w-3 h-3" /> Saved
                   </span>
                 )}
                 {isConfirmedInHouzz && (
                   <span
-                    className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 shrink-0"
+                    className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 shrink-0"
                     title="Houzz Pro confirmed that this lead was created."
                     aria-label="Created in Houzz Pro"
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+                    <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
                     <span>Houzz Pro</span>
                   </span>
                 )}
@@ -335,7 +335,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={onClose}
-              className="p-2 text-zinc-400 hover:text-zinc-700 dark:hover:text-white bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-lg transition-colors shrink-0 cursor-pointer"
+              className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-white bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-md transition-colors duration-120 shrink-0 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -346,7 +346,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
         <div className="flex border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-900/50">
           <button
             onClick={() => setActiveTab('details')}
-            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+            className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors duration-120 cursor-pointer ${
               activeTab === 'details'
                 ? 'text-[#FF5500] border-b-2 border-[#FF5500] font-black'
                 : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
@@ -356,7 +356,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('timeline')}
-            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+            className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors duration-120 cursor-pointer ${
               activeTab === 'timeline'
                 ? 'text-[#FF5500] border-b-2 border-[#FF5500] font-black'
                 : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
@@ -367,9 +367,9 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
         </div>
 
         {/* Content Scroll Area */}
-        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-800 scrollbar-track-transparent">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-800 scrollbar-track-transparent">
           {saveError && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-600 dark:text-red-400 flex items-center gap-2">
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-md text-xs text-red-600 dark:text-red-400 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{saveError}</span>
             </div>
@@ -440,7 +440,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                         setEditEstimateSentAt(new Date().toISOString().split("T")[0]);
                       }
                     }}
-                    className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#FF5500] dark:focus:border-[#FF5500] rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-white font-bold outline-none cursor-pointer"
+                    className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#FF5500] dark:focus:border-[#FF5500] rounded-md px-3 py-2 text-sm text-zinc-900 dark:text-white font-bold outline-none cursor-pointer transition-colors duration-120"
                   >
                     {statusOptions.map((st) => (
                       <option key={st} value={st} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white font-medium">
@@ -468,7 +468,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                   <select
                     value={editOwner}
                     onChange={(e) => setEditOwner(e.target.value)}
-                    className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#FF5500] dark:focus:border-[#FF5500] rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-white font-semibold outline-none cursor-pointer"
+                    className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#FF5500] dark:focus:border-[#FF5500] rounded-md px-3 py-2 text-sm text-zinc-900 dark:text-white font-semibold outline-none cursor-pointer transition-colors duration-120"
                   >
                     <option value="">Unassigned</option>
                     {salespeople?.map((sp) => (
@@ -542,7 +542,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                   <select
                     value={editAngiAccount}
                     onChange={(e) => setEditAngiAccount(e.target.value as 'not_identified' | 'dxg' | 'mr_contract')}
-                    className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#FF5500] dark:focus:border-[#FF5500] rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-white font-semibold outline-none cursor-pointer"
+                    className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#FF5500] dark:focus:border-[#FF5500] rounded-md px-3 py-2 text-sm text-zinc-900 dark:text-white font-semibold outline-none cursor-pointer transition-colors duration-120"
                   >
                     {ANGI_ACCOUNT_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>{option.label}</option>
@@ -560,7 +560,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                   onChange={(e) => setEditNotes(e.target.value)}
                   rows={3}
                   placeholder="Add details, project scope, client preferences..."
-                  className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#FF5500] dark:focus:border-[#FF5500] rounded-xl p-3 text-sm text-zinc-900 dark:text-white font-medium outline-none resize-none transition-colors placeholder-zinc-400"
+                  className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#FF5500] dark:focus:border-[#FF5500] rounded-md p-3 text-sm text-zinc-900 dark:text-white font-medium outline-none resize-none transition-colors duration-120 placeholder-zinc-400"
                 />
               </div>
 
@@ -570,7 +570,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                   type="button"
                   onClick={handleMoveToTrash}
                   disabled={isSaving}
-                  className="px-3.5 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  className="px-3.5 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 rounded-md text-xs font-bold transition-colors duration-120 cursor-pointer"
                 >
                   Move to Trash
                 </button>
@@ -578,14 +578,14 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsEditing(false)}
-                    className="px-4 py-2 bg-transparent border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 text-zinc-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-transparent border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 text-zinc-700 dark:text-zinc-300 rounded-md text-xs font-bold transition-colors duration-120 cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSaving}
-                    className="px-5 py-2 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    className="px-5 py-2 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-md text-xs font-bold transition-colors duration-120 shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     {isSaving ? (
                       <>
@@ -603,16 +603,16 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
               </div>
             </form>
           ) : activeTab === 'details' ? (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* ACTION BAR: Quick Status Change */}
-              <div className="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-[10px] font-black uppercase text-zinc-500 dark:text-zinc-400 tracking-wider">Current Status</label>
+              <div className="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-md border border-zinc-200 dark:border-zinc-800">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[10px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider">Current Status</label>
                 </div>
                 <select
                   value={lead.status || 'New'}
                   onChange={(e) => onStatusChange(lead, e.target.value)}
-                  className="w-full bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white font-bold rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-[#FF5500]/50 outline-none cursor-pointer"
+                  className="w-full h-8.5 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white font-bold rounded-md py-1 px-3 text-xs focus:ring-1 focus:ring-[#FF5500] outline-none cursor-pointer"
                 >
                   {statusOptions.map((opt) => (
                     <option key={opt} value={opt} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white font-semibold py-1">
@@ -633,22 +633,22 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
 
                 if (formattedAppt || isMeetingScheduledStatus(lead.status)) {
                   return (
-                    <div className="p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl space-y-2 shadow-xs">
+                    <div className="p-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md space-y-1.5 shadow-2xs">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <CalendarClock className="w-5 h-5 text-[#FF5500] shrink-0" />
-                          <h3 className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white">Appointments</h3>
+                          <CalendarClock className="w-4 h-4 text-[#FF5500] shrink-0" />
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">Appointments</h3>
                         </div>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                           Synced
                         </span>
                       </div>
-                      <div className="text-sm sm:text-base font-extrabold text-zinc-900 dark:text-white">
+                      <div className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-white tabular-nums">
                         {formattedAppt || 'Appointment Scheduled in Google Calendar'}
                       </div>
                       {match?.formData.salespersonCode && (
                         <div className="text-xs text-zinc-600 dark:text-zinc-300">
-                          <strong className="text-zinc-500 dark:text-zinc-400">Assigned Salesperson:</strong> <span className="text-zinc-900 dark:text-white font-bold">{match.formData.salespersonCode}</span>
+                          <strong className="text-zinc-500 dark:text-zinc-400">Assigned:</strong> <span className="text-zinc-900 dark:text-white font-bold">{match.formData.salespersonCode}</span>
                         </div>
                       )}
                     </div>
@@ -657,18 +657,18 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                 return null;
               })()}
 
-              {/* Contact Info */}
+              {/* Contact Info - Flattened Single Surface */}
               <div>
-                <div className="flex items-center justify-between mb-2.5">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Contact</h3>
+                <div className="flex items-center justify-between mb-1.5">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Contact</h3>
                 </div>
-                <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-2 space-y-1">
-                  <a href={`tel:${lead.clientPhone}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-colors group">
-                    <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-950 flex items-center justify-center shrink-0 border border-zinc-200 dark:border-zinc-800">
-                      <Phone className="w-4 h-4 text-zinc-500 dark:text-zinc-400 transition-transform" />
+                <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-1.5 space-y-1">
+                  <a href={`tel:${lead.clientPhone}`} className="flex items-center gap-2.5 p-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-colors duration-120 group">
+                    <div className="w-7 h-7 rounded-md bg-white dark:bg-zinc-950 flex items-center justify-center shrink-0 border border-zinc-200 dark:border-zinc-800">
+                      <Phone className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="text-zinc-800 dark:text-zinc-200 font-semibold text-sm block truncate">
+                      <span className="text-zinc-800 dark:text-zinc-200 font-semibold text-xs block truncate tabular-nums">
                         {formatPhoneNumber(lead.clientPhone || '') || 'No Phone Provided'}
                       </span>
                       {lead.carrier && (
@@ -678,11 +678,11 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                       )}
                     </div>
                   </a>
-                  <a href={`mailto:${lead.clientEmail}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-colors group">
-                    <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-950 flex items-center justify-center shrink-0 border border-zinc-200 dark:border-zinc-800">
-                      <Mail className="w-4 h-4 text-zinc-500 dark:text-zinc-400 transition-transform" />
+                  <a href={`mailto:${lead.clientEmail}`} className="flex items-center gap-2.5 p-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-colors duration-120 group">
+                    <div className="w-7 h-7 rounded-md bg-white dark:bg-zinc-950 flex items-center justify-center shrink-0 border border-zinc-200 dark:border-zinc-800">
+                      <Mail className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
                     </div>
-                    <span className="text-zinc-800 dark:text-zinc-200 font-semibold text-sm break-all">
+                    <span className="text-zinc-800 dark:text-zinc-200 font-semibold text-xs break-all">
                       {lead.clientEmail || 'No Email Provided'}
                     </span>
                   </a>
@@ -690,41 +690,41 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                     href={lead.address ? `https://maps.google.com/?q=${encodeURIComponent(lead.address)}` : '#'}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-colors group"
+                    className="flex items-center gap-2.5 p-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-colors duration-120 group"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-950 flex items-center justify-center shrink-0 border border-zinc-200 dark:border-zinc-800">
-                      <MapPin className="w-4 h-4 text-zinc-500 dark:text-zinc-400 transition-transform" />
+                    <div className="w-7 h-7 rounded-md bg-white dark:bg-zinc-950 flex items-center justify-center shrink-0 border border-zinc-200 dark:border-zinc-800">
+                      <MapPin className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
                     </div>
-                    <span className="text-zinc-800 dark:text-zinc-200 font-semibold text-sm leading-tight">
+                    <span className="text-zinc-800 dark:text-zinc-200 font-semibold text-xs leading-tight">
                       {lead.address || 'No Address Provided'}
                     </span>
                   </a>
                 </div>
               </div>
 
-              {/* Job Details */}
+              {/* Job Details - Flattened surface */}
               <div>
-                <h3 className="text-xs font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2.5">Project</h3>
-                <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 space-y-3.5 text-sm">
-                  <div className="flex justify-between items-center border-b border-zinc-200 dark:border-zinc-800/60 pb-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">Project</h3>
+                <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-3 space-y-2 text-xs">
+                  <div className="flex justify-between items-center border-b border-zinc-200 dark:border-zinc-800/60 pb-2">
                     <span className="text-zinc-500 dark:text-zinc-400">Service Needed</span>
-                    <span className="text-zinc-800 dark:text-zinc-100 font-bold bg-zinc-200 dark:bg-zinc-800 px-2.5 py-1 rounded-md text-xs">
+                    <span className="text-zinc-800 dark:text-zinc-100 font-bold bg-zinc-200 dark:bg-zinc-800 px-2 py-0.5 rounded-md text-[11px]">
                       {lead.serviceNeeded || lead.leadType || '-'}
                     </span>
                   </div>
                   {lead.leadFee && (
-                    <div className="flex justify-between items-center border-b border-zinc-200 dark:border-zinc-800/60 pb-3">
+                    <div className="flex justify-between items-center border-b border-zinc-200 dark:border-zinc-800/60 pb-2">
                       <span className="text-zinc-500 dark:text-zinc-400">Lead Fee</span>
-                      <span className="text-zinc-800 dark:text-zinc-100 font-bold text-xs">{lead.leadFee}</span>
+                      <span className="text-zinc-800 dark:text-zinc-100 font-bold tabular-nums text-xs">{lead.leadFee}</span>
                     </div>
                   )}
-                  <div className="flex justify-between items-center border-b border-zinc-200 dark:border-zinc-800/60 pb-3">
+                  <div className="flex justify-between items-center border-b border-zinc-200 dark:border-zinc-800/60 pb-2">
                     <span className="text-zinc-500 dark:text-zinc-400">Source</span>
                     <span className="text-zinc-800 dark:text-zinc-100 font-semibold">{isAngiLead ? angiAccountLabel : (lead.leadSource || lead.tabName || '-')}</span>
                   </div>
                   <div className="pt-1">
-                    <span className="text-zinc-500 dark:text-zinc-400 block mb-2 text-xs font-semibold">Notes</span>
-                    <p className="text-zinc-700 dark:text-zinc-200 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3.5 text-sm leading-relaxed whitespace-pre-wrap">
+                    <span className="text-zinc-500 dark:text-zinc-400 block mb-1 text-[11px] font-semibold">Notes</span>
+                    <p className="text-zinc-700 dark:text-zinc-200 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md p-2.5 text-xs leading-relaxed whitespace-pre-wrap">
                       {lead.notes || 'No notes provided for this lead.'}
                     </p>
                   </div>
@@ -733,10 +733,10 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
 
               {/* Thumbtack leads require a human review before Houzz creation. */}
               {isThumbtackLead && (
-                <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl space-y-2.5">
+                <div className="p-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md space-y-2">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <h3 className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white">Houzz Pro</h3>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">Houzz Pro</h3>
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
                         {isConfirmedInHouzz
                           ? 'This lead is already in Houzz Pro.'
@@ -747,17 +747,17 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                               : 'Complete the name, contact, address, and service before sending.'}
                       </p>
                     </div>
-                    {isConfirmedInHouzz && <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" aria-hidden="true" />}
+                    {isConfirmedInHouzz && <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" aria-hidden="true" />}
                   </div>
                   {!isConfirmedInHouzz && !isHouzzAccepted && (
                     <button
                       type="button"
                       disabled={!hasHouzzRequiredInfo || isSendingToHouzz || !onSendToHouzz}
                       onClick={() => onSendToHouzz?.(lead)}
-                      className="w-full py-2.5 bg-[#FF5500] hover:bg-[#E64D00] disabled:bg-zinc-300 dark:disabled:bg-zinc-800 disabled:text-zinc-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                      className="w-full h-8.5 bg-[#FF5500] hover:bg-[#E64D00] disabled:bg-zinc-300 dark:disabled:bg-zinc-800 disabled:text-zinc-500 text-white rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-colors duration-120 cursor-pointer disabled:cursor-not-allowed"
                       title={hasHouzzRequiredInfo ? 'Create this Thumbtack lead in Houzz Pro' : 'Complete the required lead information first'}
                     >
-                      {isSendingToHouzz ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                      {isSendingToHouzz ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
                       <span>{isSendingToHouzz ? 'Sending…' : 'Create in Houzz Pro'}</span>
                     </button>
                   )}
@@ -767,24 +767,24 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
               {/* Edit Button CTA */}
               <button
                 onClick={() => setIsEditing(true)}
-                className="w-full py-3 bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 hover:border-[#FF5500] dark:hover:border-[#FF5500] text-zinc-900 dark:text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="w-full h-8.5 bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 hover:border-[#FF5500] dark:hover:border-[#FF5500] text-zinc-900 dark:text-white rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-colors duration-120 cursor-pointer"
               >
-                <Edit2 className="w-4 h-4 text-[#FF5500]" />
+                <Edit2 className="w-3.5 h-3.5 text-[#FF5500]" />
                 <span>Edit All Client Information</span>
               </button>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Custom Note Logger */}
-              <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4">
-                <form onSubmit={handleAddActivity} className="space-y-3">
-                  <div className="flex gap-2 mb-2">
+              <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-3">
+                <form onSubmit={handleAddActivity} className="space-y-2.5">
+                  <div className="flex gap-1.5 mb-1.5">
                     {(["note", "call", "text"] as const).map((t) => (
                       <button
                         key={t}
                         type="button"
                         onClick={() => setActivityType(t)}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors duration-120 cursor-pointer ${
                           activityType === t
                             ? "bg-[#FF5500] text-white"
                             : "bg-white dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border border-zinc-200 dark:border-zinc-800"
@@ -800,32 +800,32 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                       onChange={(e) => setNewNote(e.target.value)}
                       placeholder="Type activity note or update details..."
                       rows={3}
-                      className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#FF5500]/40 resize-none"
+                      className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md p-2.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5500] resize-none"
                     />
                     <button
                       type="submit"
                       disabled={!newNote.trim()}
-                      className="absolute bottom-3 right-3 p-1.5 bg-[#FF5500] text-white rounded-lg hover:bg-[#E64D00] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                      className="absolute bottom-2.5 right-2.5 p-1 bg-[#FF5500] text-white rounded-md hover:bg-[#E64D00] transition-colors duration-120 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                     >
-                      <Send className="w-4 h-4" />
+                      <Send className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </form>
               </div>
 
               {/* Activity Timeline Feed */}
-              <div className="relative pl-6 border-l-2 border-zinc-200 dark:border-zinc-800 space-y-6 py-2">
+              <div className="relative pl-5 border-l border-zinc-200 dark:border-zinc-800 space-y-4 py-1">
                 {/* Lead Created Event */}
                 <div className="relative">
-                  <div className="absolute -left-[35px] top-0 w-8 h-8 rounded-full bg-white dark:bg-zinc-900 border-2 border-[#FF5500] flex items-center justify-center">
-                    <CalendarClock className="w-3.5 h-3.5 text-[#FF5500]" />
+                  <div className="absolute -left-[27px] top-0 w-6 h-6 rounded-md bg-white dark:bg-zinc-900 border border-[#FF5500] flex items-center justify-center">
+                    <CalendarClock className="w-3 h-3 text-[#FF5500]" />
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider tabular-nums">
                       {lead.timestamp ? new Date(lead.timestamp).toLocaleDateString() : "Original Date"}
                     </span>
-                    <h4 className="text-zinc-900 dark:text-zinc-200 font-bold text-sm mt-0.5">Lead Created</h4>
-                    <p className="text-zinc-600 dark:text-zinc-400 text-xs mt-1">
+                    <h4 className="text-zinc-900 dark:text-zinc-200 font-bold text-xs mt-0.5">Lead Created</h4>
+                    <p className="text-zinc-600 dark:text-zinc-400 text-[11px] mt-0.5">
                       Lead originated from <strong>{lead.leadSource || "Manual Entry"}</strong>.
                     </p>
                   </div>
@@ -834,23 +834,23 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                 {/* Logged Activities */}
                 {activities.map((act) => (
                   <div key={act.id} className="relative">
-                    <div className="absolute -left-[35px] top-0 w-8 h-8 rounded-full bg-white dark:bg-zinc-900 border-2 border-zinc-300 dark:border-zinc-700 flex items-center justify-center">
-                      {act.type === "call" && <Phone className="w-3.5 h-3.5 text-zinc-700 dark:text-white" />}
-                      {act.type === "text" && <MessageSquare className="w-3.5 h-3.5 text-zinc-700 dark:text-white" />}
-                      {act.type === "meeting" && <MapPin className="w-3.5 h-3.5 text-[#FF5500]" />}
-                      {act.type === "note" && <Tag className="w-3.5 h-3.5 text-zinc-700 dark:text-white" />}
-                      {act.type === "status_change" && <AlertCircle className="w-3.5 h-3.5 text-zinc-700 dark:text-white" />}
+                    <div className="absolute -left-[27px] top-0 w-6 h-6 rounded-md bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 flex items-center justify-center">
+                      {act.type === "call" && <Phone className="w-3 h-3 text-zinc-700 dark:text-white" />}
+                      {act.type === "text" && <MessageSquare className="w-3 h-3 text-zinc-700 dark:text-white" />}
+                      {act.type === "meeting" && <MapPin className="w-3 h-3 text-[#FF5500]" />}
+                      {act.type === "note" && <Tag className="w-3 h-3 text-zinc-700 dark:text-white" />}
+                      {act.type === "status_change" && <AlertCircle className="w-3 h-3 text-zinc-700 dark:text-white" />}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider tabular-nums">
                           {new Date(act.timestamp).toLocaleString()}
                         </span>
-                        <span className="text-xs font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400">
                           {act.type}
                         </span>
                       </div>
-                      <p className="text-zinc-800 dark:text-zinc-200 text-sm mt-1 bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 rounded-xl p-3 leading-relaxed">
+                      <p className="text-zinc-800 dark:text-zinc-200 text-xs mt-1 bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 rounded-md p-2.5 leading-relaxed">
                         {act.message}
                       </p>
                     </div>
@@ -859,12 +859,12 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
 
                 {activities.length === 0 && (
                   <div className="relative opacity-60">
-                    <div className="absolute -left-[35px] top-0 w-8 h-8 rounded-full bg-white dark:bg-zinc-900 border-2 border-zinc-300 dark:border-zinc-800 flex items-center justify-center">
-                      <AlertCircle className="w-3.5 h-3.5 text-zinc-600 dark:text-white" />
+                    <div className="absolute -left-[27px] top-0 w-6 h-6 rounded-md bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 flex items-center justify-center">
+                      <AlertCircle className="w-3 h-3 text-zinc-600 dark:text-white" />
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">No Custom Activity Logged</span>
-                      <p className="text-zinc-500 text-xs mt-1">Use the form above to log activity notes.</p>
+                      <p className="text-zinc-500 text-[11px] mt-0.5">Use the form above to log activity notes.</p>
                     </div>
                   </div>
                 )}

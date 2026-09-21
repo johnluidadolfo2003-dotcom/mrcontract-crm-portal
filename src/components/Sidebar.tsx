@@ -419,20 +419,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
  const renderFollowUpsParent = () => {
  return (
- <div key="Follow-Ups-Group"className="flex flex-col space-y-1">
+ <div key="Follow-Ups-Group" className="flex flex-col space-y-1">
  <button
  type="button"
  onClick={handleFollowUpsToggle}
  className={`group relative flex items-center ${
- showExpanded ? 'px-3.5 py-3 gap-3.5 min-h-[44px]' : 'p-3 justify-center min-h-[44px]'
- } rounded-2xl font-semibold text-sm transition-all duration-150 cursor-pointer w-full text-left ${
+ showExpanded ? 'px-3 py-2 gap-3 min-h-[36px]' : 'p-2 justify-center min-h-[36px]'
+ } rounded-md font-semibold text-xs transition-colors duration-120 cursor-pointer w-full text-left ${
  isFollowUpsActive
- ? 'bg-[#FF5500]/10 text-[#FF5500] font-bold shadow-xs'
+ ? 'bg-[#FF5500]/10 text-[#FF5500] font-bold'
  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
  }`}
  >
  <Clock
- className={`w-5 h-5 shrink-0 transition-colors ${
+ className={`w-4.5 h-4.5 shrink-0 transition-colors ${
  isFollowUpsActive
  ? 'text-[#FF5500] stroke-[2.2]'
  : 'text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-white'
@@ -450,7 +450,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  <>
  {showExpanded ? (
  <span
- className={`px-1.5 py-0.5 min-w-[20px] h-5 rounded-full text-xs font-black flex items-center justify-center ${
+ className={`px-1.5 py-0.5 min-w-[18px] h-4.5 rounded-md text-[10px] font-bold flex items-center justify-center tabular-nums ${
  isFollowUpsActive
  ? 'bg-[#FF5500] text-white'
  : 'bg-[#FF5500] text-white'
@@ -460,7 +460,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  </span>
  ) : (
  <span
- className={`absolute top-2 right-2 w-2.5 h-2.5 rounded-full ring-2 ring-white dark:ring-[#09090b] bg-[#FF5500]`}
+ className={`absolute top-2 right-2 w-2 h-2 rounded-full ring-2 ring-white dark:ring-[#09090b] bg-[#FF5500]`}
  />
  )}
  </>
@@ -468,13 +468,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
  {showExpanded && (
  <span className="ml-1 text-zinc-400 dark:text-zinc-500">
- {isFollowUpsOpen ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>}
+ {isFollowUpsOpen ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>}
  </span>
  )}
  </button>
 
  {isFollowUpsOpen && showExpanded && (
- <div className="flex flex-col space-y-1 mt-1 border-l border-zinc-100 dark:border-zinc-800/50 ml-6 pl-2">
+ <div className="flex flex-col space-y-0.5 mt-0.5 border-l border-zinc-200 dark:border-zinc-800/50 ml-5 pl-2">
  {followUpSubItems.map((subItem) => {
  const isSubActive = isItemActive(subItem.path);
  return (
@@ -483,9 +483,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
  to={subItem.path}
  onClick={handleNavClick}
  className={() =>
- `group relative flex items-center px-3.5 py-2.5 gap-3 min-h-[40px] rounded-xl font-semibold text-xs transition-all duration-150 cursor-pointer ${
+ `group relative flex items-center px-3 py-1.5 gap-2.5 min-h-[32px] rounded-md font-medium text-xs transition-colors duration-120 cursor-pointer ${
  isSubActive
- ? 'bg-[#FF5500]/10 text-[#FF5500] font-black'
+ ? 'bg-[#FF5500]/10 text-[#FF5500] font-bold'
  : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800/40'
  }`
  }
@@ -494,7 +494,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  {subItem.name}
  </span>
  {subItem.badge !== undefined && (
- <span className="px-1.5 py-0.5 min-w-[18px] h-4.5 rounded-full text-[10px] font-black flex items-center justify-center bg-[#FF5500] text-white">
+ <span className="px-1.5 py-0.5 min-w-[16px] h-4 rounded-md text-[10px] font-bold flex items-center justify-center bg-[#FF5500] text-white tabular-nums">
  {subItem.badge}
  </span>
  )}
@@ -513,7 +513,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  <div className={`p-4 pb-3 flex ${showExpanded ? 'items-center justify-between gap-2' : 'flex-col items-center gap-4'} bg-white dark:bg-black`}>
  <div className="flex items-center gap-3 overflow-hidden">
  {/* Logo Mark: Orange rounded squircle with bold white 'M' */}
- <div className="w-10 h-10 rounded-xl bg-[#FF5500] shrink-0 flex items-center justify-center">
+ <div className="w-10 h-10 rounded-md bg-[#FF5500] shrink-0 flex items-center justify-center">
  <span className="text-white font-black text-xl leading-none tracking-tighter">
  M
  </span>
@@ -542,7 +542,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  type="button"
  onClick={() => setIsMobileOpen && setIsMobileOpen(false)}
  aria-label="Close sidebar"
- className="p-2 rounded-xl text-zinc-400 hover:text-zinc-700 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
+ className="p-2 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors duration-120 cursor-pointer shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
  >
  <ChevronLeft className="w-5 h-5"/>
  </button>
@@ -551,7 +551,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  type="button"
  onClick={() => setIsOpen(!isOpen)}
  aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
- className="p-1.5 rounded-lg text-zinc-400 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer shrink-0"
+ className="p-1.5 rounded-md text-zinc-400 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors duration-120 cursor-pointer shrink-0"
  >
  {isOpen ? (
  <ChevronLeft className="w-4 h-4"/>
@@ -568,7 +568,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  <button
  type="button"
  onClick={handleAddLeadClick}
- className="w-full py-3 px-4 min-h-[44px] bg-[#FF5500] hover:bg-[#E64D00] text-white font-bold text-sm rounded-lg transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+ className="w-full py-3 px-4 min-h-[44px] bg-[#FF5500] hover:bg-[#E64D00] text-white font-bold text-sm rounded-md transition-colors duration-120 flex items-center justify-center gap-2 shadow-sm cursor-pointer"
  >
  <PlusCircle className="w-5 h-5 text-white shrink-0 stroke-[2.5]"/>
  <span className="tracking-wide text-white font-bold">
@@ -580,7 +580,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  type="button"
  onClick={handleAddLeadClick}
  title="Add Lead"
- className="w-12 h-12 mx-auto min-h-[44px] min-w-[44px] bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-lg transition-all flex items-center justify-center shadow-sm cursor-pointer"
+ className="w-12 h-12 mx-auto min-h-[44px] min-w-[44px] bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-md transition-colors duration-120 flex items-center justify-center shadow-sm cursor-pointer"
  >
  <PlusCircle className="w-5 h-5 text-white shrink-0 stroke-[2.5]"/>
  </button>
@@ -590,8 +590,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
  {/* Divider */}
  <div className="mx-3 border-t border-zinc-100 dark:border-zinc-800/60 my-1"/>
 
- {/* Nav Items List */}
- <nav className="flex-1 px-3 py-2 space-y-1.5 overflow-y-auto bg-white dark:bg-black">
+  {/* Nav Items List */}
+ <nav className="flex-1 px-3 py-1.5 space-y-1 overflow-y-auto bg-white dark:bg-black">
  {mainNavItems.map((item) => {
  const Icon = item.icon;
  const isCurrentActive = isItemActive(item.path, item.exact);
@@ -603,8 +603,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
  onClick={handleNavClick}
  className={() =>
  `group relative flex items-center ${
- showExpanded ? 'px-3.5 py-3 gap-3.5 min-h-[44px]' : 'p-3 justify-center min-h-[44px]'
- } rounded-2xl font-semibold text-sm transition-all duration-150 cursor-pointer ${
+ showExpanded ? 'px-3 py-2 gap-3 min-h-[36px]' : 'p-2 justify-center min-h-[36px]'
+ } rounded-md font-semibold text-xs transition-colors duration-120 cursor-pointer ${
  isCurrentActive
  ? 'bg-[#FF5500] text-white font-bold'
  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
@@ -612,7 +612,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  }
  >
  <Icon
- className={`w-5 h-5 shrink-0 transition-colors ${
+ className={`w-4.5 h-4.5 shrink-0 transition-colors ${
  isCurrentActive
  ? 'text-white stroke-[2.2]'
  : 'text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-white'
@@ -630,7 +630,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  <>
  {showExpanded ? (
  <span
- className={`px-1.5 py-0.5 min-w-[20px] h-5 rounded-full text-xs font-black flex items-center justify-center ${
+ className={`px-1.5 py-0.5 min-w-[18px] h-4.5 rounded-md text-[10px] font-bold flex items-center justify-center tabular-nums ${
  isCurrentActive
  ? 'bg-white text-[#FF5500]'
  : 'bg-[#FF5500] text-white'
@@ -640,7 +640,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  </span>
  ) : (
  <span
- className={`absolute top-2 right-2 w-2.5 h-2.5 rounded-full ring-2 ring-white dark:ring-[#09090b] ${
+ className={`absolute top-2 right-2 w-2 h-2 rounded-full ring-2 ring-white dark:ring-[#09090b] ${
  isCurrentActive ? 'bg-white' : 'bg-[#FF5500]'
  }`}
  />
@@ -666,8 +666,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
  onClick={handleNavClick}
  className={() =>
  `group relative flex items-center ${
- showExpanded ? 'px-3.5 py-3 gap-3.5 min-h-[44px]' : 'p-3 justify-center min-h-[44px]'
- } rounded-2xl font-semibold text-sm transition-all duration-150 cursor-pointer ${
+ showExpanded ? 'px-3 py-2 gap-3 min-h-[36px]' : 'p-2 justify-center min-h-[36px]'
+ } rounded-md font-semibold text-xs transition-colors duration-120 cursor-pointer ${
  isCurrentActive
  ? 'bg-[#FF5500] text-white font-bold'
  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
@@ -693,7 +693,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  <>
  {showExpanded ? (
  <span
- className={`px-1.5 py-0.5 min-w-[20px] h-5 rounded-full text-xs font-black flex items-center justify-center ${
+ className={`px-1.5 py-0.5 min-w-[18px] h-4.5 rounded-md text-[10px] font-bold flex items-center justify-center tabular-nums ${
  isCurrentActive
  ? 'bg-white text-[#FF5500]'
  : 'bg-[#FF5500] text-white'
@@ -703,7 +703,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  </span>
  ) : (
  <span
- className={`absolute top-2 right-2 w-2.5 h-2.5 rounded-full ring-2 ring-white dark:ring-[#09090b] ${
+ className={`absolute top-2 right-2 w-2 h-2 rounded-full ring-2 ring-white dark:ring-[#09090b] ${
  isCurrentActive ? 'bg-white' : 'bg-[#FF5500]'
  }`}
  />
@@ -716,7 +716,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  </nav>
 
  {/* Bottom Section: Worker Profile & History & Settings */}
- <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 mt-auto pb-safe space-y-1 bg-white dark:bg-black">
+ <div className="p-2.5 border-t border-zinc-200 dark:border-zinc-800 mt-auto pb-safe space-y-1 bg-white dark:bg-black">
  {/* Worker Profile Card */}
  {currentUser && (
  <button
@@ -726,12 +726,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
  if (isMobileView) setIsMobileOpen && setIsMobileOpen(false);
  }}
  className={`flex items-center ${
- showExpanded ? 'w-full px-3 py-2.5 gap-3' : 'w-11 h-11 mx-auto justify-center'
- } bg-zinc-50 dark:bg-zinc-900/80 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl transition-all font-semibold text-xs cursor-pointer group`}
+ showExpanded ? 'w-full px-2.5 py-2 gap-2.5' : 'w-9 h-9 mx-auto justify-center'
+ } bg-zinc-50 dark:bg-zinc-900/80 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-800/80 rounded-md transition-colors duration-120 font-semibold text-xs cursor-pointer group`}
  title={!showExpanded ? `Worker: ${currentUser.name} (Click to switch)` : undefined}
  >
  <div
- className="w-7 h-7 rounded-xl flex items-center justify-center text-white font-black text-xs shrink-0 shadow-xs bg-[#FF5500]"
+ className="w-6 h-6 rounded-md flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-2xs bg-[#FF5500]"
  >
  {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
  </div>
@@ -756,8 +756,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
  if (isMobileView) setIsMobileOpen && setIsMobileOpen(false);
  }}
  className={`flex items-center ${
- showExpanded ? 'w-full px-3.5 py-2.5 gap-3.5' : 'w-11 h-11 mx-auto justify-center'
- } text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/60 rounded-2xl transition-colors font-semibold text-xs cursor-pointer`}
+ showExpanded ? 'w-full px-2.5 py-1.5 gap-2.5 min-h-[34px]' : 'w-9 h-9 mx-auto justify-center'
+ } text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/60 rounded-md transition-colors duration-120 font-semibold text-xs cursor-pointer`}
  title={!showExpanded ? 'Team Activity Log' : undefined}
  >
  <History className="w-4 h-4 shrink-0 text-zinc-500 dark:text-zinc-400"/>
@@ -776,10 +776,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
  if (isMobileView) setIsMobileOpen && setIsMobileOpen(false);
  }}
  className={`flex items-center ${
- showExpanded ? 'w-full px-3.5 py-2.5 gap-3.5' : 'w-11 h-11 mx-auto justify-center'
- } text-zinc-600 dark:text-zinc-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/10 rounded-2xl transition-colors font-semibold text-xs cursor-pointer`}
-  
-
+ showExpanded ? 'w-full px-2.5 py-1.5 gap-2.5 min-h-[34px]' : 'w-9 h-9 mx-auto justify-center'
+ } text-zinc-600 dark:text-zinc-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/10 rounded-md transition-colors duration-120 font-semibold text-xs cursor-pointer`}
  title={!showExpanded ? 'Trash & Deleted Leads' : undefined}
  >
  <Trash2 className="w-4 h-4 shrink-0 text-zinc-500 dark:text-zinc-400"/>
@@ -795,8 +793,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
  type="button"
  onClick={handleSettingsClick}
  className={`flex items-center ${
- showExpanded ? 'w-full px-3.5 py-2.5 gap-3.5' : 'w-11 h-11 mx-auto justify-center'
- } text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/60 rounded-2xl transition-colors font-semibold text-xs cursor-pointer`}
+ showExpanded ? 'w-full px-2.5 py-1.5 gap-2.5 min-h-[34px]' : 'w-9 h-9 mx-auto justify-center'
+ } text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/60 rounded-md transition-colors duration-120 font-semibold text-xs cursor-pointer`}
  title={!showExpanded ? 'Settings & Sync' : undefined}
  >
  <Settings className="w-4 h-4 shrink-0 text-zinc-500 dark:text-zinc-400"/>
@@ -819,7 +817,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  {/* Mobile Slide-Out Drawer & Backdrop */}
  {isMobileOpen && (
  <div
- className="fixed inset-0 bg-black/60 z-50 md:hidden"
+ className="fixed inset-0 bg-black/60 z-50 md:hidden transition-opacity duration-120"
  onClick={() => setIsMobileOpen && setIsMobileOpen(false)}
  aria-hidden="true"
  />
@@ -827,7 +825,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
  {/* Mobile Drawer */}
  <aside
- className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white dark:bg-black border-r border-zinc-200 dark:border-zinc-800 shadow-2xl transform transition-transform duration-300 ease-in-out md:hidden ${
+ className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white dark:bg-black border-r border-zinc-200 dark:border-zinc-800 shadow-md transform transition-transform duration-120 ease-out md:hidden ${
  isMobileOpen ? 'translate-x-0' : '-translate-x-full'
  }`}
  >
@@ -836,7 +834,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
  {/* Desktop / Tablet Persistent Sidebar */}
  <aside
- className={`hidden md:flex sticky top-0 h-screen z-30 flex-col transition-all duration-300 ease-in-out shrink-0 select-none ${
+ className={`hidden md:flex sticky top-0 h-screen z-30 flex-col transition-[width] duration-120 ease-out shrink-0 select-none ${
  isOpen ? 'w-64' : 'w-20'
  } bg-white dark:bg-black border-r border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 overflow-hidden`}
  >

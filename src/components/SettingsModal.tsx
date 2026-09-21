@@ -324,31 +324,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const inputStyle =
-    "w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl focus:border-[#FF5500] dark:focus:border-[#FF5500] focus:outline-none text-xs font-semibold text-zinc-900 dark:text-white transition-all placeholder-zinc-400";
+    "w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-md focus:border-[#FF5500] dark:focus:border-[#FF5500] focus:outline-none text-xs font-semibold text-zinc-900 dark:text-white transition-colors duration-120 placeholder-zinc-400";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white dark:bg-zinc-900 rounded-md shadow-xl border border-zinc-200 dark:border-zinc-800 w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="px-6 py-4 bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+        <div className="px-5 py-3.5 bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <UserCheck className="w-5 h-5 text-zinc-900 dark:text-white" />
-            <h2 className="text-lg font-bold text-zinc-900 dark:text-white">System Settings</h2>
+            <UserCheck className="w-4 h-4 text-zinc-900 dark:text-white" />
+            <h2 className="text-base font-bold text-zinc-900 dark:text-white">System Settings</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-white rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-white rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors duration-120 cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Top-Level Navigation Tabs */}
-        <div className="px-6 bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2">
+        <div className="px-5 bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2">
           <button
             type="button"
             onClick={() => setActiveTab('general')}
-            className={`py-3 px-3.5 text-xs font-bold border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
+            className={`py-2.5 px-3 text-xs font-bold border-b-2 transition-colors duration-120 flex items-center gap-2 cursor-pointer ${
               activeTab === 'general'
                 ? 'border-[#FF5500] text-zinc-900 dark:text-white font-extrabold'
                 : 'border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
@@ -360,7 +360,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('integrations')}
-            className={`py-3 px-3.5 text-xs font-bold border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
+            className={`py-2.5 px-3 text-xs font-bold border-b-2 transition-colors duration-120 flex items-center gap-2 cursor-pointer ${
               activeTab === 'integrations'
                 ? 'border-[#FF5500] text-zinc-900 dark:text-white font-extrabold'
                 : 'border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-200'
@@ -375,14 +375,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto space-y-5 text-sm">
+        <div className="p-5 overflow-y-auto space-y-4 text-sm">
           {activeTab === 'general' ? (
-            <div className="space-y-6">
-                            {/* Active Worker Profile / Edit Name */}
+            <div className="space-y-4">
+              {/* Active Worker Profile / Edit Name */}
               {currentUser && (
-                <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl p-4 space-y-3">
+                <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-md p-3.5 space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
                       <User className="w-3.5 h-3.5 text-[#FF5500]" />
                       Active Worker Profile
                     </label>
@@ -411,7 +411,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button
                       type="submit"
                       disabled={isUpdatingUserName || !editingUserName.trim() || editingUserName.trim() === currentUser.name}
-                      className="px-4 py-2 bg-[#FF5500] hover:bg-[#e04b00] disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
+                      className="px-3.5 py-2 bg-[#FF5500] hover:bg-[#e04b00] disabled:opacity-50 text-white text-xs font-bold rounded-md shadow-xs transition-colors duration-120 cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                       <span>{isUpdatingUserName ? 'Saving...' : 'Update Name'}</span>
@@ -427,7 +427,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               )}
 
               {/* Dark Mode Setting */}
-              <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl p-4 flex items-center justify-between">
+              <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-md p-3.5 flex items-center justify-between">
                 <div className="space-y-0.5">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
                     {theme === 'dark' ? (
@@ -448,13 +448,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     setTheme(nextTheme);
                     applyTheme(nextTheme);
                   }}
-                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-120 focus:outline-none ${
                     theme === 'dark' ? 'bg-[#FF5500]' : 'bg-zinc-300 dark:bg-zinc-600'
                   }`}
                 >
                   <span className="sr-only">Toggle Dark Mode</span>
                   <span
-                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition-transform duration-120 ${
                       theme === 'dark' ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />
@@ -462,7 +462,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
               {/* US Time Zone Setting */}
-              <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl p-4 space-y-2">
+              <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-md p-3.5 space-y-2">
                 <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
                   US Time Zone
@@ -481,37 +481,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
               {/* Salesperson Directory */}
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-zinc-900 dark:text-white text-sm">Salesperson Directory</h3>
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400">{salespeople.length} configured</span>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">{salespeople.length} configured</span>
                 </div>
 
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                   {salespeople.map((sp) => (
                     <div
                       key={sp.id}
-                      className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl p-2.5 text-xs"
+                      className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md p-2 text-xs"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-zinc-900 dark:text-zinc-950 bg-zinc-200 px-2 py-0.5 rounded-md">
+                        <span className="font-bold text-zinc-900 dark:text-zinc-950 bg-zinc-200 px-1.5 py-0.5 rounded-md tabular-nums">
                           {sp.code}
                         </span>
                         <span className="font-semibold text-zinc-800 dark:text-white">{sp.name}</span>
                       </div>
                       <button
                         onClick={() => handleRemoveSalesperson(sp.id)}
-                        className="text-zinc-400 hover:text-red-500 p-1 transition-colors cursor-pointer"
+                        className="text-zinc-400 hover:text-red-500 p-1 transition-colors duration-120 cursor-pointer"
                         title="Remove"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   ))}
                 </div>
 
                 {/* Add new Salesperson */}
-                <div className="bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 space-y-2.5">
+                <div className="bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700 rounded-md p-3 space-y-2">
                   <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 block uppercase tracking-wider">Add Salesperson</span>
                   <div className="space-y-2">
                     <input
@@ -534,7 +534,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <button
                         type="button"
                         onClick={handleAddSalesperson}
-                        className="bg-[#FF5500] hover:bg-[#E64D00] text-white px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                        className="bg-[#FF5500] hover:bg-[#E64D00] text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 transition-colors duration-120 cursor-pointer shrink-0 shadow-xs"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         Add Salesperson
@@ -545,16 +545,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
               {/* Lead Sources Management */}
-              <div className="space-y-3 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+              <div className="space-y-2.5 pt-2 border-t border-zinc-200 dark:border-zinc-800">
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-zinc-900 dark:text-white text-sm">Lead Sources</h3>
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400">{leadSources.length} options</span>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">{leadSources.length} options</span>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {leadSources.map((source) => (
                     <div
                       key={source}
-                      className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 px-2.5 py-1 rounded-lg text-xs font-semibold text-zinc-800 dark:text-zinc-200"
+                      className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 px-2.5 py-1 rounded-md text-xs font-semibold text-zinc-800 dark:text-zinc-200"
                     >
                       <span>{source}</span>
                       <button
@@ -580,7 +580,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <button
                     type="button"
                     onClick={handleAddLeadSource}
-                    className="bg-[#FF5500] hover:bg-[#E64D00] text-white px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                    className="bg-[#FF5500] hover:bg-[#E64D00] text-white px-3.5 py-1.5 rounded-md text-xs font-bold flex items-center gap-1 transition-colors duration-120 cursor-pointer shrink-0 shadow-xs"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Add Source
@@ -589,16 +589,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
               {/* Lead Types Management */}
-              <div className="space-y-3 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+              <div className="space-y-2.5 pt-2 border-t border-zinc-200 dark:border-zinc-800">
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-zinc-900 dark:text-white text-sm">Lead Types</h3>
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400">{leadTypes.length} options</span>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">{leadTypes.length} options</span>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {leadTypes.map((type) => (
                     <div
                       key={type}
-                      className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 px-2.5 py-1 rounded-lg text-xs font-semibold text-zinc-800 dark:text-zinc-200"
+                      className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 px-2.5 py-1 rounded-md text-xs font-semibold text-zinc-800 dark:text-zinc-200"
                     >
                       <span>{type}</span>
                       <button
@@ -624,7 +624,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <button
                     type="button"
                     onClick={handleAddLeadType}
-                    className="bg-[#FF5500] hover:bg-[#E64D00] text-white px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                    className="bg-[#FF5500] hover:bg-[#E64D00] text-white px-3.5 py-1.5 rounded-md text-xs font-bold flex items-center gap-1 transition-colors duration-120 cursor-pointer shrink-0 shadow-xs"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Add Type
@@ -633,13 +633,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             </div>
           ) : (
-            <div className="space-y-5">
+            <div className="space-y-4">
               {/* Subtabs: Connections | Webhooks | Troubleshooting */}
-              <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-950 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800 text-xs">
+              <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-950 p-1 rounded-md border border-zinc-200 dark:border-zinc-800 text-xs">
                 <button
                   type="button"
                   onClick={() => setActiveIntegrationsSubTab('connections')}
-                  className={`flex-1 py-1.5 px-3 rounded-lg font-bold transition-all text-center cursor-pointer ${
+                  className={`flex-1 py-1.5 px-3 rounded-md font-bold transition-colors duration-120 text-center cursor-pointer ${
                     activeIntegrationsSubTab === 'connections'
                       ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs'
                       : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
@@ -650,7 +650,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveIntegrationsSubTab('webhooks')}
-                  className={`flex-1 py-1.5 px-3 rounded-lg font-bold transition-all text-center cursor-pointer ${
+                  className={`flex-1 py-1.5 px-3 rounded-md font-bold transition-colors duration-120 text-center cursor-pointer ${
                     activeIntegrationsSubTab === 'webhooks'
                       ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs'
                       : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
@@ -661,7 +661,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveIntegrationsSubTab('troubleshooting')}
-                  className={`flex-1 py-1.5 px-3 rounded-lg font-bold transition-all text-center cursor-pointer flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-1.5 px-3 rounded-md font-bold transition-colors duration-120 text-center cursor-pointer flex items-center justify-center gap-1.5 ${
                     activeIntegrationsSubTab === 'troubleshooting'
                       ? 'bg-[#FF5500]/20 text-[#FF5500] border border-[#FF5500]/40 shadow-xs'
                       : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
@@ -674,26 +674,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               {/* Subtab: Connections */}
               {activeIntegrationsSubTab === 'connections' && (
-                <div className="space-y-5">
+                <div className="space-y-4">
                   {/* Google Account Connection Status */}
-                  <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl p-4 space-y-3">
+                  <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-md p-3.5 space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5 text-[#FF5500]" />
                         Shared Google Calendar (Server Integration)
                       </label>
                       {isCheckingCalendar ? (
-                        <span className="inline-flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                        <span className="inline-flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-[10px] font-extrabold px-2 py-0.5 rounded-md">
                           <RefreshCw className="w-3 h-3 animate-spin text-zinc-500" />
                           Checking Backend...
                         </span>
                       ) : isCalendarConnected ? (
-                        <span className="inline-flex items-center gap-1 bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                        <span className="inline-flex items-center gap-1 bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[10px] font-extrabold px-2 py-0.5 rounded-md">
                           <CheckCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                           Connected ({calendarBackendStatus?.authSource === 'service_account' ? 'Service Account' : 'Server OAuth'})
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 bg-orange-100 dark:bg-orange-950/60 border border-orange-300 dark:border-orange-800 text-orange-800 dark:text-orange-300 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                        <span className="inline-flex items-center gap-1 bg-orange-100 dark:bg-orange-950/60 border border-orange-300 dark:border-orange-800 text-orange-800 dark:text-orange-300 text-[10px] font-extrabold px-2 py-0.5 rounded-md">
                           <AlertCircle className="w-3 h-3 text-orange-600 dark:text-orange-400" />
                           Server Config Required
                         </span>
@@ -710,7 +710,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         </p>
                       )}
                       {calendarBackendStatus?.error && (
-                        <div className="p-2 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-lg text-red-700 dark:text-red-300 text-[11px]">
+                        <div className="p-2 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-md text-red-700 dark:text-red-300 text-[11px]">
                           <strong>Server Notice:</strong> {calendarBackendStatus.error}
                         </div>
                       )}
@@ -720,7 +720,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         type="button"
                         onClick={checkGoogleAuth}
                         disabled={isCheckingCalendar}
-                        className="px-3 py-1.5 bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-800 dark:text-zinc-100 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+                        className="px-3 py-1.5 bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-800 dark:text-zinc-100 rounded-md text-xs font-bold transition-colors duration-120 flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
                       >
                         <RefreshCw className={`w-3.5 h-3.5 ${isCheckingCalendar ? 'animate-spin' : ''}`} />
                         <span>Test Backend Connection</span>
@@ -729,21 +729,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
 
                   {/* Google Sheets Integration Status (Backend Service Account) */}
-                  <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl p-4 space-y-2.5">
+                  <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-md p-3.5 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
                           <FileSpreadsheet className="w-3.5 h-3.5 text-[#FF5500]" />
                           Google Sheets (Service Account)
                         </label>
                       </div>
                       {sheetsStatus?.configured ? (
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                           <CheckCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                           Connected
                         </span>
                       ) : (
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/30 flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/30 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3 text-orange-600 dark:text-orange-400" />
                           Credentials Needed
                         </span>
@@ -756,20 +756,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           Google Sheets synchronization is active. Leads, statuses, and appointments stay in sync automatically 24/7.
                         </p>
                         {sheetsStatus.clientEmail && (
-                          <div className="bg-white dark:bg-zinc-950 px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 font-mono text-[10px] text-zinc-800 dark:text-zinc-300 flex items-center justify-between">
+                          <div className="bg-white dark:bg-zinc-950 px-2.5 py-1.5 rounded-md border border-zinc-200 dark:border-zinc-800 font-mono text-[10px] text-zinc-800 dark:text-zinc-300 flex items-center justify-between">
                             <span className="truncate">Service Account: {sheetsStatus.clientEmail}</span>
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div className="space-y-2 text-xs text-zinc-700 dark:text-zinc-400 leading-relaxed bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800/50 p-3 rounded-lg">
+                      <div className="space-y-2 text-xs text-zinc-700 dark:text-zinc-400 leading-relaxed bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800/50 p-3 rounded-md">
                         <p className="font-semibold text-orange-900 dark:text-orange-300">
                           Google Service Account credentials are not configured in environment variables.
                         </p>
                         <p className="text-zinc-700 dark:text-zinc-300 text-xs">
                           Please add the following variables in <strong>AI Studio Settings &gt; Secrets / Environment Variables</strong>:
                         </p>
-                        <div className="bg-zinc-100 dark:bg-zinc-950 p-2.5 rounded border border-zinc-200 dark:border-zinc-800 font-mono text-xs text-zinc-800 dark:text-zinc-300 space-y-1">
+                        <div className="bg-zinc-100 dark:bg-zinc-950 p-2 rounded-md border border-zinc-200 dark:border-zinc-800 font-mono text-xs text-zinc-800 dark:text-zinc-300 space-y-1">
                           <div>GOOGLE_SERVICE_ACCOUNT_EMAIL=<i>your-service-account@project.iam.gserviceaccount.com</i></div>
                           <div>GOOGLE_PRIVATE_KEY=<i>"-----BEGIN PRIVATE KEY-----\n..."</i></div>
                           <div>GOOGLE_SPREADSHEET_ID=<i>your_google_sheet_id</i></div>
@@ -795,15 +795,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
 
                   {/* Houzz Pro / Zapier Webhook Integration Setting */}
-                  <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-[#FF5500]/40 rounded-xl p-4 space-y-3">
+                  <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-[#FF5500]/40 rounded-md p-3.5 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-[#FF5500] flex items-center gap-1.5">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-[#FF5500] flex items-center gap-1.5">
                           <Send className="w-3.5 h-3.5 text-[#FF5500]" />
                           Zapier / Houzz Pro Webhook (Backend Shared)
                         </label>
                       </div>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                         Shared with Team
                       </span>
                     </div>
@@ -848,7 +848,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               setTestingHouzz(false);
                             }
                           }}
-                          className="px-3 py-2 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5 shrink-0"
+                          className="px-3 py-2 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-md text-xs font-bold transition-colors duration-120 cursor-pointer disabled:opacity-40 flex items-center gap-1.5 shrink-0 shadow-xs"
                         >
                           <Send className={`w-3.5 h-3.5 ${testingHouzz ? 'animate-spin' : ''}`} />
                           <span>{testingHouzz ? 'Testing...' : 'Test Webhook'}</span>
@@ -860,7 +860,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </p>
 
                       {houzzTestStatus && (
-                        <div className={`text-[11px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-medium ${
+                        <div className={`text-[11px] px-3 py-1.5 rounded-md flex items-center gap-1.5 font-medium ${
                           houzzTestStatus.includes('sent')
                             ? 'text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800'
                             : 'text-rose-800 dark:text-rose-300 bg-rose-100 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800'
@@ -889,10 +889,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {activeIntegrationsSubTab === 'webhooks' && (
                 <div className="space-y-4">
                   {/* Inbound Lead Webhooks (Angi & Thumbtack) */}
-                  <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-orange-500/40 rounded-xl p-4 space-y-3.5">
+                  <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-orange-500/40 rounded-md p-3.5 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
-                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
+                        <label className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
                           <Webhook className="w-4 h-4 text-[#FF5500]" />
                           Inbound Lead Webhooks (Angi & Thumbtack)
                         </label>
@@ -900,7 +900,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           Receive live leads from Angi and Thumbtack directly into your CRM
                         </p>
                       </div>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                         Live Endpoints
                       </span>
                     </div>
@@ -912,7 +912,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">POST (JSON)</span>
                       </div>
                       <div className="flex gap-2">
-                        <div className="flex-1 bg-white dark:bg-zinc-950 px-3 py-2 rounded-xl text-xs font-mono text-zinc-800 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700/80 truncate select-all">
+                        <div className="flex-1 bg-white dark:bg-zinc-950 px-3 py-2 rounded-md text-xs font-mono text-zinc-800 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700/80 truncate select-all">
                           {getWebhookUrls().angiUrl}
                         </div>
                         <button
@@ -922,7 +922,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             setCopiedUrl('angi');
                             setTimeout(() => setCopiedUrl(null), 2500);
                           }}
-                          className="px-3 py-2 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-800 dark:text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                          className="px-3 py-2 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-800 dark:text-white rounded-md text-xs font-bold transition-colors duration-120 cursor-pointer flex items-center gap-1 shrink-0"
                         >
                           {copiedUrl === 'angi' ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                           <span>{copiedUrl === 'angi' ? 'Copied' : 'Copy'}</span>
@@ -937,7 +937,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">POST (JSON)</span>
                       </div>
                       <div className="flex gap-2">
-                        <div className="flex-1 bg-white dark:bg-zinc-950 px-3 py-2 rounded-xl text-xs font-mono text-zinc-800 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700/80 truncate select-all">
+                        <div className="flex-1 bg-white dark:bg-zinc-950 px-3 py-2 rounded-md text-xs font-mono text-zinc-800 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700/80 truncate select-all">
                           {getWebhookUrls().thumbtackUrl}
                         </div>
                         <button
@@ -947,7 +947,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             setCopiedUrl('thumbtack');
                             setTimeout(() => setCopiedUrl(null), 2500);
                           }}
-                          className="px-3 py-2 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-800 dark:text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                          className="px-3 py-2 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-800 dark:text-white rounded-md text-xs font-bold transition-colors duration-120 cursor-pointer flex items-center gap-1 shrink-0"
                         >
                           {copiedUrl === 'thumbtack' ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                           <span>{copiedUrl === 'thumbtack' ? 'Copied' : 'Copy'}</span>
@@ -957,7 +957,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
 
                   {/* Switch to Troubleshooting Tip */}
-                  <div className="bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700/60 rounded-xl p-3.5 flex items-center justify-between gap-3 text-xs">
+                  <div className="bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700/60 rounded-md p-3 flex items-center justify-between gap-3 text-xs">
                     <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
                       <Activity className="w-4 h-4 text-[#FF5500] shrink-0" />
                       <span>Looking to test leads, inspect live server logs, or diagnose parsing?</span>
@@ -965,7 +965,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setActiveIntegrationsSubTab('troubleshooting')}
-                      className="px-3 py-1.5 bg-[#FF5500]/20 hover:bg-[#FF5500]/30 text-[#FF5500] border border-[#FF5500]/40 font-bold rounded-lg shrink-0 transition-all cursor-pointer"
+                      className="px-3 py-1.5 bg-[#FF5500]/20 hover:bg-[#FF5500]/30 text-[#FF5500] border border-[#FF5500]/40 font-bold rounded-md shrink-0 transition-colors duration-120 cursor-pointer"
                     >
                       Troubleshooting →
                     </button>
@@ -977,7 +977,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {activeIntegrationsSubTab === 'troubleshooting' && (
                 <div className="space-y-4">
                   {/* Overview Card */}
-                  <div className="bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700/60 rounded-xl p-4 space-y-1.5">
+                  <div className="bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700/60 rounded-md p-3.5 space-y-1">
                     <div className="flex items-center gap-2 text-zinc-900 dark:text-white font-bold text-xs uppercase tracking-wider">
                       <Activity className="w-4 h-4 text-[#FF5500]" />
                       <span>Troubleshooting & Integration Diagnostics</span>
@@ -989,7 +989,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                   {/* Status Indicator Cards */}
                   <div className="grid grid-cols-2 gap-2.5">
-                    <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl p-3 space-y-1">
+                    <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-md p-3 space-y-1">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block">
                         Inbound Webhooks
                       </span>
@@ -1000,7 +1000,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block">Angi & Thumbtack active</span>
                     </div>
 
-                    <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl p-3 space-y-1">
+                    <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-md p-3 space-y-1">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block">
                         Google Sheets Sync
                       </span>
@@ -1017,7 +1017,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
 
                   {/* Primary Diagnostic Launcher */}
-                  <div className="bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 space-y-3 shadow-sm">
+                  <div className="bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-md p-3.5 space-y-2.5 shadow-xs">
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <h4 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
@@ -1030,7 +1030,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="space-y-1.5 text-[11px] text-zinc-700 dark:text-zinc-300">
+                    <div className="space-y-1 text-[11px] text-zinc-700 dark:text-zinc-300">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0" />
                         <span>Live request inspector & raw JSON viewer</span>
@@ -1048,7 +1048,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setIsDiagOpen(true)}
-                      className="w-full py-2.5 px-4 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                      className="w-full py-2 px-4 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-md text-xs font-bold transition-colors duration-120 flex items-center justify-center gap-2 cursor-pointer shadow-xs"
                     >
                       <Activity className="w-4 h-4" />
                       <span>Launch Webhook Diagnostics & Test Suite</span>
@@ -1056,7 +1056,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
 
                   {/* 1-Click Quick Verification Actions */}
-                  <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl p-4 space-y-3">
+                  <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-md p-3.5 space-y-2.5">
                     <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
                       Quick Verification Actions
                     </label>
@@ -1065,7 +1065,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         type="button"
                         disabled={isSendingTestLead !== null || isTestingPipeline}
                         onClick={() => handleQuickTestLead('Angi')}
-                        className="px-3 py-2 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 disabled:opacity-50 text-zinc-800 dark:text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                        className="px-3 py-1.5 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 disabled:opacity-50 text-zinc-800 dark:text-white rounded-md text-xs font-bold transition-colors duration-120 cursor-pointer flex items-center justify-center gap-1.5"
                       >
                         <Send className={`w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300 ${isSendingTestLead === 'Angi' ? 'animate-spin' : ''}`} />
                         <span>{isSendingTestLead === 'Angi' ? 'Sending...' : 'Test Angi'}</span>
@@ -1075,7 +1075,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         type="button"
                         disabled={isSendingTestLead !== null || isTestingPipeline}
                         onClick={() => handleQuickTestLead('Thumbtack')}
-                        className="px-3 py-2 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 disabled:opacity-50 text-zinc-800 dark:text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                        className="px-3 py-1.5 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 disabled:opacity-50 text-zinc-800 dark:text-white rounded-md text-xs font-bold transition-colors duration-120 cursor-pointer flex items-center justify-center gap-1.5"
                       >
                         <Send className={`w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300 ${isSendingTestLead === 'Thumbtack' ? 'animate-spin' : ''}`} />
                         <span>{isSendingTestLead === 'Thumbtack' ? 'Sending...' : 'Test Thumbtack'}</span>
@@ -1085,7 +1085,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         type="button"
                         disabled={isSendingTestLead !== null || isTestingPipeline}
                         onClick={handleQuickPipelineTest}
-                        className="px-3 py-2 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 disabled:opacity-50 text-zinc-800 dark:text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                        className="px-3 py-1.5 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 disabled:opacity-50 text-zinc-800 dark:text-white rounded-md text-xs font-bold transition-colors duration-120 cursor-pointer flex items-center justify-center gap-1.5"
                       >
                         <RefreshCw className={`w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 ${isTestingPipeline ? 'animate-spin' : ''}`} />
                         <span>{isTestingPipeline ? 'Verifying...' : 'Test Pipeline'}</span>
@@ -1093,7 +1093,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
 
                     {quickTestResult && (
-                      <div className={`p-2.5 rounded-xl text-xs font-medium border flex items-center justify-between gap-2 ${
+                      <div className={`p-2 rounded-md text-xs font-medium border flex items-center justify-between gap-2 ${
                         quickTestResult.success
                           ? 'bg-emerald-100 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
                           : 'bg-rose-100 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-300'
@@ -1116,18 +1116,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end space-x-3">
+        <div className="px-5 py-3.5 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end space-x-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded-lg transition-colors cursor-pointer"
+            className="px-3.5 py-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded-md transition-colors duration-120 cursor-pointer"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="px-5 py-2.5 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+            className="px-4 py-1.5 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-md text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors duration-120 cursor-pointer"
           >
-            <Save className="w-4 h-4 text-white" />
+            <Save className="w-3.5 h-3.5 text-white" />
             <span>Save Settings</span>
           </button>
         </div>

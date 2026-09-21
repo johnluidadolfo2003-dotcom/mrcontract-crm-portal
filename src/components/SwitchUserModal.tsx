@@ -48,6 +48,12 @@ export const SwitchUserModal: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isSwitchUserModalOpen, setIsSwitchUserModalOpen]);
 
+  useEffect(() => {
+    const handleOpen = () => setIsSwitchUserModalOpen(true);
+    window.addEventListener('open_switch_user_modal', handleOpen);
+    return () => window.removeEventListener('open_switch_user_modal', handleOpen);
+  }, [setIsSwitchUserModalOpen]);
+
   if (!isSwitchUserModalOpen) return null;
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -91,37 +97,37 @@ export const SwitchUserModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60">
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-lg p-5 sm:p-7 shadow-2xl relative max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md w-full max-w-lg p-4 sm:p-5 shadow-lg relative max-h-[92vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 mb-4 border-b border-zinc-100 dark:border-zinc-800">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#FF5500]/10 flex items-center justify-center text-[#FF5500]">
-              <Users className="w-5 h-5" />
+        <div className="flex items-center justify-between pb-3 mb-3 border-b border-zinc-100 dark:border-zinc-800">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-md bg-[#FF5500]/10 flex items-center justify-center text-[#FF5500]">
+              <Users className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-zinc-900 dark:text-white leading-tight">Worker Profiles</h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Switch profile or edit your user name</p>
+              <h2 className="text-base font-bold text-zinc-900 dark:text-white leading-tight">Worker Profiles</h2>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Switch profile or edit your user name</p>
             </div>
           </div>
           <button
             onClick={() => setIsSwitchUserModalOpen(false)}
-            className="p-2 rounded-xl text-zinc-400 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors"
+            className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors duration-120"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+        <div className="flex-1 overflow-y-auto space-y-3 pr-1">
           {isAdding ? (
-            <form onSubmit={handleAdd} className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-3">
+            <form onSubmit={handleAdd} className="p-3 rounded-md bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Add New Team Member</span>
                 <button
                   type="button"
                   onClick={() => setIsAdding(false)}
-                  className="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                  className="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors duration-120 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -132,18 +138,18 @@ export const SwitchUserModal: React.FC = () => {
                 placeholder="User name (e.g. Alex)"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-zinc-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-[#FF5500]/30"
+                className="w-full bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-md px-3 h-[34px] text-xs text-zinc-900 dark:text-white font-bold outline-none focus:ring-1 focus:ring-[#FF5500]"
               />
               <div>
-                <span className="text-[10px] font-black uppercase text-zinc-500 dark:text-zinc-400 block mb-1.5">Avatar Color</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-1">Avatar Color</span>
                 <div className="flex gap-2">
                   {PRESET_COLORS.map((c) => (
                     <button
                       key={c}
                       type="button"
                       onClick={() => setColor(c)}
-                      className={`w-6 h-6 rounded-full transition-transform cursor-pointer flex items-center justify-center ${
-                        color === c ? 'scale-110 ring-2 ring-zinc-900 dark:ring-white' : 'opacity-70 hover:opacity-100'
+                      className={`w-5 h-5 rounded-md transition-opacity duration-120 cursor-pointer flex items-center justify-center ${
+                        color === c ? 'ring-2 ring-zinc-900 dark:ring-white' : 'opacity-70 hover:opacity-100'
                       }`}
                       style={{ backgroundColor: c }}
                     >
@@ -152,11 +158,11 @@ export const SwitchUserModal: React.FC = () => {
                   ))}
                 </div>
               </div>
-              <div className="pt-2 flex justify-end">
+              <div className="pt-1 flex justify-end">
                 <button
                   type="submit"
                   disabled={isSubmitting || !name.trim()}
-                  className="px-4 py-2 bg-[#FF5500] hover:bg-[#e04b00] disabled:opacity-50 text-white text-xs font-black rounded-lg shadow cursor-pointer transition-all"
+                  className="px-3 h-[34px] bg-[#FF5500] hover:bg-[#e04b00] disabled:opacity-50 text-white text-xs font-bold rounded-md cursor-pointer transition-colors duration-120"
                 >
                   {isSubmitting ? 'Adding...' : 'Create & Switch'}
                 </button>
@@ -170,7 +176,7 @@ export const SwitchUserModal: React.FC = () => {
                   setIsAdding(true);
                   setEditingUserId(null);
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FF5500]/10 hover:bg-[#FF5500]/20 text-[#FF5500] text-xs font-bold transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-2.5 h-[34px] rounded-md bg-[#FF5500]/10 hover:bg-[#FF5500]/20 text-[#FF5500] text-xs font-bold transition-colors duration-120 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5 stroke-[3]" />
                 <span>Add User</span>
@@ -178,7 +184,7 @@ export const SwitchUserModal: React.FC = () => {
             </div>
           )}
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {users.map((u) => {
               const isEditingThis = editingUserId === u.id;
               const isActive = currentUser?.id === u.id || currentUser?.name.toLowerCase() === u.name.toLowerCase();
@@ -189,7 +195,7 @@ export const SwitchUserModal: React.FC = () => {
                   <form
                     key={u.id}
                     onSubmit={(e) => handleSaveEdit(e, u.id)}
-                    className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-[#FF5500]/40 space-y-3 shadow-md"
+                    className="p-3 rounded-md bg-zinc-50 dark:bg-zinc-950 border border-[#FF5500]/40 space-y-2.5"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
@@ -199,14 +205,14 @@ export const SwitchUserModal: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleCancelEdit}
-                        className="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer"
+                        className="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer transition-colors duration-120"
                       >
                         Cancel
                       </button>
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black uppercase text-zinc-500 dark:text-zinc-400 block mb-1">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-1">
                         User Name
                       </label>
                       <input
@@ -215,20 +221,20 @@ export const SwitchUserModal: React.FC = () => {
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
                         placeholder="Enter your name"
-                        className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3.5 py-2 text-sm text-zinc-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-[#FF5500]/30"
+                        className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-md px-3 h-[34px] text-xs text-zinc-900 dark:text-white font-bold outline-none focus:ring-1 focus:ring-[#FF5500]"
                       />
                     </div>
 
                     <div>
-                      <span className="text-[10px] font-black uppercase text-zinc-500 dark:text-zinc-400 block mb-1.5">Avatar Color</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-1">Avatar Color</span>
                       <div className="flex gap-2">
                         {PRESET_COLORS.map((c) => (
                           <button
                             key={c}
                             type="button"
                             onClick={() => setEditColor(c)}
-                            className={`w-6 h-6 rounded-full transition-transform cursor-pointer flex items-center justify-center ${
-                              editColor === c ? 'scale-110 ring-2 ring-zinc-900 dark:ring-white' : 'opacity-70 hover:opacity-100'
+                            className={`w-5 h-5 rounded-md transition-opacity duration-120 cursor-pointer flex items-center justify-center ${
+                              editColor === c ? 'ring-2 ring-zinc-900 dark:ring-white' : 'opacity-70 hover:opacity-100'
                             }`}
                             style={{ backgroundColor: c }}
                           >
@@ -242,14 +248,14 @@ export const SwitchUserModal: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleCancelEdit}
-                        className="px-3 py-1.5 rounded-lg bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-semibold hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                        className="px-3 h-[34px] rounded-md bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-semibold hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors duration-120 cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={isSavingEdit || !editName.trim()}
-                        className="px-4 py-1.5 bg-[#FF5500] hover:bg-[#e04b00] disabled:opacity-50 text-white text-xs font-black rounded-lg shadow cursor-pointer transition-all flex items-center gap-1.5"
+                        className="px-3 h-[34px] bg-[#FF5500] hover:bg-[#e04b00] disabled:opacity-50 text-white text-xs font-bold rounded-md cursor-pointer transition-colors duration-120 flex items-center gap-1.5"
                       >
                         {isSavingEdit ? 'Saving...' : 'Save Changes'}
                       </button>
@@ -262,30 +268,30 @@ export const SwitchUserModal: React.FC = () => {
                 <div
                   key={u.id}
                   onClick={() => selectUser(u)}
-                  className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between group ${
+                  className={`p-2.5 rounded-md border transition-colors duration-120 cursor-pointer flex items-center justify-between group ${
                     isActive
-                      ? 'bg-[#FF5500]/10 border-[#FF5500] shadow-sm'
+                      ? 'bg-[#FF5500]/10 border-[#FF5500]'
                       : 'bg-zinc-50 dark:bg-zinc-900/60 border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700'
                   }`}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
                     <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm shrink-0 shadow-xs bg-[#FF5500]"
+                      className="w-8 h-8 rounded-md flex items-center justify-center text-white font-bold text-xs shrink-0 bg-[#FF5500]"
                     >
                       {initial}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-zinc-900 dark:text-white truncate">
+                        <span className="text-xs font-bold text-zinc-900 dark:text-white truncate">
                           {u.name}
                         </span>
                         {isActive && (
-                          <span className="px-2 py-0.5 rounded-full bg-[#FF5500] text-white text-xs font-black uppercase tracking-wider">
+                          <span className="px-1.5 py-0.5 rounded-md bg-[#FF5500] text-white text-[10px] font-bold uppercase tracking-wider tabular-nums">
                             Active
                           </span>
                         )}
                       </div>
-                      <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block truncate">
+                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block truncate tabular-nums">
                         {u.lastActiveAt ? `Last active ${new Date(u.lastActiveAt).toLocaleDateString()}` : 'Team Member'}
                       </span>
                     </div>
@@ -296,16 +302,16 @@ export const SwitchUserModal: React.FC = () => {
                     <button
                       type="button"
                       onClick={(e) => handleStartEdit(e, u)}
-                      className="p-2 text-zinc-400 hover:text-[#FF5500] dark:text-zinc-500 dark:hover:text-[#FF5500] hover:bg-[#FF5500]/10 rounded-xl transition-all cursor-pointer"
+                      className="p-1.5 text-zinc-400 hover:text-[#FF5500] dark:text-zinc-500 dark:hover:text-[#FF5500] hover:bg-[#FF5500]/10 rounded-md transition-colors duration-120 cursor-pointer"
                       title="Edit user name"
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Pencil className="w-3.5 h-3.5" />
                     </button>
 
                     {/* Switch Indicator */}
                     {!isActive && (
-                      <div className="w-7 h-7 rounded-lg bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 group-hover:bg-[#FF5500] group-hover:text-white flex items-center justify-center transition-colors">
-                        <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <div className="w-6 h-6 rounded-md bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 group-hover:bg-[#FF5500] group-hover:text-white flex items-center justify-center transition-colors duration-120">
+                        <ArrowRight className="w-3 h-3 stroke-[2.5]" />
                       </div>
                     )}
 
@@ -316,10 +322,10 @@ export const SwitchUserModal: React.FC = () => {
                         e.stopPropagation();
                         setUserToDelete({ id: u.id, name: u.name });
                       }}
-                      className="p-2 text-zinc-400 hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all cursor-pointer"
+                      className="p-1.5 text-zinc-400 hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors duration-120 cursor-pointer"
                       title="Remove user"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -329,21 +335,21 @@ export const SwitchUserModal: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <div className="pt-4 mt-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+        <div className="pt-3 mt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
           <button
             type="button"
             onClick={() => {
               logoutUser();
               setIsSwitchUserModalOpen(false);
             }}
-            className="text-xs text-red-500 hover:text-red-600 font-bold transition-colors cursor-pointer"
+            className="text-xs text-red-500 hover:text-red-600 font-bold transition-colors duration-120 cursor-pointer"
           >
             Log Out Current Profile
           </button>
           <button
             type="button"
             onClick={() => setIsSwitchUserModalOpen(false)}
-            className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-bold rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+            className="px-3 h-[34px] bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-bold rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors duration-120 cursor-pointer flex items-center justify-center"
           >
             Close
           </button>
@@ -352,22 +358,22 @@ export const SwitchUserModal: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       {userToDelete && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 rounded-2xl">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
-              <Trash2 className="w-6 h-6" />
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 rounded-md">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-4 max-w-sm w-full shadow-lg text-center space-y-3">
+            <div className="w-10 h-10 rounded-md bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
+              <Trash2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-black text-zinc-900 dark:text-white">Delete Profile</h3>
+              <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Delete Profile</h3>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                 Are you sure you want to remove <span className="font-bold text-zinc-800 dark:text-zinc-200">"{userToDelete.name}"</span>? This cannot be undone.
               </p>
             </div>
-            <div className="flex items-center gap-2 pt-2">
+            <div className="flex items-center gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => setUserToDelete(null)}
-                className="flex-1 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                className="flex-1 h-[34px] rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors duration-120 cursor-pointer"
               >
                 Cancel
               </button>
@@ -377,7 +383,7 @@ export const SwitchUserModal: React.FC = () => {
                   deleteUser(userToDelete.id);
                   setUserToDelete(null);
                 }}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black shadow-lg shadow-red-600/20 transition-all cursor-pointer"
+                className="flex-1 h-[34px] rounded-md bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors duration-120 cursor-pointer"
               >
                 Delete Profile
               </button>

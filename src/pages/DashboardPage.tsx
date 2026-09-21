@@ -496,7 +496,7 @@ export const Dashboard: React.FC = () => {
  return (
   <div className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6">
    {message && (
-    <div className={`fixed top-5 right-5 z-[80] max-w-sm rounded-xl px-4 py-3 text-sm font-bold shadow-xl border ${
+    <div className={`fixed top-5 right-5 z-[80] max-w-sm rounded-md px-4 py-3 text-sm font-bold shadow-md border transition-opacity duration-120 ${
      message.type === 'success'
       ? 'bg-white dark:bg-zinc-900 text-emerald-600 border-emerald-500/30'
       : 'bg-white dark:bg-zinc-900 text-red-600 border-red-500/30'
@@ -509,7 +509,7 @@ export const Dashboard: React.FC = () => {
     <button
      onClick={loadDashboardData}
      disabled={refreshing}
-     className="p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 transition-all cursor-pointer disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center"
+     className="p-2.5 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 transition-colors duration-120 cursor-pointer disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center"
      title="Refresh dashboard and Google Calendar"
     >
      <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-[#FF5500]' : ''}`} />
@@ -517,32 +517,32 @@ export const Dashboard: React.FC = () => {
    </div>
 
    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5">
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-5">
      <div className="flex items-center justify-between">
       <Users className="w-5 h-5 text-[#FF5500]" />
-      <button onClick={() => navigate('/new')} className="text-xs font-bold text-zinc-500 flex items-center gap-1">
+      <button onClick={() => navigate('/new')} className="text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors duration-120 flex items-center gap-1 cursor-pointer">
        View <ArrowUpRight className="w-3.5 h-3.5" />
       </button>
      </div>
-     <div className="mt-4 text-4xl font-black text-zinc-900 dark:text-white">{newLeadsCount}</div>
+     <div className="mt-4 text-4xl font-black text-zinc-900 dark:text-white tabular-nums">{newLeadsCount}</div>
      <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">New Leads</div>
     </div>
 
-    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5">
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-5">
      <Calendar className="w-5 h-5 text-[#FF5500]" />
-     <div className="mt-4 text-4xl font-black text-zinc-900 dark:text-white">{todayAppointments.length}</div>
+     <div className="mt-4 text-4xl font-black text-zinc-900 dark:text-white tabular-nums">{todayAppointments.length}</div>
      <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">Appointments Today</div>
      <div className="text-[11px] text-zinc-500 mt-0.5">From all accessible Google Calendars</div>
     </div>
 
-    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5">
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-5">
      <Clock className="w-5 h-5 text-[#FF5500]" />
-     <div className="mt-4 text-4xl font-black text-zinc-900 dark:text-white">{followUpsCount}</div>
+     <div className="mt-4 text-4xl font-black text-zinc-900 dark:text-white tabular-nums">{followUpsCount}</div>
      <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">Follow-Ups Due</div>
     </div>
    </div>
 
-   <section className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 sm:p-6">
+   <section className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-5 sm:p-6">
     <div className="flex items-center justify-between gap-3 pb-4 border-b border-zinc-100 dark:border-zinc-800">
      <div>
       <h2 className="text-base font-extrabold text-zinc-900 dark:text-white">

@@ -88,17 +88,17 @@ export const TrashModal: React.FC<TrashModalProps> = ({ isOpen, onClose }) => {
 if (!isOpen) return null;
 
  return (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 overflow-y-auto">
- <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-3xl p-5 sm:p-7 max-h-[90vh] flex flex-col shadow-2xl relative">
+ <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 overflow-y-auto">
+ <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md w-full max-w-3xl p-4 sm:p-5 max-h-[90vh] flex flex-col shadow-lg relative">
  {/* Header */}
- <div className="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
- <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
- <Trash2 className="w-5 h-5"/>
+ <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
+ <div className="flex items-center gap-2.5">
+ <div className="w-8 h-8 rounded-md bg-red-500/10 text-red-500 flex items-center justify-center">
+ <Trash2 className="w-4 h-4"/>
  </div>
  <div>
- <h3 className="text-base font-bold text-zinc-900 dark:text-white">Trash & Deleted Leads</h3>
- <p className="text-xs text-zinc-500 dark:text-zinc-400">
+ <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Trash & Deleted Leads</h3>
+ <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
  Recover accidentally deleted leads or permanently remove them.
  </p>
  </div>
@@ -109,16 +109,16 @@ if (!isOpen) return null;
  <button
  type="button"
  onClick={handleEmptyTrash}
- className="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-600 hover:text-white text-xs font-bold transition-colors cursor-pointer"
+ className="px-3 h-[34px] rounded-md bg-red-500/10 hover:bg-red-500 text-red-600 hover:text-white text-xs font-bold transition-colors duration-120 cursor-pointer flex items-center"
  >
  Empty Trash
  </button>
  )}
  <button
  onClick={onClose}
- className="p-2 rounded-lg text-zinc-400 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors"
+ className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors duration-120"
  >
- <X className="w-5 h-5"/>
+ <X className="w-4 h-4"/>
  </button>
  </div>
  </div>
@@ -126,7 +126,7 @@ if (!isOpen) return null;
  {/* Toast */}
  {toast && (
  <div
- className={`my-3 p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
+ className={`my-2 p-2.5 rounded-md text-xs font-bold flex items-center gap-2 ${
  toast.type === 'success'
  ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
  : 'bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400'
@@ -138,37 +138,37 @@ if (!isOpen) return null;
  )}
 
  {/* Trashed Items List */}
- <div className="flex-1 overflow-y-auto py-4 space-y-3 min-h-[200px]">
+ <div className="flex-1 overflow-y-auto py-3 space-y-2 min-h-[200px]">
  {isLoading ? (
  <div className="py-12 text-center">
- <RefreshCw className="w-6 h-6 mx-auto animate-spin text-[#FF5500]"/>
+ <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#FF5500]"/>
  <p className="text-xs font-bold text-zinc-400 dark:text-zinc-500 mt-2">Loading trash items...</p>
  </div>
  ) : items.length === 0 ? (
  <div className="py-12 text-center text-zinc-400 dark:text-zinc-500">
- <Trash2 className="w-10 h-10 mx-auto opacity-30 stroke-[1.5]"/>
+ <Trash2 className="w-8 h-8 mx-auto opacity-30 stroke-[1.5]"/>
  <p className="text-xs font-bold mt-2">Trash is empty.</p>
  </div>
  ) : (
  items.map((item, index) => (
  <div
  key={item.id || index}
- className="p-3.5 bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-between gap-3"
+ className="p-2.5 bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-md flex items-center justify-between gap-3"
  >
  <div className="min-w-0">
  <div className="flex items-center gap-2">
- <span className="font-bold text-sm text-zinc-900 dark:text-white truncate">
+ <span className="font-bold text-xs text-zinc-900 dark:text-white truncate">
  {item.clientName}
  </span>
- <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+ <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
  {item.leadSource || 'Direct'}
  </span>
  </div>
 
- <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400 mt-1 flex-wrap">
+ <div className="flex items-center gap-2.5 text-xs text-zinc-500 dark:text-zinc-400 mt-1 flex-wrap tabular-nums">
  {item.clientPhone && <span>{item.clientPhone}</span>}
  {item.deletedAt && (
- <span className="flex items-center gap-1 text-[11px]">
+ <span className="flex items-center gap-1 text-[11px] tabular-nums">
  <Clock className="w-3 h-3 text-zinc-400"/>
  Deleted {new Date(item.deletedAt).toLocaleDateString()}
  </span>
@@ -181,7 +181,7 @@ if (!isOpen) return null;
  <button
  type="button"
  onClick={() => handleRestore(item)}
- className="px-3 py-1.5 rounded-xl bg-[#FF5500]/10 hover:bg-[#FF5500] text-[#FF5500] hover:text-white font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+ className="px-3 h-[34px] rounded-md bg-[#FF5500]/10 hover:bg-[#FF5500] text-[#FF5500] hover:text-white font-bold text-xs transition-colors duration-120 flex items-center gap-1.5 cursor-pointer shrink-0"
  >
  <RotateCcw className="w-3.5 h-3.5"/>
  <span>Restore</span>
