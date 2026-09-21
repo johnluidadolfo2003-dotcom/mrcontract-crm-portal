@@ -523,6 +523,9 @@ export async function listAllAccessibleCalendarEvents(options: {
         calendarId,
         timeMin: options.timeMin,
         timeMax: options.timeMax,
+        // The calendar list may be authorized by the signed-in browser user.
+        // Propagate that same token to every salesperson calendar request.
+        clientToken: options.clientToken,
       });
       if (!result.success) return [];
       return result.events.map((event) => ({

@@ -40,6 +40,10 @@ import {
  deleteGoogleCalendarEvent,
 } from '../lib/calendar';
 import { LeadDrawer } from '../components/ui/LeadDrawer';
+import {
+ resolveDashboardAppointmentIdentity,
+ DashboardRepresentativeCode,
+} from '../lib/dashboardSchedule';
 
 interface DashboardOutletContext {
  config: AppConfig;
@@ -54,7 +58,7 @@ interface DashboardOutletContext {
  openAddLeadModal?: () => void;
 }
 
-type RepresentativeCode = 'DG' | 'SB' | 'JS' | 'BK';
+type RepresentativeCode = DashboardRepresentativeCode;
 
 interface TodayCalendarItem {
  id: string;
@@ -96,22 +100,6 @@ function normalizeText(value?: string): string {
 
 function normalizePhone(value?: string): string {
  return String(value || '').replace(/\D/g, '');
-}
-
-function parseAppointmentTitle(summary: string): {
- representative: RepresentativeCode;
- clientName: string;
- serviceNeeded: string;
-} | null {
- const match = String(summary || '').trim().match(
-  /^(?:appt|appointment)\s*[-–—]\s*(DG|SB|JS|BK)\s*[-–—]\s*(.+?)\s*\((.+)\)\s*$/i
- );
- if (!match) return null;
- return {
-  representative: match[1].toUpperCase() as RepresentativeCode,
-  clientName: match[2].trim(),
-  serviceNeeded: match[3].trim(),
- };
 }
 
 function toSheetRow(record: ScheduledClientRecord): SheetRowRecord {
@@ -285,9 +273,9 @@ export const Dashboard: React.FC = () => {
  const todayAppointments = useMemo<TodayCalendarItem[]>(() => {
   return calendarEvents
    .map((event): TodayCalendarItem | null => {
-    const title = parseAppointmentTitle(event.summary || '');
-    if (!title) return null;
     const parsed = parseCalendarEventToFormData(event, config).formData;
+    const title = resolveDashboardAppointmentIdentity(event.summary || '', parsed);
+    if (!title) return null;
     const appointmentDate = parsed.appointmentDate;
     if (appointmentDate !== todayKey) return null;
 
