@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "npm run test:houzz && npm run test:new-lead-order && vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build": "npm run test:houzz && npm run test:new-lead-order && npm run test:dashboard-schedule && vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "test:houzz": "tsx test_houzz_delivery.ts",
-    "test:new-lead-order": "tsx test_new_lead_order.ts"
+    "test:new-lead-order": "tsx test_new_lead_order.ts",
+    "test:dashboard-schedule": "tsx test_dashboard_schedule.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
