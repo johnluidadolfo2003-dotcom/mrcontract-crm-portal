@@ -54,6 +54,7 @@ export interface LeadDurableMetadata {
   estimateSentAt?: string;
   createdAt: string;
   updatedAt: string;
+  newestOrder?: number;
   houzzDispatchStatus?: 'pending' | 'sending' | 'confirmed' | 'failed';
   houzzDispatchAt?: string;
   houzzError?: string;

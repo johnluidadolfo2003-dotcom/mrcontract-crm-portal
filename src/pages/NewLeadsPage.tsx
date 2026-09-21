@@ -30,6 +30,7 @@ import {
  AlertCircle,
 } from 'lucide-react';
 import { getNewLeads, fetchNewLeads, migrateLegacyNewLeads, deleteNewLead, updateNewLeadStatus, updateNewLeadInfo, NewLeadRecord } from '../lib/newLeads';
+import { compareNewestLeads } from '../lib/newLeadOrder';
 import { logAuditActivity } from '../lib/activityLogger';
 import { loadAppConfig, isLeadSourceTab, DEFAULT_LEAD_SOURCES } from '../config';
 import { LEAD_STATUS_OPTIONS } from '../types';
@@ -735,14 +736,7 @@ export const NewLeadsPage: React.FC = () => {
  (lead.address || '').toLowerCase().includes(query)
  );
  })
- .sort((a, b) => {
- const aTime = new Date(a.createdAt || 0).getTime();
- const bTime = new Date(b.createdAt || 0).getTime();
- if (!isNaN(aTime) && !isNaN(bTime) && bTime !== aTime && bTime > 0 && aTime > 0) {
- return bTime - aTime;
- }
- return (b.rowIndex || 0) - (a.rowIndex || 0);
- });
+ .sort(compareNewestLeads);
 
  return (
  <div className={`p-4 sm:p-6 space-y-5 font-sans transition-all ${viewMode === 'table' ? 'w-full max-w-none px-4 sm:px-6 md:px-8' : 'max-w-7xl mx-auto'}`}>
