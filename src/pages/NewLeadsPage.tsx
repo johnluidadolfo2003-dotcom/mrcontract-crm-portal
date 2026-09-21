@@ -30,7 +30,7 @@ import {
  AlertCircle,
 } from 'lucide-react';
 import { getNewLeads, fetchNewLeads, migrateLegacyNewLeads, deleteNewLead, updateNewLeadStatus, updateNewLeadInfo, NewLeadRecord } from '../lib/newLeads';
-import { compareNewestLeads } from '../lib/newLeadOrder';
+import { compareNewestLeads, wasLeadCreatedToday } from '../lib/newLeadOrder';
 import { logAuditActivity } from '../lib/activityLogger';
 import { loadAppConfig, isLeadSourceTab, DEFAULT_LEAD_SOURCES } from '../config';
 import { LEAD_STATUS_OPTIONS } from '../types';
@@ -62,63 +62,6 @@ const isAngiLead = (lead: Pick<NewLeadRecord, 'leadSource' | 'webhookSource'>): 
 
 const getAngiAccountLabel = (value?: string): string =>
  ANGI_ACCOUNT_OPTIONS.find((option) => option.value === value)?.label || 'Angi (Not Identified)';
-
-const getDateKeyInTimeZone = (date: Date, timeZone: string): string => {
- const parts = new Intl.DateTimeFormat('en-US', {
-  timeZone,
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
- }).formatToParts(date);
- const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
- return `${values.year}-${values.month}-${values.day}`;
-};
-
-const wasCreatedTodayInBusinessTimeZone = (createdAt?: string, timeZone = 'America/New_York'): boolean => {
- if (!createdAt) return false;
-
- const rawCreatedAt = String(createdAt).trim();
- if (!rawCreatedAt) return false;
-
- try {
-  const todayKey = getDateKeyInTimeZone(new Date(), timeZone);
-
-  // Google Sheets can return timestamps without a timezone, for example
-  // "9/14/2026 10:30:00 AM". That is a business-calendar date, so compare its
-  // written date directly instead of letting each laptop interpret it locally.
-  const hasExplicitOffset = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(rawCreatedAt);
-  if (!hasExplicitOffset) {
-   const isoDate = rawCreatedAt.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:$|[T\s])/);
-   if (isoDate) {
-    const dateKey = `${isoDate[1]}-${isoDate[2].padStart(2, '0')}-${isoDate[3].padStart(2, '0')}`;
-    return dateKey === todayKey;
-   }
-
-   const usDate = rawCreatedAt.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})(?:$|[T,\s])/);
-   if (usDate) {
-    const year = usDate[3].length === 2 ? `20${usDate[3]}` : usDate[3];
-    const dateKey = `${year}-${usDate[1].padStart(2, '0')}-${usDate[2].padStart(2, '0')}`;
-    return dateKey === todayKey;
-   }
-  }
-
-  // ISO timestamps containing Z or an offset represent an exact instant and
-  // must be converted into the configured U.S. business timezone.
-  const created = new Date(rawCreatedAt);
-  if (Number.isNaN(created.getTime())) return false;
-  return getDateKeyInTimeZone(created, timeZone) === todayKey;
- } catch {
-  // The CRM defaults to Eastern Time if an older saved timezone is invalid.
-  try {
-   const created = new Date(rawCreatedAt);
-   return !Number.isNaN(created.getTime()) &&
-    getDateKeyInTimeZone(created, 'America/New_York') ===
-    getDateKeyInTimeZone(new Date(), 'America/New_York');
-  } catch {
-   return false;
-  }
- }
-};
 
 export const NewLeadsPage: React.FC = () => {
  const navigate = useNavigate();
@@ -837,8 +780,8 @@ export const NewLeadsPage: React.FC = () => {
         <div className="flex flex-col gap-3 w-full">
           {filteredLeads.map((lead) => {
             // Keep TODAY visible until midnight in the configured U.S. business timezone.
-            const isToday = wasCreatedTodayInBusinessTimeZone(
-              lead.createdAt,
+            const isToday = wasLeadCreatedToday(
+              lead,
               config.timeZone || 'America/New_York'
             );
             const isThumbtackTest =
@@ -990,8 +933,8 @@ export const NewLeadsPage: React.FC = () => {
  </thead>
  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium">
  {filteredLeads.map((lead) => {
- const isToday = wasCreatedTodayInBusinessTimeZone(
-  lead.createdAt,
+ const isToday = wasLeadCreatedToday(
+  lead,
   config.timeZone || 'America/New_York'
  );
 
