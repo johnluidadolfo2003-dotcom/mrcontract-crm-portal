@@ -28,11 +28,18 @@ const createGoogleProvider = (forceAccountSelection = false) => {
 export const googleProvider = createGoogleProvider();
 
 let cachedGoogleAccessToken: string | null = null;
+let cachedGoogleAccessTokenIssuedAt: number | null = null;
 const ACCESS_TOKEN_STORAGE_KEY = 'mrcontract_google_access_token';
 const ACCESS_TOKEN_ISSUED_AT_STORAGE_KEY = 'mrcontract_google_access_token_issued_at';
 
 export const getCachedAccessToken = (): string | null => {
-  if (cachedGoogleAccessToken) return cachedGoogleAccessToken;
+  if (cachedGoogleAccessToken && isGoogleAccessTokenFresh(cachedGoogleAccessTokenIssuedAt)) {
+    return cachedGoogleAccessToken;
+  }
+  if (cachedGoogleAccessToken) {
+    cachedGoogleAccessToken = null;
+    cachedGoogleAccessTokenIssuedAt = null;
+  }
   if (typeof window !== 'undefined') {
     try {
       const stored = sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
@@ -40,6 +47,7 @@ export const getCachedAccessToken = (): string | null => {
       const issuedAt = issuedAtValue ? Number(issuedAtValue) : null;
       if (stored && isGoogleAccessTokenFresh(issuedAt)) {
         cachedGoogleAccessToken = stored;
+        cachedGoogleAccessTokenIssuedAt = issuedAt;
         return stored;
       }
       if (stored) {
@@ -53,6 +61,7 @@ export const getCachedAccessToken = (): string | null => {
 
 export const setCachedAccessToken = (token: string | null) => {
   cachedGoogleAccessToken = token;
+  cachedGoogleAccessTokenIssuedAt = token ? Date.now() : null;
   if (typeof window !== 'undefined') {
     try {
       if (token) {
