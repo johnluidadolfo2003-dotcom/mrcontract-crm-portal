@@ -24,6 +24,7 @@ import { logAuditActivity } from '../../lib/activityLogger';
 import { SalespersonOption } from '../../types';
 import { loadAppConfig } from '../../config';
 import { updateNewLeadInfo } from '../../lib/newLeads';
+import { isFollowedUpStage } from '../../lib/leadScheduling';
 
 const ANGI_ACCOUNT_OPTIONS = [
   { value: 'not_identified', label: 'Angi (Not Identified)' },
@@ -36,6 +37,7 @@ interface LeadDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onStatusChange: (row: SheetRowRecord, newStatus: string) => void;
+  onSchedule?: (lead: SheetRowRecord) => void;
   onLeadUpdate?: (updatedLead: SheetRowRecord) => Promise<void> | void;
   onSendToHouzz?: (lead: SheetRowRecord) => Promise<void> | void;
   isSendingToHouzz?: boolean;
@@ -49,6 +51,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
   isOpen,
   onClose,
   onStatusChange,
+  onSchedule,
   onLeadUpdate,
   onSendToHouzz,
   isSendingToHouzz = false,
@@ -762,6 +765,18 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                     </button>
                   )}
                 </div>
+              )}
+
+              {onSchedule && isFollowedUpStage(lead.status) && (
+                <button
+                  type="button"
+                  onClick={() => onSchedule(lead)}
+                  className="w-full h-9 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-colors duration-120 cursor-pointer shadow-xs"
+                  aria-label={`Schedule ${lead.clientName || 'client'}`}
+                >
+                  <CalendarClock className="w-4 h-4" />
+                  <span>Schedule Client</span>
+                </button>
               )}
 
               {/* Edit Button CTA */}

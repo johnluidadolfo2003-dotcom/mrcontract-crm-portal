@@ -61,6 +61,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { Toast } from '../components/ui/Toast';
 import { LeadDrawer } from '../components/ui/LeadDrawer';
 import { formatName, formatPhoneNumber, isFollowUpOverdue, calculateLeadAge, checkFollowUpOverdue, addLeadActivity, getEstimateFollowUpInfo, isFollowUpStatus, isMeetingScheduledStatus } from '../lib/utils';
+import { buildSheetLeadAppointmentPrefill } from '../lib/leadScheduling';
 import { logAuditActivity } from '../lib/activityLogger';
 import { loadAppConfig, saveAppConfig, applyTheme, isLeadSourceTab } from '../config';
 import { AppConfig, AppointmentFormData, LEAD_STATUS_OPTIONS, LeadStatus } from '../types';
@@ -929,23 +930,17 @@ export const SpreadsheetPage: React.FC = () => {
 
  const handleScheduleFromRow = (row: SheetRowRecord) => {
  const todayStr = new Date().toISOString().split('T')[0];
- const appointmentData: AppointmentFormData = {
- clientName: row.clientName || '',
- appointmentDate: row.appointmentDate || todayStr,
- startTime: row.startTime || '09:00',
- endTime: row.endTime || '11:00',
- salespersonCode: '',
- clientPhone: row.clientPhone || '',
- clientEmail: row.clientEmail || '',
- address: row.address || '',
- leadSource: row.leadSource || selectedTab || config.leadSources[0] || 'Angi',
- leadType: row.leadType || config.leadTypes[0] || 'Direct',
- notes: row.notes || '',
- };
+ const appointmentData = buildSheetLeadAppointmentPrefill(row, {
+  today: todayStr,
+  selectedTab,
+  defaultLeadSource: config.leadSources[0] || 'Angi',
+  defaultLeadType: config.leadTypes[0] || 'Direct',
+ });
  sessionStorage.setItem('prefill_schedule_lead', JSON.stringify(appointmentData));
+ setSelectedLead(null);
  navigate('/');
  setTimeout(() => {
- window.dispatchEvent(new CustomEvent('open_schedule_modal', { detail: appointmentData }));
+  window.dispatchEvent(new CustomEvent('open_schedule_modal', { detail: appointmentData }));
  }, 100);
  };
 
@@ -1781,6 +1776,7 @@ export const SpreadsheetPage: React.FC = () => {
  isOpen={!!selectedLead} 
  onClose={() => setSelectedLead(null)} 
  onStatusChange={handleStatusChange}
+ onSchedule={handleScheduleFromRow}
  statusOptions={LEAD_STATUS_OPTIONS}
  salespeople={config.salespeople}
  calendarEvents={calendarEvents}
