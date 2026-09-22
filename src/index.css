@@ -152,7 +152,7 @@ html.dark {
 /* Base HTML Setup */
 html {
   font-size: 14px;
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 html.dark {
