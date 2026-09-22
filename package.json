@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "npm run test:houzz && npm run test:new-lead-order && npm run test:dashboard-schedule && npm run test:calendar-auth && npm run test:followed-up-scheduling && vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build": "npm run test:houzz && npm run test:new-lead-order && npm run test:dashboard-schedule && npm run test:calendar-auth && npm run test:followed-up-scheduling && npm run test:theme-resume && vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
@@ -14,7 +14,8 @@
     "test:new-lead-order": "tsx test_new_lead_order.ts",
     "test:dashboard-schedule": "tsx test_dashboard_schedule.ts",
     "test:calendar-auth": "tsx test_calendar_auth_recovery.ts",
-    "test:followed-up-scheduling": "tsx test_followed_up_scheduling.ts"
+    "test:followed-up-scheduling": "tsx test_followed_up_scheduling.ts",
+    "test:theme-resume": "tsx test_theme_resume.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

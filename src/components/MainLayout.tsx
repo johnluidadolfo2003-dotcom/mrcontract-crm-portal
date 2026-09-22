@@ -93,10 +93,20 @@ export const MainLayout: React.FC = () => {
   }
  };
 
- // Sync dark/light theme class on root element
+ // Keep React controls and document classes on the same authoritative theme.
  useEffect(() => {
  applyTheme(config.theme || 'dark');
  }, [config.theme]);
+
+ useEffect(() => {
+  const handleThemeChanged = (event: Event) => {
+   const nextTheme = (event as CustomEvent<{ theme?: 'dark' | 'light' }>).detail?.theme;
+   if (!nextTheme) return;
+   setConfig((current) => current.theme === nextTheme ? current : { ...current, theme: nextTheme });
+  };
+  window.addEventListener('crm_theme_changed', handleThemeChanged);
+  return () => window.removeEventListener('crm_theme_changed', handleThemeChanged);
+ }, []);
 
  useEffect(() => {
  fetchAndSyncServerConfig().then((serverCfg) => {
@@ -402,7 +412,7 @@ export const MainLayout: React.FC = () => {
 
 
   return (
- <div className={`flex h-screen overflow-hidden ${config.theme === 'dark' ? 'dark' : ''} bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 font-sans antialiased`}>
+ <div className="flex h-screen overflow-hidden bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 font-sans antialiased">
  {/* Persistent Global Sidebar across all views with mobile drawer support */}
  <Sidebar
  isOpen={isSidebarOpen}
