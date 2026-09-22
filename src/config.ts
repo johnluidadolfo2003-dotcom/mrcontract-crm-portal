@@ -112,7 +112,7 @@ export function applyTheme(theme?: AppTheme): void {
  }
  document.documentElement.style.colorScheme = currentTheme;
 
- if (!wasConsistent && typeof window !== 'undefined') {
+ if (!wasConsistent && typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') {
   window.dispatchEvent(new CustomEvent('crm_theme_changed', {
    detail: { theme: currentTheme },
   }));
