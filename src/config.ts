@@ -79,16 +79,67 @@ export const DEFAULT_CONFIG: AppConfig = {
 };
 
 const STORAGE_KEY = 'masonry_appointment_config';
+export type AppTheme = 'dark' | 'light';
 
-export function applyTheme(theme?: 'dark' | 'light'): void {
- const currentTheme = theme || loadAppConfig().theme || 'dark';
- if (currentTheme === 'light') {
- document.documentElement.classList.add('light');
- document.documentElement.classList.remove('dark');
- } else {
- document.documentElement.classList.add('dark');
- document.documentElement.classList.remove('light');
+export function readStoredTheme(): AppTheme {
+ if (typeof localStorage === 'undefined') return DEFAULT_CONFIG.theme || 'dark';
+ try {
+  const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  return parsed.theme === 'light' ? 'light' : 'dark';
+ } catch {
+  return 'dark';
  }
+}
+
+export function applyTheme(theme?: AppTheme): void {
+ if (typeof document === 'undefined') return;
+ const currentTheme: AppTheme = theme || readStoredTheme();
+ const isDark = currentTheme === 'dark';
+ const targets = [
+  document.documentElement,
+  document.body,
+  document.getElementById('root'),
+ ].filter(Boolean) as HTMLElement[];
+ const wasConsistent = targets.length > 0 && targets.every((target) =>
+  target.classList.contains(currentTheme) &&
+  !target.classList.contains(isDark ? 'light' : 'dark')
+ );
+
+ for (const target of targets) {
+  target.classList.toggle('dark', isDark);
+  target.classList.toggle('light', !isDark);
+  target.dataset.theme = currentTheme;
+ }
+ document.documentElement.style.colorScheme = currentTheme;
+
+ if (!wasConsistent && typeof window !== 'undefined') {
+  window.dispatchEvent(new CustomEvent('crm_theme_changed', {
+   detail: { theme: currentTheme },
+  }));
+ }
+}
+
+export function installThemeLifecycleSync(): () => void {
+ if (typeof window === 'undefined' || typeof document === 'undefined') return () => {};
+ const syncTheme = () => applyTheme(readStoredTheme());
+ const handleVisibility = () => {
+  if (!document.hidden) syncTheme();
+ };
+ const handleStorage = (event: StorageEvent) => {
+  if (!event.key || event.key === STORAGE_KEY) syncTheme();
+ };
+
+ window.addEventListener('focus', syncTheme);
+ window.addEventListener('pageshow', syncTheme);
+ window.addEventListener('storage', handleStorage);
+ document.addEventListener('visibilitychange', handleVisibility);
+
+ return () => {
+  window.removeEventListener('focus', syncTheme);
+  window.removeEventListener('pageshow', syncTheme);
+  window.removeEventListener('storage', handleStorage);
+  document.removeEventListener('visibilitychange', handleVisibility);
+ };
 }
 
 export function loadAppConfig(): AppConfig {
