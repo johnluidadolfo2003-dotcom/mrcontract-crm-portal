@@ -942,11 +942,6 @@ export const SpreadsheetPage: React.FC = () => {
  setTimeout(() => {
   window.dispatchEvent(new CustomEvent('open_schedule_modal', { detail: appointmentData }));
  }, 100);
- }; sessionStorage.setItem('prefill_schedule_lead', JSON.stringify(appointmentData));
- navigate('/');
- setTimeout(() => {
- window.dispatchEvent(new CustomEvent('open_schedule_modal', { detail: appointmentData }));
- }, 100);
  };
 
  const handleSendToHouzzFromRow = async (row: SheetRowRecord) => {
