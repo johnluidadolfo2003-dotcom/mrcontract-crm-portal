@@ -1,6 +1,7 @@
 import { AppointmentFormData, AppConfig, GoogleCalendarEventPayload, CreatedCalendarEvent } from '../types';
 import { loadAppConfig } from '../config';
-import { getCachedAccessToken } from './firebase';
+import { clearCachedAccessToken, getCachedAccessToken, googleSignIn } from './firebase';
+import { isGoogleCalendarAuthFailure } from './googleToken';
 
 export const BUSINESS_TIME_ZONE = 'America/New_York';
 
@@ -11,6 +12,68 @@ export function getCalendarAuthHeaders(customHeaders: Record<string, string> = {
     headers['Authorization'] = `Bearer ${token}`;
   }
   return headers;
+}
+
+const CALENDAR_RECONNECT_COOLDOWN_MS = 5 * 60 * 1000;
+let lastAutomaticCalendarReconnectAt = 0;
+let activeCalendarReconnect: Promise<string | null> | null = null;
+
+async function reconnectCalendarAccess(): Promise<string | null> {
+  if (activeCalendarReconnect) return activeCalendarReconnect;
+  const now = Date.now();
+  if (now - lastAutomaticCalendarReconnectAt < CALENDAR_RECONNECT_COOLDOWN_MS) return null;
+  lastAutomaticCalendarReconnectAt = now;
+
+  activeCalendarReconnect = (async () => {
+    try {
+      const result = await googleSignIn(false);
+      return result.accessToken || null;
+    } catch (error) {
+      console.warn('[Calendar Reconnect Notice]:', error);
+      return null;
+    } finally {
+      activeCalendarReconnect = null;
+    }
+  })();
+
+  return activeCalendarReconnect;
+}
+
+async function fetchCalendarApi(
+  input: RequestInfo | URL,
+  init: RequestInit = {}
+): Promise<Response> {
+  const send = () => fetch(input, {
+    ...init,
+    headers: getCalendarAuthHeaders((init.headers || {}) as Record<string, string>),
+  });
+
+  const response = await send();
+  if (!isGoogleCalendarAuthFailure(response.status)) return response;
+
+  clearCachedAccessToken();
+  setCalendarSyncStatus({
+    status: 'error',
+    error: 'Google Calendar authorization expired. Reconnecting…',
+    errorCode: 'GOOGLE_AUTH_EXPIRED',
+    authSource: 'client_oauth_token',
+    lastSyncAt: new Date().toISOString(),
+  });
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('calendar_auth_expired'));
+  }
+
+  const refreshedToken = await reconnectCalendarAccess();
+  if (!refreshedToken) return response;
+
+  const retry = await send();
+  if (!isGoogleCalendarAuthFailure(retry.status)) return retry;
+
+  clearCachedAccessToken();
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('calendar_auth_required'));
+  }
+  return retry;
 }
 
 /**
@@ -238,7 +301,7 @@ export interface BackendCalendarStatus {
 export async function checkBackendCalendarStatus(calendarId?: string): Promise<BackendCalendarStatus> {
   try {
     const query = calendarId ? `?calendarId=${encodeURIComponent(calendarId)}` : '';
-    const res = await fetch(`/api/calendar/status${query}`, {
+    const res = await fetchCalendarApi(`/api/calendar/status${query}`, {
       headers: getCalendarAuthHeaders(),
     });
     const data = await res.json().catch(() => ({}));
@@ -297,7 +360,7 @@ export async function fetchGoogleCalendarEvents(
  if (actualCalId) params.append('calendarId', actualCalId);
  const queryString = params.toString() ? `?${params.toString()}` : '';
 
- const serverRes = await fetch(`/api/calendar/events${queryString}`, {
+ const serverRes = await fetchCalendarApi(`/api/calendar/events${queryString}`, {
   headers: getCalendarAuthHeaders(),
  });
  const serverData = await serverRes.json().catch(() => ({}));
@@ -357,7 +420,7 @@ export async function fetchAllGoogleCalendarEvents(options?: {
   const query = params.toString() ? `?${params.toString()}` : '';
 
   const separator = query ? '&' : '?';
-  const response = await fetch(`/api/calendar/events${query}${separator}calendarId=all-accessible`, {
+  const response = await fetchCalendarApi(`/api/calendar/events${query}${separator}calendarId=all-accessible`, {
    headers: getCalendarAuthHeaders(),
   });
   const data = await response.json().catch(() => ({}));
@@ -464,7 +527,7 @@ export async function createGoogleCalendarEvent(
  }
 
  const query = calendarId ? `?calendarId=${encodeURIComponent(calendarId)}` : '';
- const res = await fetch(`/api/calendar/events${query}`, {
+ const res = await fetchCalendarApi(`/api/calendar/events${query}`, {
   method: 'POST',
   headers: getCalendarAuthHeaders({
    'Content-Type': 'application/json',
@@ -531,7 +594,7 @@ export async function updateGoogleCalendarEvent(
  }
 
  const query = calendarId ? `?calendarId=${encodeURIComponent(calendarId)}` : '';
- const response = await fetch(`/api/calendar/events/${encodeURIComponent(eventId)}${query}`, {
+ const response = await fetchCalendarApi(`/api/calendar/events/${encodeURIComponent(eventId)}${query}`, {
   method: 'PUT',
   headers: getCalendarAuthHeaders({
    'Content-Type': 'application/json',
@@ -583,7 +646,7 @@ export async function deleteGoogleCalendarEvent(
  calendarId?: string
 ): Promise<boolean> {
  const query = calendarId ? `?calendarId=${encodeURIComponent(calendarId)}` : '';
- const response = await fetch(`/api/calendar/events/${encodeURIComponent(eventId)}${query}`, {
+ const response = await fetchCalendarApi(`/api/calendar/events/${encodeURIComponent(eventId)}${query}`, {
   method: 'DELETE',
   headers: getCalendarAuthHeaders(),
  });

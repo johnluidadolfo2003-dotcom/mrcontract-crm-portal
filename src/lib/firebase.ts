@@ -9,27 +9,50 @@ import {
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
+import { isGoogleAccessTokenFresh } from './googleToken';
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId || undefined);
 
-export const googleProvider = new GoogleAuthProvider();
-googleProvider.addScope('https://www.googleapis.com/auth/calendar');
-googleProvider.addScope('https://www.googleapis.com/auth/calendar.events');
-googleProvider.setCustomParameters({ prompt: 'select_account' });
+const createGoogleProvider = (forceAccountSelection = false) => {
+  const provider = new GoogleAuthProvider();
+  provider.addScope('https://www.googleapis.com/auth/calendar');
+  provider.addScope('https://www.googleapis.com/auth/calendar.events');
+  if (forceAccountSelection) {
+    provider.setCustomParameters({ prompt: 'select_account' });
+  }
+  return provider;
+};
+
+export const googleProvider = createGoogleProvider();
 
 let cachedGoogleAccessToken: string | null = null;
+let cachedGoogleAccessTokenIssuedAt: number | null = null;
 const ACCESS_TOKEN_STORAGE_KEY = 'mrcontract_google_access_token';
+const ACCESS_TOKEN_ISSUED_AT_STORAGE_KEY = 'mrcontract_google_access_token_issued_at';
 
 export const getCachedAccessToken = (): string | null => {
-  if (cachedGoogleAccessToken) return cachedGoogleAccessToken;
+  if (cachedGoogleAccessToken && isGoogleAccessTokenFresh(cachedGoogleAccessTokenIssuedAt)) {
+    return cachedGoogleAccessToken;
+  }
+  if (cachedGoogleAccessToken) {
+    cachedGoogleAccessToken = null;
+    cachedGoogleAccessTokenIssuedAt = null;
+  }
   if (typeof window !== 'undefined') {
     try {
       const stored = sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
-      if (stored) {
+      const issuedAtValue = sessionStorage.getItem(ACCESS_TOKEN_ISSUED_AT_STORAGE_KEY);
+      const issuedAt = issuedAtValue ? Number(issuedAtValue) : null;
+      if (stored && isGoogleAccessTokenFresh(issuedAt)) {
         cachedGoogleAccessToken = stored;
+        cachedGoogleAccessTokenIssuedAt = issuedAt;
         return stored;
+      }
+      if (stored) {
+        sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+        sessionStorage.removeItem(ACCESS_TOKEN_ISSUED_AT_STORAGE_KEY);
       }
     } catch {}
   }
@@ -38,12 +61,15 @@ export const getCachedAccessToken = (): string | null => {
 
 export const setCachedAccessToken = (token: string | null) => {
   cachedGoogleAccessToken = token;
+  cachedGoogleAccessTokenIssuedAt = token ? Date.now() : null;
   if (typeof window !== 'undefined') {
     try {
       if (token) {
         sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
+        sessionStorage.setItem(ACCESS_TOKEN_ISSUED_AT_STORAGE_KEY, String(Date.now()));
       } else {
         sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+        sessionStorage.removeItem(ACCESS_TOKEN_ISSUED_AT_STORAGE_KEY);
       }
     } catch {}
   }
@@ -80,7 +106,10 @@ export const googleSignIn = async (_force?: boolean): Promise<{ user: User; acce
 
   activeSignInPromise = (async () => {
     try {
-      const result = await signInWithPopup(auth, googleProvider);
+      // Reconnect with the existing Google browser session when possible.
+      // Account selection is reserved for an explicit full sign-in.
+      const provider = createGoogleProvider(_force === true);
+      const result = await signInWithPopup(auth, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const accessToken = credential?.accessToken || null;
       if (accessToken) {
@@ -121,6 +150,7 @@ export const isAuthError = (err: any) => {
   return (
     msg.includes('unauthorized') ||
     msg.includes('401') ||
+    msg.includes('invalid credentials') ||
     msg.includes('invalid_grant') ||
     msg.includes('token expired') ||
     msg.includes('credentials not configured')

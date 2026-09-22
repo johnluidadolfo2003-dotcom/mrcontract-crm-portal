@@ -39,6 +39,7 @@ import { logAuditActivity } from '../lib/activityLogger';
 import { buildEventPayload, createGoogleCalendarEvent, checkBackendCalendarStatus, BackendCalendarStatus } from '../lib/calendar';
 import { addOrUpdateScheduledClient, recordMeetingScheduledTransition } from '../lib/scheduledClients';
 import { addNewLead, getNewLeads, fetchNewLeads, migrateLegacyNewLeads, updateNewLeadStatus } from '../lib/newLeads';
+import { googleSignIn } from '../lib/firebase';
 
 export const MainLayout: React.FC = () => {
  const navigate = useNavigate();
@@ -47,6 +48,7 @@ export const MainLayout: React.FC = () => {
  const [config, setConfig] = useState<AppConfig>(loadAppConfig);
  const [calendarStatus, setCalendarStatus] = useState<BackendCalendarStatus | null>(null);
  const [isCheckingCalendar, setIsCheckingCalendar] = useState<boolean>(true);
+ const [isReconnectingCalendar, setIsReconnectingCalendar] = useState<boolean>(false);
  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
  const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'integrations'>('general');
  const [settingsInitialSubTab, setSettingsInitialSubTab] = useState<'connections' | 'webhooks' | 'troubleshooting'>('connections');
@@ -67,6 +69,28 @@ export const MainLayout: React.FC = () => {
  const showToast = (type: 'success' | 'error', text: string) => {
  setToastMessage({ type, text });
  setTimeout(() => setToastMessage(null), 4000);
+ };
+
+ const handleReconnectCalendar = async () => {
+  if (isReconnectingCalendar) return;
+  setIsReconnectingCalendar(true);
+  setIsCheckingCalendar(true);
+  try {
+   await googleSignIn(false);
+   const status = await checkBackendCalendarStatus(config.calendarId);
+   setCalendarStatus(status);
+   if (status.connected) {
+    showToast('success', 'Google Calendar reconnected.');
+    window.dispatchEvent(new CustomEvent('dashboard_data_refresh'));
+   } else {
+    showToast('error', status.error || 'Google Calendar could not reconnect.');
+   }
+  } catch (error: any) {
+   showToast('error', error?.message || 'Google Calendar reconnection was not completed.');
+  } finally {
+   setIsCheckingCalendar(false);
+   setIsReconnectingCalendar(false);
+  }
  };
 
  // Sync dark/light theme class on root element
@@ -447,16 +471,13 @@ export const MainLayout: React.FC = () => {
  ) : (
  <button
  type="button"
- onClick={() => {
- setSettingsInitialTab('integrations');
- setSettingsInitialSubTab('connections');
- setIsSettingsOpen(true);
- }}
- className="flex items-center gap-1.5 px-2.5 h-[34px] bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-md text-red-700 dark:text-red-300 text-xs font-semibold cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors duration-120"
- title="Calendar is currently unavailable. Click to configure backend integration."
+ onClick={handleReconnectCalendar}
+ disabled={isReconnectingCalendar}
+ className="flex items-center gap-1.5 px-2.5 h-[34px] bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-md text-red-700 dark:text-red-300 text-xs font-semibold cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors duration-120 disabled:opacity-60"
+ title="Google Calendar authorization expired. Click to reconnect without signing out of the CRM."
  >
  <span className="w-2 h-2 rounded-full bg-red-500" />
- <span className="hidden sm:inline">Calendar unavailable</span>
+ <span className="hidden sm:inline">{isReconnectingCalendar ? 'Reconnecting…' : 'Reconnect calendar'}</span>
  </button>
  )}
 
