@@ -619,3 +619,18 @@ html, body {
 #root > .min-h-screen [class~="w-12"][class~="h-12"][class~="bg-[#EF7E15]"] > span {
   display: none !important;
 }
+
+
+/* Login page cleanup: keep the original logo, remove duplicate branding copy. */
+#root > .min-h-screen > .w-full.max-w-md > .flex.flex-col.items-center.gap-3 > div:last-child {
+  display: none !important;
+}
+
+#root > .min-h-screen > .w-full.max-w-md > .pt-2.border-t {
+  display: none !important;
+}
+
+#root > .min-h-screen > .w-full.max-w-md [class~="w-12"][class~="h-12"][class~="bg-[#EF7E15]"] {
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.5rem !important;
+}
