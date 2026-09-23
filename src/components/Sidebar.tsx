@@ -511,29 +511,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
  <div className="flex flex-col h-full bg-white dark:bg-black">
  {/* Top Header / Brand Section */}
  <div className={`p-4 pb-3 flex ${showExpanded ? 'items-center justify-between gap-2' : 'flex-col items-center gap-4'} bg-white dark:bg-black`}>
- <div className="flex items-center gap-3 overflow-hidden">
- {/* Logo Mark: Orange rounded squircle with bold white 'M' */}
- <div className="w-10 h-10 rounded-md bg-[#EF7E15] shrink-0 flex items-center justify-center">
- <span className="text-white font-black text-xl leading-none tracking-tighter">
- M
- </span>
- </div>
-
- {showExpanded && (
- <div className="flex flex-col min-w-0 leading-tight">
- <div className="flex items-baseline gap-1 truncate">
- <span className="font-extrabold text-base tracking-tight text-zinc-900 dark:text-white">
- Mr.
- </span>
- <span className="font-extrabold text-base tracking-tight text-[#EF7E15]">
- Contract
- </span>
- </div>
- <span className="text-[10px] font-bold tracking-widest text-zinc-400 dark:text-zinc-500 uppercase">
- CRM
- </span>
- </div>
- )}
+ <div className={`shrink-0 flex items-center justify-center overflow-hidden ${showExpanded ? 'w-36' : 'w-10'}`}>
+ <img
+ src="/mr-contract-logo.png"
+ alt="Mr. Contract"
+ className={`block w-full h-auto object-contain ${showExpanded ? 'max-h-12' : 'max-h-10'}`}
+ />
  </div>
 
  {/* Controls: Close button on mobile, Collapse/Expand on desktop */}

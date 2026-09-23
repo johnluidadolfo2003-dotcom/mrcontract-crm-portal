@@ -440,8 +440,11 @@ export const MainLayout: React.FC = () => {
  </button>
 
  <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm truncate">
- <span className="font-black text-zinc-900 dark:text-white tracking-tight shrink-0">Mr.</span>
- <span className="font-black text-[#EF7E15] tracking-tight shrink-0">Contract</span>
+ <img
+ src="/mr-contract-logo.png"
+ alt="Mr. Contract"
+ className="w-20 sm:w-24 h-7 object-contain shrink-0"
+ />
  <span className="text-zinc-400 dark:text-zinc-600 font-medium">/</span>
  <span className="font-bold text-black dark:text-zinc-300 truncate">{getPageBreadcrumb()}</span>
  </div>

@@ -605,3 +605,17 @@ html, body {
   padding-right: 2.5rem !important;
   text-overflow: ellipsis;
 }
+
+
+/* Use the original Mr. Contract logo asset on the authentication screen. */
+#root > .min-h-screen [class~="w-12"][class~="h-12"][class~="bg-[#EF7E15]"] {
+  width: min(18rem, 72vw) !important;
+  height: 6rem !important;
+  border-radius: 0 !important;
+  background: transparent url('/mr-contract-logo.png') center / contain no-repeat !important;
+  box-shadow: none !important;
+}
+
+#root > .min-h-screen [class~="w-12"][class~="h-12"][class~="bg-[#EF7E15]"] > span {
+  display: none !important;
+}
