@@ -103,7 +103,7 @@ export const STATUS_STYLES: Record<string, { bg: string; text: string; border: s
     bg: 'bg-orange-500/10 dark:bg-orange-950/40',
     text: 'text-orange-900 dark:text-orange-200 font-bold',
     border: 'border-orange-500/30 dark:border-orange-500/30',
-    dot: 'bg-[#FF5500]',
+    dot: 'bg-[#EF7E15]',
   },
  '15 day Follow UP': {
  bg: 'bg-zinc-100 dark:bg-zinc-800/80',
@@ -163,7 +163,7 @@ export const STATUS_STYLES: Record<string, { bg: string; text: string; border: s
     bg: 'bg-orange-500/10 dark:bg-orange-950/40',
     text: 'text-orange-900 dark:text-orange-200 font-bold',
     border: 'border-orange-500/30 dark:border-orange-500/30',
-    dot: 'bg-[#FF5500]',
+    dot: 'bg-[#EF7E15]',
   },
  'Estimate Sent': {
  bg: 'bg-emerald-100 dark:bg-emerald-950/80',
@@ -1355,7 +1355,7 @@ export const SpreadsheetPage: React.FC = () => {
                       <div key={status} className="w-80 bg-white dark:bg-zinc-900 rounded-md border border-zinc-200 dark:border-zinc-800 flex flex-col h-full shadow-xs">
                         <div className="px-3.5 py-2.5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between sticky top-0 bg-white dark:bg-zinc-900 rounded-t-md z-10 shrink-0">
                           <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-xs">{status}</h3>
-                          <span className="text-[11px] font-bold text-white bg-[#FF5500] px-1.5 py-0.5 rounded-md tabular-nums">{colRows.length}</span>
+                          <span className="text-[11px] font-bold text-white bg-[#EF7E15] px-1.5 py-0.5 rounded-md tabular-nums">{colRows.length}</span>
                         </div>
                         <div className="p-2.5 flex-1 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-zinc-800">
                           {colRows.map((r, rIdx) => {
@@ -1401,8 +1401,8 @@ export const SpreadsheetPage: React.FC = () => {
  >
  {/* NAME & AGING / OVERDUE BADGES */}
  <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
- <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-[#FF5500]/10 border border-[#FF5500]/20 flex items-center justify-center shrink-0 text-[#FF5500]">
- <User className="w-3.5 h-3.5 text-[#FF5500]"/>
+ <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-[#EF7E15]/10 border border-[#EF7E15]/20 flex items-center justify-center shrink-0 text-[#EF7E15]">
+ <User className="w-3.5 h-3.5 text-[#EF7E15]"/>
  </div>
  <div className="min-w-0 flex-1">
  <h3 className="font-bold text-zinc-900 dark:text-white text-xs truncate">
@@ -1746,7 +1746,7 @@ export const SpreadsheetPage: React.FC = () => {
  <button
  type="submit"
  disabled={isAppending}
- className="px-4 py-1.5 bg-[#FF5500] hover:bg-[#E64D00] disabled:opacity-50 text-white font-bold rounded-md flex items-center gap-1.5 transition-colors duration-120 cursor-pointer shadow-xs text-xs"
+ className="px-4 py-1.5 bg-[#EF7E15] hover:bg-[#D66B0F] disabled:opacity-50 text-white font-bold rounded-md flex items-center gap-1.5 transition-colors duration-120 cursor-pointer shadow-xs text-xs"
  >
  {isAppending ? (
  <>
@@ -1789,7 +1789,7 @@ export const SpreadsheetPage: React.FC = () => {
  {/* Modal Header */}
  <div className="px-5 py-3.5 bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-4">
  <div className="flex items-center gap-3">
- <div className="w-9 h-9 rounded-md bg-[#FF5500] flex items-center justify-center text-white shadow-xs">
+ <div className="w-9 h-9 rounded-md bg-[#EF7E15] flex items-center justify-center text-white shadow-xs">
  <Clock className="w-4 h-4"/>
  </div>
  <div>
@@ -1803,7 +1803,7 @@ export const SpreadsheetPage: React.FC = () => {
  setIsCSModalOpen(false);
  setViewMode('table');
  }}
- className="px-3 py-1.5 bg-[#FF5500] hover:bg-[#E64D00] text-white font-bold text-xs rounded-md shadow-xs transition-colors duration-120 cursor-pointer flex items-center gap-1.5"
+ className="px-3 py-1.5 bg-[#EF7E15] hover:bg-[#D66B0F] text-white font-bold text-xs rounded-md shadow-xs transition-colors duration-120 cursor-pointer flex items-center gap-1.5"
  title="Close CS Center and View leads Table"
  >
  <TableIcon className="w-3.5 h-3.5"/>
@@ -1933,7 +1933,7 @@ export const SpreadsheetPage: React.FC = () => {
  <span
  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border tabular-nums ${
  isExactMilestone
- ? 'bg-[#FF5500] text-white border-[#FF5500] shadow-xs'
+ ? 'bg-[#EF7E15] text-white border-[#EF7E15] shadow-xs'
  : info.dayCount >= 3
  ? 'bg-brand-orange/15 text-orange-700 dark:text-orange-300 border-brand-orange/30'
  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700'
@@ -2109,7 +2109,7 @@ export const SpreadsheetPage: React.FC = () => {
  onClick={() => setCsSelectedScriptDay(d)}
  className={`py-1.5 px-1 rounded-md text-xs font-bold transition-colors duration-120 text-center cursor-pointer relative tabular-nums ${
  isSelected
- ? 'bg-[#FF5500] text-white'
+ ? 'bg-[#EF7E15] text-white'
  : isRecommended
  ? 'bg-orange-500/15 text-orange-700 dark:text-orange-300 border border-orange-500/40 hover:bg-orange-500/25'
  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border border-zinc-200 dark:border-zinc-700'
@@ -2173,7 +2173,7 @@ export const SpreadsheetPage: React.FC = () => {
  csSelectedLead,
  activeScript.key
  )}
- className="flex-1 py-2 bg-[#FF5500] hover:bg-[#E64D00] disabled:bg-zinc-800 text-white font-bold text-xs rounded-md flex items-center justify-center gap-1.5 transition-colors duration-120 cursor-pointer shadow-xs disabled:cursor-not-allowed"
+ className="flex-1 py-2 bg-[#EF7E15] hover:bg-[#D66B0F] disabled:bg-zinc-800 text-white font-bold text-xs rounded-md flex items-center justify-center gap-1.5 transition-colors duration-120 cursor-pointer shadow-xs disabled:cursor-not-allowed"
  >
  <Mail className={`w-3.5 h-3.5 ${isSendingEmail ? 'animate-spin' : ''}`} />
  <span>{isSendingEmail ? 'Sending…' : 'Send email'}</span>
@@ -2217,7 +2217,7 @@ export const SpreadsheetPage: React.FC = () => {
  <div className="pt-1">
  <a
  href={`sms:${csSelectedLead.clientPhone}?body=${encodeURIComponent(filledSmsBody)}`}
- className="bg-[#FF5500] hover:bg-[#E64D00] text-white w-full py-2 text-white font-bold text-xs rounded-md flex items-center justify-center gap-1.5 transition-colors duration-120 cursor-pointer shadow-xs"
+ className="bg-[#EF7E15] hover:bg-[#D66B0F] text-white w-full py-2 text-white font-bold text-xs rounded-md flex items-center justify-center gap-1.5 transition-colors duration-120 cursor-pointer shadow-xs"
  >
  <Phone className="w-3.5 h-3.5"/>
  <span>Open SMS App</span>

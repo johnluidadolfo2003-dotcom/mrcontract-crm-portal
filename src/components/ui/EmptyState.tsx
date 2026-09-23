@@ -20,7 +20,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ tabName, onAdd }) => {
       </div>
       <button
         onClick={onAdd}
-        className="mt-2 px-6 py-2.5 bg-[#FF5500] hover:bg-[#E64D00] text-white font-bold text-sm rounded-lg inline-flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+        className="mt-2 px-6 py-2.5 bg-[#EF7E15] hover:bg-[#D66B0F] text-white font-bold text-sm rounded-lg inline-flex items-center gap-2 shadow-sm transition-all cursor-pointer"
       >
         <Plus className="w-4 h-4" />
         <span>Add First Lead</span>

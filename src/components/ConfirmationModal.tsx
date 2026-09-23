@@ -163,7 +163,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             type="button"
             onClick={onConfirm}
             disabled={isSubmitting}
-            className="bg-[#FF5500] hover:bg-[#E64D00] text-white font-bold text-xs px-4 py-2 rounded-md shadow-xs transition-colors duration-120 flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+            className="bg-[#EF7E15] hover:bg-[#D66B0F] text-white font-bold text-xs px-4 py-2 rounded-md shadow-xs transition-colors duration-120 flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
           >
             {isSubmitting ? (
               <>

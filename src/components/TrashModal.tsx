@@ -141,7 +141,7 @@ if (!isOpen) return null;
  <div className="flex-1 overflow-y-auto py-3 space-y-2 min-h-[200px]">
  {isLoading ? (
  <div className="py-12 text-center">
- <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#FF5500]"/>
+ <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#EF7E15]"/>
  <p className="text-xs font-bold text-zinc-400 dark:text-zinc-500 mt-2">Loading trash items...</p>
  </div>
  ) : items.length === 0 ? (
@@ -181,7 +181,7 @@ if (!isOpen) return null;
  <button
  type="button"
  onClick={() => handleRestore(item)}
- className="px-3 h-[34px] rounded-md bg-[#FF5500]/10 hover:bg-[#FF5500] text-[#FF5500] hover:text-white font-bold text-xs transition-colors duration-120 flex items-center gap-1.5 cursor-pointer shrink-0"
+ className="px-3 h-[34px] rounded-md bg-[#EF7E15]/10 hover:bg-[#EF7E15] text-[#EF7E15] hover:text-white font-bold text-xs transition-colors duration-120 flex items-center gap-1.5 cursor-pointer shrink-0"
  >
  <RotateCcw className="w-3.5 h-3.5"/>
  <span>Restore</span>

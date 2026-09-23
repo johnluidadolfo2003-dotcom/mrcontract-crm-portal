@@ -273,7 +273,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
     setNewNote('');
   };
 
-  const inputClass = "w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#FF5500] dark:focus:border-[#FF5500] rounded-md px-3.5 py-2 text-sm text-zinc-900 dark:text-white font-medium outline-none transition-colors duration-120 placeholder-zinc-400";
+  const inputClass = "w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#EF7E15] dark:focus:border-[#EF7E15] rounded-md px-3.5 py-2 text-sm text-zinc-900 dark:text-white font-medium outline-none transition-colors duration-120 placeholder-zinc-400";
   const houzzState = String((lead as any).houzzStatus || (lead as any).houzzResult || '').trim().toLowerCase();
   const isConfirmedInHouzz = houzzState.includes('created in houzz pro');
   const isHouzzAccepted = houzzState.includes('accepted by zapier');
@@ -308,8 +308,8 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
         {/* Header */}
         <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-start justify-between bg-zinc-50 dark:bg-zinc-950">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-md bg-[#FF5500]/15 border border-[#FF5500]/30 flex items-center justify-center shrink-0">
-              <User className="w-4.5 h-4.5 text-[#FF5500]" />
+            <div className="w-9 h-9 rounded-md bg-[#EF7E15]/15 border border-[#EF7E15]/30 flex items-center justify-center shrink-0">
+              <User className="w-4.5 h-4.5 text-[#EF7E15]" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
@@ -351,7 +351,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
             onClick={() => setActiveTab('details')}
             className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors duration-120 cursor-pointer ${
               activeTab === 'details'
-                ? 'text-[#FF5500] border-b-2 border-[#FF5500] font-black'
+                ? 'text-[#EF7E15] border-b-2 border-[#EF7E15] font-black'
                 : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
             }`}
           >
@@ -361,7 +361,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
             onClick={() => setActiveTab('timeline')}
             className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors duration-120 cursor-pointer ${
               activeTab === 'timeline'
-                ? 'text-[#FF5500] border-b-2 border-[#FF5500] font-black'
+                ? 'text-[#EF7E15] border-b-2 border-[#EF7E15] font-black'
                 : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
             }`}
           >
@@ -443,7 +443,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                         setEditEstimateSentAt(new Date().toISOString().split("T")[0]);
                       }
                     }}
-                    className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#FF5500] dark:focus:border-[#FF5500] rounded-md px-3 py-2 text-sm text-zinc-900 dark:text-white font-bold outline-none cursor-pointer transition-colors duration-120"
+                    className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#EF7E15] dark:focus:border-[#EF7E15] rounded-md px-3 py-2 text-sm text-zinc-900 dark:text-white font-bold outline-none cursor-pointer transition-colors duration-120"
                   >
                     {statusOptions.map((st) => (
                       <option key={st} value={st} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white font-medium">
@@ -471,7 +471,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                   <select
                     value={editOwner}
                     onChange={(e) => setEditOwner(e.target.value)}
-                    className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#FF5500] dark:focus:border-[#FF5500] rounded-md px-3 py-2 text-sm text-zinc-900 dark:text-white font-semibold outline-none cursor-pointer transition-colors duration-120"
+                    className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#EF7E15] dark:focus:border-[#EF7E15] rounded-md px-3 py-2 text-sm text-zinc-900 dark:text-white font-semibold outline-none cursor-pointer transition-colors duration-120"
                   >
                     <option value="">Unassigned</option>
                     {salespeople?.map((sp) => (
@@ -545,7 +545,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                   <select
                     value={editAngiAccount}
                     onChange={(e) => setEditAngiAccount(e.target.value as 'not_identified' | 'dxg' | 'mr_contract')}
-                    className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#FF5500] dark:focus:border-[#FF5500] rounded-md px-3 py-2 text-sm text-zinc-900 dark:text-white font-semibold outline-none cursor-pointer transition-colors duration-120"
+                    className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#EF7E15] dark:focus:border-[#EF7E15] rounded-md px-3 py-2 text-sm text-zinc-900 dark:text-white font-semibold outline-none cursor-pointer transition-colors duration-120"
                   >
                     {ANGI_ACCOUNT_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>{option.label}</option>
@@ -563,7 +563,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                   onChange={(e) => setEditNotes(e.target.value)}
                   rows={3}
                   placeholder="Add details, project scope, client preferences..."
-                  className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#FF5500] dark:focus:border-[#FF5500] rounded-md p-3 text-sm text-zinc-900 dark:text-white font-medium outline-none resize-none transition-colors duration-120 placeholder-zinc-400"
+                  className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#EF7E15] dark:focus:border-[#EF7E15] rounded-md p-3 text-sm text-zinc-900 dark:text-white font-medium outline-none resize-none transition-colors duration-120 placeholder-zinc-400"
                 />
               </div>
 
@@ -588,7 +588,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                   <button
                     type="submit"
                     disabled={isSaving}
-                    className="px-5 py-2 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-md text-xs font-bold transition-colors duration-120 shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    className="px-5 py-2 bg-[#EF7E15] hover:bg-[#D66B0F] text-white rounded-md text-xs font-bold transition-colors duration-120 shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     {isSaving ? (
                       <>
@@ -615,7 +615,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                 <select
                   value={lead.status || 'New'}
                   onChange={(e) => onStatusChange(lead, e.target.value)}
-                  className="w-full h-8.5 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white font-bold rounded-md py-1 px-3 text-xs focus:ring-1 focus:ring-[#FF5500] outline-none cursor-pointer"
+                  className="w-full h-8.5 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white font-bold rounded-md py-1 px-3 text-xs focus:ring-1 focus:ring-[#EF7E15] outline-none cursor-pointer"
                 >
                   {statusOptions.map((opt) => (
                     <option key={opt} value={opt} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white font-semibold py-1">
@@ -639,7 +639,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                     <div className="p-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md space-y-1.5 shadow-2xs">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <CalendarClock className="w-4 h-4 text-[#FF5500] shrink-0" />
+                          <CalendarClock className="w-4 h-4 text-[#EF7E15] shrink-0" />
                           <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">Appointments</h3>
                         </div>
                         <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
@@ -675,7 +675,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                         {formatPhoneNumber(lead.clientPhone || '') || 'No Phone Provided'}
                       </span>
                       {lead.carrier && (
-                        <span className="text-[10px] text-[#FF5500] font-bold uppercase tracking-wider block mt-0.5">
+                        <span className="text-[10px] text-[#EF7E15] font-bold uppercase tracking-wider block mt-0.5">
                           Carrier: {lead.carrier}
                         </span>
                       )}
@@ -757,7 +757,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                       type="button"
                       disabled={!hasHouzzRequiredInfo || isSendingToHouzz || !onSendToHouzz}
                       onClick={() => onSendToHouzz?.(lead)}
-                      className="w-full h-8.5 bg-[#FF5500] hover:bg-[#E64D00] disabled:bg-zinc-300 dark:disabled:bg-zinc-800 disabled:text-zinc-500 text-white rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-colors duration-120 cursor-pointer disabled:cursor-not-allowed"
+                      className="w-full h-8.5 bg-[#EF7E15] hover:bg-[#D66B0F] disabled:bg-zinc-300 dark:disabled:bg-zinc-800 disabled:text-zinc-500 text-white rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-colors duration-120 cursor-pointer disabled:cursor-not-allowed"
                       title={hasHouzzRequiredInfo ? 'Create this Thumbtack lead in Houzz Pro' : 'Complete the required lead information first'}
                     >
                       {isSendingToHouzz ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
@@ -771,7 +771,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                 <button
                   type="button"
                   onClick={() => onSchedule(lead)}
-                  className="w-full h-9 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-colors duration-120 cursor-pointer shadow-xs"
+                  className="w-full h-9 bg-[#EF7E15] hover:bg-[#D66B0F] text-white rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-colors duration-120 cursor-pointer shadow-xs"
                   aria-label={`Schedule ${lead.clientName || 'client'}`}
                 >
                   <CalendarClock className="w-4 h-4" />
@@ -782,9 +782,9 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
               {/* Edit Button CTA */}
               <button
                 onClick={() => setIsEditing(true)}
-                className="w-full h-8.5 bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 hover:border-[#FF5500] dark:hover:border-[#FF5500] text-zinc-900 dark:text-white rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-colors duration-120 cursor-pointer"
+                className="w-full h-8.5 bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 hover:border-[#EF7E15] dark:hover:border-[#EF7E15] text-zinc-900 dark:text-white rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-colors duration-120 cursor-pointer"
               >
-                <Edit2 className="w-3.5 h-3.5 text-[#FF5500]" />
+                <Edit2 className="w-3.5 h-3.5 text-[#EF7E15]" />
                 <span>Edit All Client Information</span>
               </button>
             </div>
@@ -801,7 +801,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                         onClick={() => setActivityType(t)}
                         className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors duration-120 cursor-pointer ${
                           activityType === t
-                            ? "bg-[#FF5500] text-white"
+                            ? "bg-[#EF7E15] text-white"
                             : "bg-white dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border border-zinc-200 dark:border-zinc-800"
                         }`}
                       >
@@ -815,12 +815,12 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                       onChange={(e) => setNewNote(e.target.value)}
                       placeholder="Type activity note or update details..."
                       rows={3}
-                      className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md p-2.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5500] resize-none"
+                      className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md p-2.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#EF7E15] resize-none"
                     />
                     <button
                       type="submit"
                       disabled={!newNote.trim()}
-                      className="absolute bottom-2.5 right-2.5 p-1 bg-[#FF5500] text-white rounded-md hover:bg-[#E64D00] transition-colors duration-120 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                      className="absolute bottom-2.5 right-2.5 p-1 bg-[#EF7E15] text-white rounded-md hover:bg-[#D66B0F] transition-colors duration-120 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                     >
                       <Send className="w-3.5 h-3.5" />
                     </button>
@@ -832,8 +832,8 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
               <div className="relative pl-5 border-l border-zinc-200 dark:border-zinc-800 space-y-4 py-1">
                 {/* Lead Created Event */}
                 <div className="relative">
-                  <div className="absolute -left-[27px] top-0 w-6 h-6 rounded-md bg-white dark:bg-zinc-900 border border-[#FF5500] flex items-center justify-center">
-                    <CalendarClock className="w-3 h-3 text-[#FF5500]" />
+                  <div className="absolute -left-[27px] top-0 w-6 h-6 rounded-md bg-white dark:bg-zinc-900 border border-[#EF7E15] flex items-center justify-center">
+                    <CalendarClock className="w-3 h-3 text-[#EF7E15]" />
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider tabular-nums">
@@ -852,7 +852,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                     <div className="absolute -left-[27px] top-0 w-6 h-6 rounded-md bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 flex items-center justify-center">
                       {act.type === "call" && <Phone className="w-3 h-3 text-zinc-700 dark:text-white" />}
                       {act.type === "text" && <MessageSquare className="w-3 h-3 text-zinc-700 dark:text-white" />}
-                      {act.type === "meeting" && <MapPin className="w-3 h-3 text-[#FF5500]" />}
+                      {act.type === "meeting" && <MapPin className="w-3 h-3 text-[#EF7E15]" />}
                       {act.type === "note" && <Tag className="w-3 h-3 text-zinc-700 dark:text-white" />}
                       {act.type === "status_change" && <AlertCircle className="w-3 h-3 text-zinc-700 dark:text-white" />}
                     </div>

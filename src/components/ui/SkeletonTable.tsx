@@ -29,7 +29,7 @@ export const SkeletonTable = () => {
         ))}
       </div>
       <div className="py-8 text-center flex flex-col items-center justify-center gap-2 text-zinc-500">
-        <Loader2 className="w-5 h-5 text-[#FF5500] animate-spin" />
+        <Loader2 className="w-5 h-5 text-[#EF7E15] animate-spin" />
         <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">Loading data...</span>
       </div>
     </div>

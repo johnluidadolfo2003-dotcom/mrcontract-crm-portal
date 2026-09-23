@@ -70,11 +70,11 @@ export const UserGatekeeper: React.FC<{ children: React.ReactNode }> = ({ childr
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col items-center justify-center p-4">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-md bg-[#FF5500] flex items-center justify-center shadow-md animate-pulse">
+          <div className="w-12 h-12 rounded-md bg-[#EF7E15] flex items-center justify-center shadow-md animate-pulse">
             <span className="text-white font-black text-2xl leading-none tracking-tighter">M</span>
           </div>
           <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 text-xs font-bold mt-2">
-            <Loader2 className="w-4 h-4 animate-spin text-[#FF5500]" />
+            <Loader2 className="w-4 h-4 animate-spin text-[#EF7E15]" />
             <span>Verifying authorized CRM credentials...</span>
           </div>
         </div>
@@ -89,12 +89,12 @@ export const UserGatekeeper: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // 3. Unauthenticated / Unauthorized Gate Screen
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col items-center justify-center p-4 relative selection:bg-[#FF5500]/20 selection:text-[#FF5500]">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col items-center justify-center p-4 relative selection:bg-[#EF7E15]/20 selection:text-[#EF7E15]">
       {/* Theme toggle in top right corner */}
       <button
         type="button"
         onClick={toggleTheme}
-        className="absolute top-4 right-4 p-2.5 rounded-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors duration-120 cursor-pointer shadow-xs min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-2 focus-visible:outline-[#FF5500]"
+        className="absolute top-4 right-4 p-2.5 rounded-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors duration-120 cursor-pointer shadow-xs min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-2 focus-visible:outline-[#EF7E15]"
         title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
       >
@@ -109,7 +109,7 @@ export const UserGatekeeper: React.FC<{ children: React.ReactNode }> = ({ childr
       <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-6 sm:p-8 shadow-xl space-y-6 text-center">
         {/* Header Branding */}
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-md bg-[#FF5500] flex items-center justify-center shadow-md">
+          <div className="w-12 h-12 rounded-md bg-[#EF7E15] flex items-center justify-center shadow-md">
             <span className="text-white font-black text-2xl leading-none tracking-tighter">M</span>
           </div>
           <div>
@@ -124,7 +124,7 @@ export const UserGatekeeper: React.FC<{ children: React.ReactNode }> = ({ childr
 
         {/* Security Notice */}
         <div className="p-3 bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 rounded-md text-xs text-zinc-600 dark:text-zinc-400 flex items-center justify-center gap-2">
-          <Lock className="w-3.5 h-3.5 text-[#FF5500] shrink-0" />
+          <Lock className="w-3.5 h-3.5 text-[#EF7E15] shrink-0" />
           <span>Single-account verified administrator access required</span>
         </div>
 
@@ -152,7 +152,7 @@ export const UserGatekeeper: React.FC<{ children: React.ReactNode }> = ({ childr
           >
             {isSigningIn ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin text-[#FF5500]" />
+                <Loader2 className="w-4 h-4 animate-spin text-[#EF7E15]" />
                 <span>Signing in with Google...</span>
               </>
             ) : (

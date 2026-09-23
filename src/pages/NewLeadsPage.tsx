@@ -178,8 +178,8 @@ export const NewLeadsPage: React.FC = () => {
     const st = status || 'New';
     if (st === 'New') {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FF5500]/10 text-[#FF5500] border border-[#FF5500]/30">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#EF7E15]/10 text-[#EF7E15] border border-[#EF7E15]/30">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#EF7E15]" />
           {st}
         </span>
       );
@@ -625,7 +625,7 @@ export const NewLeadsPage: React.FC = () => {
  className={`${sizeClass} text-xs font-bold inline-flex items-center gap-1.5 transition-colors border ${
  sent
  ? 'bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/30 cursor-not-allowed'
- : 'bg-[#FF5500] hover:bg-[#E64D00] text-white border-[#FF5500] cursor-pointer disabled:opacity-60 disabled:cursor-wait'
+ : 'bg-[#EF7E15] hover:bg-[#D66B0F] text-white border-[#EF7E15] cursor-pointer disabled:opacity-60 disabled:cursor-wait'
  }`}
  >
  {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : sent ? <Check className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
@@ -702,7 +702,7 @@ export const NewLeadsPage: React.FC = () => {
  value={searchTerm}
  onChange={(e) => setSearchTerm(e.target.value)}
  placeholder="Search leads by name, phone, address, service..."
- className="w-full pl-9 pr-8 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-[#FF5500]/50 transition-all font-medium"
+ className="w-full pl-9 pr-8 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-[#EF7E15]/50 transition-all font-medium"
  />
  {searchTerm && (
  <button
@@ -763,8 +763,8 @@ export const NewLeadsPage: React.FC = () => {
  {/* Leads Content */}
  {filteredLeads.length === 0 ? (
  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-12 text-center space-y-4 shadow-sm">
- <div className="w-16 h-16 mx-auto rounded-3xl bg-[#FF5500]/10 border border-[#FF5500]/20 flex items-center justify-center text-[#FF5500]">
- <User className="w-8 h-8 text-[#FF5500]"/>
+ <div className="w-16 h-16 mx-auto rounded-3xl bg-[#EF7E15]/10 border border-[#EF7E15]/20 flex items-center justify-center text-[#EF7E15]">
+ <User className="w-8 h-8 text-[#EF7E15]"/>
  </div>
  <div className="space-y-1">
  <h3 className="text-base font-bold text-zinc-900 dark:text-white">No New Leads Found</h3>
@@ -794,22 +794,22 @@ export const NewLeadsPage: React.FC = () => {
                 onClick={() => handleOpenLead(lead)}
                 className={`group p-4 bg-white dark:bg-zinc-900 border rounded-2xl shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
                   isToday
-                    ? 'border-[#FF5500] hover:border-[#E64D00]'
-                    : 'border-zinc-200 dark:border-zinc-800 hover:border-[#FF5500] dark:hover:border-[#FF5500]'
+                    ? 'border-[#EF7E15] hover:border-[#D66B0F]'
+                    : 'border-zinc-200 dark:border-zinc-800 hover:border-[#EF7E15] dark:hover:border-[#EF7E15]'
                 }`}
               >
                 {/* LEFT: Client Identity & Metadata Badges */}
                 <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                  <div className="w-10 h-10 rounded-xl bg-[#FF5500]/10 border border-[#FF5500]/20 flex items-center justify-center text-[#FF5500] shrink-0">
-                    <User className="w-5 h-5 text-[#FF5500]" />
+                  <div className="w-10 h-10 rounded-xl bg-[#EF7E15]/10 border border-[#EF7E15]/20 flex items-center justify-center text-[#EF7E15] shrink-0">
+                    <User className="w-5 h-5 text-[#EF7E15]" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-sm sm:text-base font-extrabold text-zinc-900 dark:text-white group-hover:text-[#FF5500] transition-colors truncate">
+                      <h3 className="text-sm sm:text-base font-extrabold text-zinc-900 dark:text-white group-hover:text-[#EF7E15] transition-colors truncate">
                         {lead.clientName}
                       </h3>
                       {isToday && (
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-[#FF5500] text-white shadow-xs">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-[#EF7E15] text-white shadow-xs">
                           TODAY
                         </span>
                       )}
@@ -863,7 +863,7 @@ export const NewLeadsPage: React.FC = () => {
                       value={lead.status || 'New'}
                       onChange={(e) => handleStatusChange(lead, e.target.value)}
                       disabled={updatingId === lead.id}
-                      className="w-full px-2.5 py-1.5 pr-7 rounded-xl text-xs font-semibold bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer appearance-none disabled:opacity-50"
+                      className="w-full px-2.5 py-1.5 pr-7 rounded-xl text-xs font-semibold bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:border-[#EF7E15] cursor-pointer appearance-none disabled:opacity-50"
                       title="Update lead status"
                     >
                       {LEAD_STATUS_OPTIONS.map((st) => (
@@ -888,7 +888,7 @@ export const NewLeadsPage: React.FC = () => {
                       e.stopPropagation();
                       handleScheduleLead(lead);
                     }}
-                    className="w-[104px] justify-center px-3.5 py-2 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                    className="w-[104px] justify-center px-3.5 py-2 bg-[#EF7E15] hover:bg-[#D66B0F] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                     title="Schedule client appointment"
                   >
                     <CalendarClock className="w-3.5 h-3.5" />
@@ -946,12 +946,12 @@ export const NewLeadsPage: React.FC = () => {
               >
  <td className="py-3 px-4 font-bold text-zinc-900 dark:text-white whitespace-nowrap">
  <div className="flex items-center gap-2.5">
- <div className="w-7 h-7 rounded-lg bg-[#FF5500]/10 border border-[#FF5500]/20 flex items-center justify-center text-[#FF5500] shrink-0">
- <User className="w-3.5 h-3.5 text-[#FF5500]" />
+ <div className="w-7 h-7 rounded-lg bg-[#EF7E15]/10 border border-[#EF7E15]/20 flex items-center justify-center text-[#EF7E15] shrink-0">
+ <User className="w-3.5 h-3.5 text-[#EF7E15]" />
  </div>
- <span className="hover:text-[#FF5500] transition-colors">{lead.clientName}</span>
+ <span className="hover:text-[#EF7E15] transition-colors">{lead.clientName}</span>
  {isToday && (
-  <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-[#FF5500] text-white shadow-xs">
+  <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-[#EF7E15] text-white shadow-xs">
    TODAY
   </span>
  )}
@@ -995,7 +995,7 @@ export const NewLeadsPage: React.FC = () => {
  value={lead.status || 'New'}
  onChange={(e) => handleStatusChange(lead, e.target.value)}
  disabled={updatingId === lead.id}
- className="w-full px-2.5 py-0.5 pr-6 rounded-full text-xs font-medium bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer appearance-none disabled:opacity-50"
+ className="w-full px-2.5 py-0.5 pr-6 rounded-full text-xs font-medium bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:border-[#EF7E15] cursor-pointer appearance-none disabled:opacity-50"
  title="Click to edit status"
  >
  {LEAD_STATUS_OPTIONS.map((st) => (
@@ -1017,7 +1017,7 @@ export const NewLeadsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleScheduleLead(lead)}
-                    className="px-3 py-1.5 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-lg text-xs font-bold transition-all shadow-2xs inline-flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1.5 bg-[#EF7E15] hover:bg-[#D66B0F] text-white rounded-lg text-xs font-bold transition-all shadow-2xs inline-flex items-center gap-1 cursor-pointer"
                     title="Schedule Appointment"
                   >
                     <CalendarClock className="w-3.5 h-3.5" />
@@ -1048,7 +1048,7 @@ export const NewLeadsPage: React.FC = () => {
  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-5 my-8">
  <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
  <div className="flex items-center gap-2.5">
- <div className="w-10 h-10 rounded-xl bg-[#FF5500]/10 text-[#FF5500] flex items-center justify-center">
+ <div className="w-10 h-10 rounded-xl bg-[#EF7E15]/10 text-[#EF7E15] flex items-center justify-center">
  <Edit2 className="w-5 h-5"/>
  </div>
  <div>
@@ -1076,7 +1076,7 @@ export const NewLeadsPage: React.FC = () => {
  required
  value={editFormData.clientName}
  onChange={(e) => setEditFormData({ ...editFormData, clientName: e.target.value })}
- className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white font-medium"
+ className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#EF7E15] text-zinc-900 dark:text-white font-medium"
  placeholder="e.g. John Doe"
  />
  </div>
@@ -1091,7 +1091,7 @@ export const NewLeadsPage: React.FC = () => {
  type="text"
  value={editFormData.clientPhone}
  onChange={(e) => setEditFormData({ ...editFormData, clientPhone: e.target.value })}
- className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white"
+ className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#EF7E15] text-zinc-900 dark:text-white"
  placeholder="e.g. (555) 000-0000"
  />
  </div>
@@ -1103,7 +1103,7 @@ export const NewLeadsPage: React.FC = () => {
  type="email"
  value={editFormData.clientEmail}
  onChange={(e) => setEditFormData({ ...editFormData, clientEmail: e.target.value })}
- className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white"
+ className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#EF7E15] text-zinc-900 dark:text-white"
  placeholder="e.g. client@example.com"
  />
  </div>
@@ -1118,7 +1118,7 @@ export const NewLeadsPage: React.FC = () => {
  type="text"
  value={editFormData.address}
  onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
- className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white"
+ className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#EF7E15] text-zinc-900 dark:text-white"
  placeholder="e.g. 123 Main St, Austin, TX"
  />
  </div>
@@ -1133,7 +1133,7 @@ export const NewLeadsPage: React.FC = () => {
  type="text"
  value={editFormData.serviceNeeded}
  onChange={(e) => setEditFormData({ ...editFormData, serviceNeeded: e.target.value })}
- className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white"
+ className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#EF7E15] text-zinc-900 dark:text-white"
  placeholder="e.g. Roof Inspection, HVAC Repair"
  />
  </div>
@@ -1145,7 +1145,7 @@ export const NewLeadsPage: React.FC = () => {
  type="text"
  value={editFormData.leadFee}
  onChange={(e) => setEditFormData({ ...editFormData, leadFee: e.target.value })}
- className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white"
+ className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#EF7E15] text-zinc-900 dark:text-white"
  placeholder="e.g. 45.00"
  />
  </div>
@@ -1161,7 +1161,7 @@ export const NewLeadsPage: React.FC = () => {
  type="text"
  value={editFormData.leadSource}
  onChange={(e) => setEditFormData({ ...editFormData, leadSource: e.target.value })}
- className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white"
+ className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#EF7E15] text-zinc-900 dark:text-white"
  placeholder="e.g. Angi, Thumbtack, Website"
  />
  </div>
@@ -1172,7 +1172,7 @@ export const NewLeadsPage: React.FC = () => {
  <select
  value={editFormData.status}
  onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
- className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white font-bold"
+ className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#EF7E15] text-zinc-900 dark:text-white font-bold"
  >
  {LEAD_STATUS_OPTIONS.map((st) => (
  <option key={st} value={st}>
@@ -1191,7 +1191,7 @@ export const NewLeadsPage: React.FC = () => {
  rows={3}
  value={editFormData.notes}
  onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
- className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] text-zinc-900 dark:text-white resize-none"
+ className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#EF7E15] text-zinc-900 dark:text-white resize-none"
  placeholder="Any notes about this lead or project..."
  />
  </div>
@@ -1210,7 +1210,7 @@ export const NewLeadsPage: React.FC = () => {
  <button
  type="submit"
  disabled={isSavingEdit}
- className="flex-1 py-2.5 rounded-lg bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-black shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+ className="flex-1 py-2.5 rounded-lg bg-[#EF7E15] hover:bg-[#D66B0F] text-white text-xs font-black shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
  >
  {isSavingEdit ? (
  <>

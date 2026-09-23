@@ -36,7 +36,7 @@ export const SuccessBanner: React.FC<SuccessBannerProps> = ({ event, onReset }) 
               href={event.htmlLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-[#FF5500] hover:bg-[#E64D00] text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-xs transition-colors"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-[#EF7E15] hover:bg-[#D66B0F] text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-xs transition-colors"
             >
               <Calendar className="w-4 h-4" />
               <span>View in Calendar</span>

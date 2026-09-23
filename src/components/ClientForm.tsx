@@ -86,7 +86,7 @@ export const ClientForm: React.FC = () => {
   };
 
   const inputStyle =
-    "w-full px-3.5 py-2.5 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700/80 rounded-xl focus:bg-white dark:focus:bg-zinc-900 focus:border-[#FF5500] dark:focus:border-[#FF5500] focus:outline-none text-base font-medium text-zinc-900 dark:text-white placeholder-zinc-400 transition-all";
+    "w-full px-3.5 py-2.5 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700/80 rounded-xl focus:bg-white dark:focus:bg-zinc-900 focus:border-[#EF7E15] dark:focus:border-[#EF7E15] focus:outline-none text-base font-medium text-zinc-900 dark:text-white placeholder-zinc-400 transition-all";
 
   if (isSuccess) {
     return (
@@ -189,7 +189,7 @@ export const ClientForm: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-2.5 bg-[#FF5500] hover:bg-[#e04b00] text-white font-bold text-xs uppercase tracking-wider rounded-lg shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
+              className="w-full py-2.5 bg-[#EF7E15] hover:bg-[#e04b00] text-white font-bold text-xs uppercase tracking-wider rounded-lg shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? (
                 <>

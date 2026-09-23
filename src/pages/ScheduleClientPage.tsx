@@ -364,7 +364,7 @@ export const ScheduleClientPage: React.FC = () => {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div className="w-9 h-9 rounded-xl bg-[#FF5500]/10 text-[#FF5500] flex items-center justify-center font-bold">
+            <div className="w-9 h-9 rounded-xl bg-[#EF7E15]/10 text-[#EF7E15] flex items-center justify-center font-bold">
               <CalendarClock className="w-4.5 h-4.5" />
             </div>
             <div>
@@ -372,7 +372,7 @@ export const ScheduleClientPage: React.FC = () => {
                 <h1 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-white tracking-tight">
                   Schedule Clients
                 </h1>
-                <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-orange-500/10 border border-orange-500/20 text-[#FF5500]">
+                <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-orange-500/10 border border-orange-500/20 text-[#EF7E15]">
                   {leads.length} New
                 </span>
               </div>
@@ -390,7 +390,7 @@ export const ScheduleClientPage: React.FC = () => {
               title="Refresh leads"
             >
               <RefreshCw
-                className={`w-4 h-4 ${refreshing ? 'animate-spin text-[#FF5500]' : ''}`}
+                className={`w-4 h-4 ${refreshing ? 'animate-spin text-[#EF7E15]' : ''}`}
               />
             </button>
 
@@ -424,7 +424,7 @@ export const ScheduleClientPage: React.FC = () => {
         <div className="rounded-2xl bg-white dark:bg-zinc-900 p-4 sm:p-5 text-zinc-900 dark:text-white shadow-2xs border border-zinc-200 dark:border-zinc-800">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center space-x-3.5">
-              <div className="w-11 h-11 rounded-xl bg-orange-500/10 text-[#FF5500] flex items-center justify-center shrink-0">
+              <div className="w-11 h-11 rounded-xl bg-orange-500/10 text-[#EF7E15] flex items-center justify-center shrink-0">
                 <CalendarClock className="w-6 h-6" />
               </div>
               <div>
@@ -444,7 +444,7 @@ export const ScheduleClientPage: React.FC = () => {
             <button
               onClick={handleRefresh}
               disabled={refreshing || loading}
-              className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-2 bg-[#FF5500] hover:bg-[#E64D00] rounded-lg text-xs font-bold text-white transition-all shadow-xs cursor-pointer shrink-0 disabled:opacity-50"
+              className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-2 bg-[#EF7E15] hover:bg-[#D66B0F] rounded-lg text-xs font-bold text-white transition-all shadow-xs cursor-pointer shrink-0 disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
               <span>Sync Leads</span>
@@ -456,7 +456,7 @@ export const ScheduleClientPage: React.FC = () => {
         {isAuthRequired && (
           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 text-center space-y-4 max-w-md mx-auto my-6 shadow-xl">
             <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center mx-auto text-zinc-600 dark:text-zinc-300">
-              <AlertCircle className="w-6 h-6 text-[#FF5500]" />
+              <AlertCircle className="w-6 h-6 text-[#EF7E15]" />
             </div>
             <div className="space-y-1">
               <h2 className="text-sm font-bold text-zinc-900 dark:text-white">Spreadsheet Sync Notice</h2>
@@ -469,7 +469,7 @@ export const ScheduleClientPage: React.FC = () => {
                 setIsAuthRequired(false);
                 fetchAllNewLeads();
               }}
-              className="bg-[#FF5500] hover:bg-[#E64D00] text-white font-bold py-2.5 px-6 rounded-xl text-xs transition-colors cursor-pointer shadow-sm"
+              className="bg-[#EF7E15] hover:bg-[#D66B0F] text-white font-bold py-2.5 px-6 rounded-xl text-xs transition-colors cursor-pointer shadow-sm"
             >
               Retry Sync
             </button>
@@ -535,7 +535,7 @@ export const ScheduleClientPage: React.FC = () => {
                 placeholder="Search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-7 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#FF5500] transition-colors"
+                className="w-full pl-9 pr-7 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#EF7E15] transition-colors"
               />
               {searchQuery && (
                 <button
@@ -565,8 +565,8 @@ export const ScheduleClientPage: React.FC = () => {
                 onClick={() => setHouzzFilter('UNSYNCED')}
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
                   houzzFilter === 'UNSYNCED'
-                    ? 'bg-[#FF5500] text-white shadow-xs'
-                    : 'text-zinc-500 dark:text-zinc-400 hover:text-[#FF5500]'
+                    ? 'bg-[#EF7E15] text-white shadow-xs'
+                    : 'text-zinc-500 dark:text-zinc-400 hover:text-[#EF7E15]'
                 }`}
                 title="Filter leads that haven't been added to Houzz Pro yet"
               >
@@ -595,7 +595,7 @@ export const ScheduleClientPage: React.FC = () => {
                 <select
                   value={sortBy}
                   onChange={(e: any) => setSortBy(e.target.value)}
-                  className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-medium rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-[#FF5500] cursor-pointer"
+                  className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-medium rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-[#EF7E15] cursor-pointer"
                 >
                   <option value="newest">Newest Date</option>
                   <option value="oldest">Oldest Date</option>
@@ -797,11 +797,11 @@ export const ScheduleClientPage: React.FC = () => {
                                 }}
                                 disabled={sendingHouzzId === lead.id || isBeingUpdated}
                                 type="button"
-                                className="inline-flex items-center justify-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-[#FF5500] hover:text-[#E64D00] dark:hover:text-white border border-[#FF5500]/30 hover:border-[#FF5500] font-bold px-3 py-1.5 rounded-xl text-xs transition-all shadow-xs cursor-pointer disabled:opacity-50 shrink-0 group"
+                                className="inline-flex items-center justify-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-[#EF7E15] hover:text-[#D66B0F] dark:hover:text-white border border-[#EF7E15]/30 hover:border-[#EF7E15] font-bold px-3 py-1.5 rounded-xl text-xs transition-all shadow-xs cursor-pointer disabled:opacity-50 shrink-0 group"
                                 title="Add this new lead into Houzz Pro"
                               >
                                 <Send
-                                  className={`w-3.5 h-3.5 text-[#FF5500] group-hover:translate-x-0.5 transition-transform ${
+                                  className={`w-3.5 h-3.5 text-[#EF7E15] group-hover:translate-x-0.5 transition-transform ${
                                     sendingHouzzId === lead.id ? 'animate-spin' : ''
                                   }`}
                                 />
@@ -814,7 +814,7 @@ export const ScheduleClientPage: React.FC = () => {
                               onClick={() => handleScheduleLead(lead)}
                               disabled={isBeingUpdated}
                               type="button"
-                              className="inline-flex items-center justify-center gap-1.5 bg-[#FF5500] hover:bg-[#E64D00] text-white font-bold px-3 py-1.5 rounded-xl text-xs transition-all shadow-xs cursor-pointer disabled:opacity-50 shrink-0"
+                              className="inline-flex items-center justify-center gap-1.5 bg-[#EF7E15] hover:bg-[#D66B0F] text-white font-bold px-3 py-1.5 rounded-xl text-xs transition-all shadow-xs cursor-pointer disabled:opacity-50 shrink-0"
                               title="Schedule Client"
                             >
                               <CalendarClock className="w-3.5 h-3.5 shrink-0" />

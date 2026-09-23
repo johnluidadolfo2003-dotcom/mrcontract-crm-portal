@@ -86,7 +86,7 @@ export const TodayTasksPage: React.FC = () => {
  <div>
  <h1 className="text-2xl sm:text-3xl font-black text-zinc-900 dark:text-white tracking-tight flex items-center gap-3">
  Tasks
- <span className="text-xs px-2.5 py-1 rounded-full bg-[#FF5500]/10 text-[#FF5500] font-black border border-[#FF5500]/20">
+ <span className="text-xs px-2.5 py-1 rounded-full bg-[#EF7E15]/10 text-[#EF7E15] font-black border border-[#EF7E15]/20">
  {filteredTasks.length} Active
  </span>
  </h1>
@@ -100,11 +100,11 @@ export const TodayTasksPage: React.FC = () => {
  type="button"
  onClick={fetchTasks}
  disabled={isLoading}
- className="p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors flex items-center justify-center min-w-[44px] min-h-[44px] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#FF5500]"
+ className="p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors flex items-center justify-center min-w-[44px] min-h-[44px] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#EF7E15]"
  title="Refresh tasks"
  aria-label="Refresh tasks"
  >
- <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-[#FF5500]' : ''}`} />
+ <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-[#EF7E15]' : ''}`} />
  </button>
  </div>
  </div>
@@ -177,7 +177,7 @@ export const TodayTasksPage: React.FC = () => {
  {/* Task List Grid */}
  {isLoading ? (
  <div className="py-20 text-center">
- <RefreshCw className="w-8 h-8 mx-auto animate-spin text-[#FF5500]"/>
+ <RefreshCw className="w-8 h-8 mx-auto animate-spin text-[#EF7E15]"/>
  <p className="text-xs font-bold text-zinc-400 dark:text-zinc-500 mt-2">Loading tasks...</p>
  </div>
  ) : filteredTasks.length === 0 ? (
@@ -199,24 +199,24 @@ export const TodayTasksPage: React.FC = () => {
  <div
  key={task.id}
  onClick={() => handleOpenLead(task)}
- className="group p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-[#FF5500] dark:hover:border-[#FF5500] rounded-2xl shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+ className="group p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-[#EF7E15] dark:hover:border-[#EF7E15] rounded-2xl shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3"
  >
  <div className="flex items-start sm:items-center gap-3.5 min-w-0">
  <div
  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
  isNew
- ? 'bg-[#FF5500]/10 text-[#FF5500]'
+ ? 'bg-[#EF7E15]/10 text-[#EF7E15]'
  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
  }`}
  >
  {isAppt && <CalendarClock className="w-5 h-5"/>}
- {isNew && <User className="w-5 h-5 text-[#FF5500]"/>}
+ {isNew && <User className="w-5 h-5 text-[#EF7E15]"/>}
  {isFollowUp && <Clock className="w-5 h-5"/>}
  </div>
 
  <div className="min-w-0">
  <div className="flex items-center gap-2 flex-wrap">
- <h4 className="font-black text-sm text-zinc-900 dark:text-white group-hover:text-[#FF5500] transition-colors truncate">
+ <h4 className="font-black text-sm text-zinc-900 dark:text-white group-hover:text-[#EF7E15] transition-colors truncate">
  {task.clientName}
  </h4>
  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
@@ -228,7 +228,7 @@ export const TodayTasksPage: React.FC = () => {
  <span className="font-semibold text-zinc-700 dark:text-zinc-300">{task.title}</span>
  {task.clientPhone && (
  <span className="flex items-center gap-1 font-mono">
- <Phone className="w-3 h-3 text-[#FF5500]"/>
+ <Phone className="w-3 h-3 text-[#EF7E15]"/>
  {task.clientPhone}
  </span>
  )}
@@ -252,7 +252,7 @@ export const TodayTasksPage: React.FC = () => {
  e.stopPropagation();
  handleOpenLead(task);
  }}
- className="px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-[#FF5500] hover:text-white text-zinc-700 dark:text-zinc-300 font-bold text-xs transition-colors flex items-center gap-1 cursor-pointer"
+ className="px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-[#EF7E15] hover:text-white text-zinc-700 dark:text-zinc-300 font-bold text-xs transition-colors flex items-center gap-1 cursor-pointer"
  >
  <span>Open</span>
  <ChevronRight className="w-3.5 h-3.5"/>

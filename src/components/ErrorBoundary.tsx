@@ -36,7 +36,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 localStorage.clear();
                 window.location.reload();
               }}
-              className="w-full py-3 px-4 bg-[#FF5500] hover:bg-[#E64D00] text-white font-medium rounded-xl transition-colors cursor-pointer shadow-xs"
+              className="w-full py-3 px-4 bg-[#EF7E15] hover:bg-[#D66B0F] text-white font-medium rounded-xl transition-colors cursor-pointer shadow-xs"
             >
               Reload Application & Reset Cache
             </button>

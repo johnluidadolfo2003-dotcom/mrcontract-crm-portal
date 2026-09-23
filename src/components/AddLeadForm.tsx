@@ -418,7 +418,7 @@ export const AddLeadForm: React.FC<AddLeadFormProps> = ({
  type="button"
  onClick={handleExtractText}
  disabled={isExtracting || !pasteText.trim()}
- className="px-4 py-1.5 bg-[#FF5500] hover:bg-[#E64D00] text-white font-bold text-xs rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-sm"
+ className="px-4 py-1.5 bg-[#EF7E15] hover:bg-[#D66B0F] text-white font-bold text-xs rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-sm"
  >
  {isExtracting ? (
  <Loader2 className="w-3.5 h-3.5 animate-spin"/>
@@ -612,7 +612,7 @@ export const AddLeadForm: React.FC<AddLeadFormProps> = ({
  <button
  type="submit"
  disabled={isSubmitting}
- className="w-full py-3.5 bg-[#FF5500] hover:bg-[#E64D00] text-white font-black text-sm uppercase tracking-wider rounded-lg  transition-all flex items-center justify-center space-x-2.5 group disabled:opacity-50 cursor-pointer"
+ className="w-full py-3.5 bg-[#EF7E15] hover:bg-[#D66B0F] text-white font-black text-sm uppercase tracking-wider rounded-lg  transition-all flex items-center justify-center space-x-2.5 group disabled:opacity-50 cursor-pointer"
  >
  {isSubmitting ? (
  <>

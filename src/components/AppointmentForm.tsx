@@ -666,7 +666,7 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
  title={showAvailability ? 'Close salesperson availability' : 'Check salesperson availability'}
  className={`w-8 h-8 border rounded-lg transition-all cursor-pointer flex items-center justify-center shadow-2xs ${
   showAvailability
-   ? 'bg-[#FF5500] border-[#FF5500] text-white'
+   ? 'bg-[#EF7E15] border-[#EF7E15] text-white'
    : 'bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white'
  }`}
  >
@@ -782,7 +782,7 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
  type="button"
  onClick={handleExtractText}
  disabled={!pasteText.trim() || isExtracting}
- className="px-4 py-1.5 bg-[#FF5500] hover:bg-[#E64D00]-dark disabled:opacity-50 text-white text-xs font-bold rounded-lg cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm"
+ className="px-4 py-1.5 bg-[#EF7E15] hover:bg-[#D66B0F]-dark disabled:opacity-50 text-white text-xs font-bold rounded-lg cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm"
  >
  {isExtracting ? (
  <Loader2 className="w-3.5 h-3.5 animate-spin"/>
@@ -800,7 +800,7 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
  {editingEventId && (
  <div className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-xl p-3 text-xs font-semibold flex items-center justify-between animate-in fade-in duration-150">
  <div className="flex items-center space-x-2">
- <Edit3 className="w-4 h-4 text-[#FF5500] shrink-0"/>
+ <Edit3 className="w-4 h-4 text-[#EF7E15] shrink-0"/>
  <span>Editing pre-scheduled item from Google Calendar. Modify any missing info below to finalize.</span>
  </div>
  {onClearLoadedEvent && (
@@ -1084,7 +1084,7 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
  <button
  type="submit"
  disabled={isSubmitting}
- className="w-full py-3.5 bg-[#FF5500] hover:bg-[#E64D00] text-white font-black text-sm uppercase tracking-wider rounded-lg  transition-all flex items-center justify-center space-x-2.5 group disabled:opacity-50 cursor-pointer"
+ className="w-full py-3.5 bg-[#EF7E15] hover:bg-[#D66B0F] text-white font-black text-sm uppercase tracking-wider rounded-lg  transition-all flex items-center justify-center space-x-2.5 group disabled:opacity-50 cursor-pointer"
  >
  {isSubmitting ? (
  <>
@@ -1126,7 +1126,7 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
       title="Refresh availability"
       className="w-9 h-9 rounded-lg border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-300 disabled:opacity-50"
      >
-      <RefreshCw className={`w-4 h-4 ${isLoadingAvailability ? 'animate-spin text-[#FF5500]' : ''}`} />
+      <RefreshCw className={`w-4 h-4 ${isLoadingAvailability ? 'animate-spin text-[#EF7E15]' : ''}`} />
      </button>
      <button
       type="button"
@@ -1176,7 +1176,7 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
        onClick={() => setAvailabilityDate(cell.key)}
        className={`h-8 rounded-lg text-xs font-bold transition-colors ${
         cell.key === availabilityDate
-         ? 'bg-[#FF5500] text-white'
+         ? 'bg-[#EF7E15] text-white'
          : cell.inMonth
           ? 'text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800'
           : 'text-zinc-300 dark:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800'
@@ -1187,9 +1187,9 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
      ))}
     </div>
     <div className="flex items-center justify-between mt-3">
-     <button type="button" onClick={() => setAvailabilityDate(addDaysToDateKey(availabilityDate, -1))} className="text-[10px] font-bold text-zinc-500 hover:text-[#FF5500]">Previous day</button>
+     <button type="button" onClick={() => setAvailabilityDate(addDaysToDateKey(availabilityDate, -1))} className="text-[10px] font-bold text-zinc-500 hover:text-[#EF7E15]">Previous day</button>
      <p className="text-xs font-black text-zinc-900 dark:text-white">{availabilityDayLabel}</p>
-     <button type="button" onClick={() => setAvailabilityDate(addDaysToDateKey(availabilityDate, 1))} className="text-[10px] font-bold text-zinc-500 hover:text-[#FF5500]">Next day</button>
+     <button type="button" onClick={() => setAvailabilityDate(addDaysToDateKey(availabilityDate, 1))} className="text-[10px] font-bold text-zinc-500 hover:text-[#EF7E15]">Next day</button>
     </div>
    </div>
 
@@ -1237,7 +1237,7 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
           .map((appointment) => (
            <div
             key={appointment.id}
-            className="absolute left-1 right-1 z-10 rounded-lg border border-[#FF5500]/40 bg-[#FF5500]/15 dark:bg-[#FF5500]/20 px-2 py-1 overflow-hidden shadow-sm"
+            className="absolute left-1 right-1 z-10 rounded-lg border border-[#EF7E15]/40 bg-[#EF7E15]/15 dark:bg-[#EF7E15]/20 px-2 py-1 overflow-hidden shadow-sm"
             style={{
              top: (appointment.startMinutes / 60) * HOUR_ROW_HEIGHT + 2,
              height: Math.max(30, ((appointment.endMinutes - appointment.startMinutes) / 60) * HOUR_ROW_HEIGHT - 4),
@@ -1245,7 +1245,7 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
             title={`${appointment.clientName} · ${formatTime12Hour(appointment.startTime)}–${formatTime12Hour(appointment.endTime)}`}
            >
             <p className="text-[10px] font-black text-zinc-900 dark:text-white truncate">{appointment.clientName}</p>
-            <p className="text-[9px] font-bold text-[#E64D00] dark:text-orange-300 truncate">
+            <p className="text-[9px] font-bold text-[#D66B0F] dark:text-orange-300 truncate">
              {formatTime12Hour(appointment.startTime)}–{formatTime12Hour(appointment.endTime)}
             </p>
             {appointment.serviceNeeded && <p className="text-[9px] text-zinc-600 dark:text-zinc-300 truncate">{appointment.serviceNeeded}</p>}

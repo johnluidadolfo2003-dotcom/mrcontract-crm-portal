@@ -188,7 +188,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
         {/* Modal Header */}
         <div className="px-5 py-3.5 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-md bg-[#FF5500]/15 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500]">
+            <div className="w-8 h-8 rounded-md bg-[#EF7E15]/15 border border-[#EF7E15]/30 flex items-center justify-center text-[#EF7E15]">
               <Activity className="w-4 h-4" />
             </div>
             <div>
@@ -221,7 +221,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
             <span className="text-zinc-900 dark:text-white font-bold text-sm tabular-nums">{diagData?.counts?.totalIncomingLeads ?? 0}</span>
           </div>
           <div className="bg-white dark:bg-zinc-950/60 p-2.5 rounded-md border border-zinc-200 dark:border-zinc-800">
-            <span className="text-[#FF5500] block text-[10px] font-semibold uppercase">Angi Leads</span>
+            <span className="text-[#EF7E15] block text-[10px] font-semibold uppercase">Angi Leads</span>
             <span className="text-zinc-900 dark:text-white font-bold text-sm tabular-nums">{diagData?.counts?.angiLeadsCount ?? 0}</span>
           </div>
           <div className="bg-white dark:bg-zinc-950/60 p-2.5 rounded-md border border-zinc-200 dark:border-zinc-800">
@@ -240,7 +240,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
             onClick={() => setActiveTab('pipeline')}
             className={`px-3.5 py-1.5 text-xs font-bold rounded-t-md transition-colors duration-120 flex items-center gap-1.5 cursor-pointer border-b-2 ${
               activeTab === 'pipeline'
-                ? 'text-[#FF5500] border-[#FF5500] bg-white dark:bg-zinc-800/60'
+                ? 'text-[#EF7E15] border-[#EF7E15] bg-white dark:bg-zinc-800/60'
                 : 'text-zinc-500 dark:text-zinc-400 border-transparent hover:text-zinc-800 dark:hover:text-zinc-200'
             }`}
           >
@@ -251,7 +251,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
             onClick={() => setActiveTab('endpoints')}
             className={`px-3.5 py-1.5 text-xs font-bold rounded-t-md transition-colors duration-120 flex items-center gap-1.5 cursor-pointer border-b-2 ${
               activeTab === 'endpoints'
-                ? 'text-[#FF5500] border-[#FF5500] bg-white dark:bg-zinc-800/60'
+                ? 'text-[#EF7E15] border-[#EF7E15] bg-white dark:bg-zinc-800/60'
                 : 'text-zinc-500 dark:text-zinc-400 border-transparent hover:text-zinc-800 dark:hover:text-zinc-200'
             }`}
           >
@@ -262,7 +262,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
             onClick={() => setActiveTab('test')}
             className={`px-3.5 py-1.5 text-xs font-bold rounded-t-md transition-colors duration-120 flex items-center gap-1.5 cursor-pointer border-b-2 ${
               activeTab === 'test'
-                ? 'text-[#FF5500] border-[#FF5500] bg-white dark:bg-zinc-800/60'
+                ? 'text-[#EF7E15] border-[#EF7E15] bg-white dark:bg-zinc-800/60'
                 : 'text-zinc-500 dark:text-zinc-400 border-transparent hover:text-zinc-800 dark:hover:text-zinc-200'
             }`}
           >
@@ -273,7 +273,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
             onClick={() => setActiveTab('diagnose')}
             className={`px-3.5 py-1.5 text-xs font-bold rounded-t-md transition-colors duration-120 flex items-center gap-1.5 cursor-pointer border-b-2 ${
               activeTab === 'diagnose'
-                ? 'text-[#FF5500] border-[#FF5500] bg-white dark:bg-zinc-800/60'
+                ? 'text-[#EF7E15] border-[#EF7E15] bg-white dark:bg-zinc-800/60'
                 : 'text-zinc-500 dark:text-zinc-400 border-transparent hover:text-zinc-800 dark:hover:text-zinc-200'
             }`}
           >
@@ -284,7 +284,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
             onClick={() => setActiveTab('logs')}
             className={`px-3.5 py-1.5 text-xs font-bold rounded-t-md transition-colors duration-120 flex items-center gap-1.5 cursor-pointer border-b-2 ${
               activeTab === 'logs'
-                ? 'text-[#FF5500] border-[#FF5500] bg-white dark:bg-zinc-800/60'
+                ? 'text-[#EF7E15] border-[#EF7E15] bg-white dark:bg-zinc-800/60'
                 : 'text-zinc-500 dark:text-zinc-400 border-transparent hover:text-zinc-800 dark:hover:text-zinc-200'
             }`}
           >
@@ -300,7 +300,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
             <div className="space-y-3.5">
               {/* Test-only & Setup Reminder Notice */}
               <div className="bg-orange-500/10 border border-orange-500/30 rounded-md p-3.5 text-xs space-y-1.5 text-zinc-800 dark:text-zinc-200">
-                <div className="flex items-center gap-2 font-bold text-[#FF5500]">
+                <div className="flex items-center gap-2 font-bold text-[#EF7E15]">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>Test only — does not prove that live Angi emails are connected.</span>
                 </div>
@@ -316,7 +316,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-200 dark:border-zinc-800/80 pb-3">
                   <div className="space-y-0.5">
                     <h3 className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-[#FF5500]" />
+                      <Zap className="w-4 h-4 text-[#EF7E15]" />
                       End-to-End Angi Lead Pipeline Validator
                     </h3>
                     <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -327,7 +327,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
                   <button
                     onClick={() => handleRunPipeline()}
                     disabled={runningPipeline}
-                    className="px-4 h-[34px] bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-md text-xs font-bold transition-colors duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shrink-0"
+                    className="px-4 h-[34px] bg-[#EF7E15] hover:bg-[#D66B0F] text-white rounded-md text-xs font-bold transition-colors duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shrink-0"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${runningPipeline ? 'animate-spin' : ''}`} />
                     <span>{runningPipeline ? 'Running 4-Step Test...' : 'Run Full Pipeline Test'}</span>
@@ -340,7 +340,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
                   <div className="bg-zinc-50 dark:bg-zinc-950 p-3.5 rounded-md border border-zinc-200 dark:border-zinc-800 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                        <span className="w-5 h-5 rounded-md bg-[#FF5500]/20 text-[#FF5500] text-[11px] font-mono flex items-center justify-center font-bold">1</span>
+                        <span className="w-5 h-5 rounded-md bg-[#EF7E15]/20 text-[#EF7E15] text-[11px] font-mono flex items-center justify-center font-bold">1</span>
                         Angi Email Reception & Parsing
                       </span>
                       {pipelineResult?.step1_extraction?.success ? (
@@ -367,7 +367,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
                   <div className="bg-zinc-50 dark:bg-zinc-950 p-3.5 rounded-md border border-zinc-200 dark:border-zinc-800 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                        <span className="w-5 h-5 rounded-md bg-[#FF5500]/20 text-[#FF5500] text-[11px] font-mono flex items-center justify-center font-bold">2</span>
+                        <span className="w-5 h-5 rounded-md bg-[#EF7E15]/20 text-[#EF7E15] text-[11px] font-mono flex items-center justify-center font-bold">2</span>
                         In-App CRM Lead Creation
                       </span>
                       {pipelineResult?.step2_app_database?.success ? (
@@ -413,7 +413,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
                     </p>
                     {pipelineResult?.step3_google_sheets && (
                       <div className="bg-white dark:bg-zinc-900/80 p-2.5 rounded-md border border-zinc-200 dark:border-zinc-800/80 text-[11px] space-y-1 text-zinc-700 dark:text-zinc-300">
-                        <div><strong className="text-zinc-900 dark:text-white">Target Tab:</strong> <span className="text-[#FF5500] font-bold">{pipelineResult.step3_google_sheets.targetTab || 'Angi'}</span></div>
+                        <div><strong className="text-zinc-900 dark:text-white">Target Tab:</strong> <span className="text-[#EF7E15] font-bold">{pipelineResult.step3_google_sheets.targetTab || 'Angi'}</span></div>
                         <div><strong className="text-zinc-900 dark:text-white">Result:</strong> {pipelineResult.step3_google_sheets.success ? <span className="text-emerald-600 dark:text-emerald-400 font-bold">Appended Successfully</span> : <span className="text-orange-600 dark:text-orange-400">{pipelineResult.step3_google_sheets.error}</span>}</div>
                       </div>
                     )}
@@ -459,14 +459,14 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-[#FF5500]" />
+                      <span className="w-2 h-2 rounded-full bg-[#EF7E15]" />
                       Primary Angi Leads Webhook
                     </h3>
                     <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                       Use this endpoint in Zapier, Make, Angi Leads Integration, or your email forwarding webhook.
                     </p>
                   </div>
-                  <span className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-[#FF5500]/10 text-[#FF5500] border border-[#FF5500]/30 font-bold">
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-[#EF7E15]/10 text-[#EF7E15] border border-[#EF7E15]/30 font-bold">
                     POST (JSON/Text/Form)
                   </span>
                 </div>
@@ -477,7 +477,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
                   </div>
                   <button
                     onClick={() => handleCopy(urls.angiUrl, 'angi')}
-                    className="px-3.5 h-[34px] bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-md text-xs font-bold transition-colors duration-120 flex items-center gap-1.5 cursor-pointer shrink-0"
+                    className="px-3.5 h-[34px] bg-[#EF7E15] hover:bg-[#D66B0F] text-white rounded-md text-xs font-bold transition-colors duration-120 flex items-center gap-1.5 cursor-pointer shrink-0"
                   >
                     {copiedUrl === 'angi' ? <Check className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4" />}
                     <span>{copiedUrl === 'angi' ? 'Copied!' : 'Copy URL'}</span>
@@ -491,7 +491,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
                   </div>
                   <div className="bg-zinc-50 dark:bg-zinc-950/80 p-2.5 rounded-md border border-zinc-200 dark:border-zinc-800/80">
                     <span className="text-zinc-500 dark:text-zinc-400 font-semibold block text-[10px]">Auto-Tagging</span>
-                    <span className="text-[#FF5500] font-bold text-xs">Source: "Angi"</span>
+                    <span className="text-[#EF7E15] font-bold text-xs">Source: "Angi"</span>
                   </div>
                   <div className="bg-zinc-50 dark:bg-zinc-950/80 p-2.5 rounded-md border border-zinc-200 dark:border-zinc-800/80">
                     <span className="text-zinc-500 dark:text-zinc-400 font-semibold block text-[10px]">Spreadsheet Sync</span>
@@ -505,7 +505,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-[#FF5500]" />
+                      <span className="w-2 h-2 rounded-full bg-[#EF7E15]" />
                       Universal Webhook (Auto-Detect Source)
                     </h3>
                     <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -573,7 +573,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
                   {/* Angi Test Card */}
                   <div className="bg-zinc-50 dark:bg-zinc-950 border border-orange-500/30 rounded-md p-3.5 space-y-2.5 relative overflow-hidden">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-[#FF5500] uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-[#EF7E15] uppercase tracking-wider flex items-center gap-1.5">
                         Angi Lead Test
                       </span>
                       <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 tabular-nums">$42.50 fee</span>
@@ -583,13 +583,13 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
                       <p className="font-semibold text-zinc-900 dark:text-white">Sarah Jenkins</p>
                       <p className="text-zinc-500 dark:text-zinc-400 tabular-nums">(412) 555-0144 • sarah.jenkins@example.com</p>
                       <p className="text-zinc-500 dark:text-zinc-400">789 Forbes Ave, Pittsburgh, PA 15213</p>
-                      <p className="text-[#FF5500] font-medium text-[11px] pt-0.5">Front Porch Retaining Wall Rebuild</p>
+                      <p className="text-[#EF7E15] font-medium text-[11px] pt-0.5">Front Porch Retaining Wall Rebuild</p>
                     </div>
 
                     <button
                       onClick={() => handleRun1ClickTest('Angi')}
                       disabled={testingSource !== null}
-                      className="w-full h-[34px] bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-md text-xs font-bold transition-colors duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                      className="w-full h-[34px] bg-[#EF7E15] hover:bg-[#D66B0F] text-white rounded-md text-xs font-bold transition-colors duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       <Send className={`w-3.5 h-3.5 ${testingSource === 'Angi' ? 'animate-spin' : ''}`} />
                       <span>{testingSource === 'Angi' ? 'Injecting Lead...' : 'Send Test Angi Lead'}</span>
@@ -657,7 +657,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
                     <select
                       value={selectedSource}
                       onChange={(e) => setSelectedSource(e.target.value)}
-                      className="bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-md px-2.5 h-[32px] text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#FF5500]"
+                      className="bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-md px-2.5 h-[32px] text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#EF7E15]"
                     >
                       <option value="Angi">Angi</option>
                       <option value="Thumbtack">Thumbtack</option>
@@ -673,7 +673,7 @@ export const WebhookDiagnosticsModal: React.FC<WebhookDiagnosticsModalProps> = (
                     value={rawInput}
                     onChange={(e) => setRawInput(e.target.value)}
                     placeholder={`Paste raw Angi email text or JSON payload here...\nExample:\nYou have a new lead!\nClean and Inspect a Wood Fireplace Chimney\n\nCustomer Information\nJAN MCCOY\n(412) 491-2719\njanrealmccoy@yahoo.com\n631 W Waldheim Rd, Pittsburgh, PA 15215`}
-                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-md p-3 text-xs font-mono text-zinc-900 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-[#FF5500]"
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-md p-3 text-xs font-mono text-zinc-900 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-[#EF7E15]"
                   />
 
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -695,7 +695,7 @@ Lead Details:
 Need full chimney inspection and tuckpointing quote.
 Lead Fee: $45.00`)
                       }
-                      className="text-[11px] text-[#FF5500] hover:underline cursor-pointer font-medium"
+                      className="text-[11px] text-[#EF7E15] hover:underline cursor-pointer font-medium"
                     >
                       Load Sample Angi Lead Email
                     </button>
@@ -713,7 +713,7 @@ Lead Fee: $45.00`)
                       <button
                         onClick={() => handleAnalyzePayload(true)}
                         disabled={analyzing || !rawInput.trim()}
-                        className="px-3.5 h-[34px] bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-md text-xs font-bold transition-colors duration-120 cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
+                        className="px-3.5 h-[34px] bg-[#EF7E15] hover:bg-[#D66B0F] text-white rounded-md text-xs font-bold transition-colors duration-120 cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
                       >
                         <Send className="w-3.5 h-3.5" />
                         <span>Parse & Create Lead</span>
@@ -756,7 +756,7 @@ Lead Fee: $45.00`)
                       </div>
                       <div className="bg-white dark:bg-zinc-900/80 p-2.5 rounded-md border border-zinc-200 dark:border-zinc-800">
                         <span className="text-zinc-500 dark:text-zinc-400 font-semibold block text-[10px]">Service Requested</span>
-                        <span className="text-[#FF5500] font-bold text-xs">{diagResult.extracted?.serviceNeeded || '—'}</span>
+                        <span className="text-[#EF7E15] font-bold text-xs">{diagResult.extracted?.serviceNeeded || '—'}</span>
                       </div>
                       <div className="bg-white dark:bg-zinc-900/80 p-2.5 rounded-md border border-zinc-200 dark:border-zinc-800">
                         <span className="text-zinc-500 dark:text-zinc-400 font-semibold block text-[10px]">Lead Fee</span>
@@ -819,7 +819,7 @@ Lead Fee: $45.00`)
                           <span
                             className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
                               log.source === 'Angi'
-                                ? 'bg-[#FF5500]/10 text-[#FF5500] border border-[#FF5500]/20'
+                                ? 'bg-[#EF7E15]/10 text-[#EF7E15] border border-[#EF7E15]/20'
                                 : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700'
                             }`}
                           >
@@ -852,7 +852,7 @@ Lead Fee: $45.00`)
         {/* Modal Footer */}
         <div className="px-5 py-3 bg-zinc-50 dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
           <div className="flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-[#FF5500]" />
+            <ShieldCheck className="w-4 h-4 text-[#EF7E15]" />
             <span>All webhook endpoints are server-monitored and SSL secured.</span>
           </div>
           <button

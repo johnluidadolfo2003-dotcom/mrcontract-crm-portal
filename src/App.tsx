@@ -12,7 +12,7 @@ const NewLeadsPage = lazy(() => import('./pages/NewLeadsPage').then((m) => ({ de
 const TodayTasksPage = lazy(() => import('./pages/TodayTasksPage').then((m) => ({ default: m.TodayTasksPage })));
 const ClientForm = lazy(() => import('./components/ClientForm').then((m) => ({ default: m.ClientForm })));
 
-const PageLoader = () => <div className="flex min-h-[40vh] items-center justify-center" role="status"><div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-300 border-t-[#FF5500]" /></div>;
+const PageLoader = () => <div className="flex min-h-[40vh] items-center justify-center" role="status"><div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-300 border-t-[#EF7E15]" /></div>;
 
 export default function App() {
  return (

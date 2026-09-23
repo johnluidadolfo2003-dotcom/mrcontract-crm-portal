@@ -116,8 +116,8 @@ export const AngiEmailActivityPage: React.FC = () => {
     }
     if (s.includes('review')) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-orange-500/10 text-[#FF5500] border border-orange-500/20">
-          <AlertCircle className="w-3.5 h-3.5 text-[#FF5500]" />
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-orange-500/10 text-[#EF7E15] border border-orange-500/20">
+          <AlertCircle className="w-3.5 h-3.5 text-[#EF7E15]" />
           {statusStr || 'Needs Review'}
         </span>
       );
@@ -149,7 +149,7 @@ export const AngiEmailActivityPage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#FF5500]/10 border border-[#FF5500]/20 flex items-center justify-center text-[#FF5500]">
+            <div className="w-10 h-10 rounded-xl bg-[#EF7E15]/10 border border-[#EF7E15]/20 flex items-center justify-center text-[#EF7E15]">
               <Activity className="w-5 h-5" />
             </div>
             <div>
@@ -188,7 +188,7 @@ export const AngiEmailActivityPage: React.FC = () => {
               onClick={() => setActiveFilter(filter)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeFilter === filter
-                  ? 'bg-[#FF5500] text-white shadow-xs'
+                  ? 'bg-[#EF7E15] text-white shadow-xs'
                   : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
               }`}
             >
@@ -204,7 +204,7 @@ export const AngiEmailActivityPage: React.FC = () => {
             placeholder="Search by name, phone, email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-900 dark:text-white outline-none focus:ring-2 focus:ring-[#FF5500]/30"
+            className="w-full pl-9 pr-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-900 dark:text-white outline-none focus:ring-2 focus:ring-[#EF7E15]/30"
           />
         </div>
       </div>
@@ -259,7 +259,7 @@ export const AngiEmailActivityPage: React.FC = () => {
                         {receivedTime}
                       </td>
                       <td className="py-3 px-4">
-                        <span className="px-2 py-0.5 rounded-md font-bold bg-orange-500/10 text-[#FF5500]">
+                        <span className="px-2 py-0.5 rounded-md font-bold bg-orange-500/10 text-[#EF7E15]">
                           {source}
                         </span>
                       </td>
@@ -339,7 +339,7 @@ export const AngiEmailActivityPage: React.FC = () => {
                       <td className="py-3 px-4 text-right whitespace-nowrap">
                         <button
                           onClick={() => handleViewLead(lead)}
-                          className="px-3 py-1.5 bg-[#FF5500]/10 hover:bg-[#FF5500]/20 text-[#FF5500] rounded-lg font-bold transition-all inline-flex items-center gap-1 cursor-pointer"
+                          className="px-3 py-1.5 bg-[#EF7E15]/10 hover:bg-[#EF7E15]/20 text-[#EF7E15] rounded-lg font-bold transition-all inline-flex items-center gap-1 cursor-pointer"
                         >
                           <span>View lead</span>
                           <ExternalLink className="w-3 h-3" />

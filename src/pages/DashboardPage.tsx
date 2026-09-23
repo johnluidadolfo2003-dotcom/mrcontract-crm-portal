@@ -495,14 +495,14 @@ export const Dashboard: React.FC = () => {
      className="p-2.5 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 transition-colors duration-120 cursor-pointer disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center"
      title="Refresh dashboard and Google Calendar"
     >
-     <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-[#FF5500]' : ''}`} />
+     <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-[#EF7E15]' : ''}`} />
     </button>
    </div>
 
    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-5">
      <div className="flex items-center justify-between">
-      <Users className="w-5 h-5 text-[#FF5500]" />
+      <Users className="w-5 h-5 text-[#EF7E15]" />
       <button onClick={() => navigate('/new')} className="text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors duration-120 flex items-center gap-1 cursor-pointer">
        View <ArrowUpRight className="w-3.5 h-3.5" />
       </button>
@@ -512,7 +512,7 @@ export const Dashboard: React.FC = () => {
     </div>
 
     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-5">
-     <Calendar className="w-5 h-5 text-[#FF5500]" />
+     <Calendar className="w-5 h-5 text-[#EF7E15]" />
      <div className="mt-4 text-4xl font-black text-zinc-900 dark:text-white tabular-nums">{todayAppointments.length}</div>
      <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">Appointments Today</div>
      <div className="text-[11px] text-zinc-500 mt-0.5">From all accessible Google Calendars</div>
@@ -541,7 +541,7 @@ export const Dashboard: React.FC = () => {
       <div key={representative} className="rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden bg-zinc-50/70 dark:bg-zinc-950/40">
        <div className="px-4 py-3 bg-zinc-100 dark:bg-zinc-800/80 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
         <span className="font-black text-sm text-zinc-900 dark:text-white">{representative}</span>
-        <span className="text-[10px] font-black rounded-full px-2 py-0.5 bg-[#FF5500]/10 text-[#FF5500]">
+        <span className="text-[10px] font-black rounded-full px-2 py-0.5 bg-[#EF7E15]/10 text-[#EF7E15]">
          {groupedAppointments[representative].length}
         </span>
        </div>
@@ -576,13 +576,13 @@ export const Dashboard: React.FC = () => {
             className={`rounded-xl border p-3 cursor-pointer transition-colors ${
              isDuplicate
               ? 'border-orange-400 bg-orange-50 dark:bg-orange-500/10'
-              : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-[#FF5500]/50'
+              : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-[#EF7E15]/50'
             }`}
            >
             <div className="flex items-start justify-between gap-2">
              <div className="min-w-0">
               <p className="text-xs font-extrabold text-zinc-900 dark:text-white truncate">{item.clientName}</p>
-              <p className="text-[11px] font-bold text-[#FF5500] mt-1">
+              <p className="text-[11px] font-bold text-[#EF7E15] mt-1">
                {formatTime12Hour(item.startTime)}
                {item.endTime ? ` – ${formatTime12Hour(item.endTime)}` : ''}
               </p>
@@ -621,7 +621,7 @@ export const Dashboard: React.FC = () => {
                event.stopPropagation();
                handlePullToCrm(item);
               }}
-              className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-lg bg-[#FF5500] hover:bg-[#E64D00] text-white text-[10px] font-black py-2 disabled:opacity-50"
+              className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-lg bg-[#EF7E15] hover:bg-[#D66B0F] text-white text-[10px] font-black py-2 disabled:opacity-50"
              >
               <Download className="w-3 h-3" />
               {pullingId === item.id ? 'Pulling...' : 'Pull to CRM'}
@@ -686,11 +686,11 @@ export const Dashboard: React.FC = () => {
       </div>
 
       <div className="p-5 space-y-3 text-sm">
-       <div className="flex gap-3"><Clock className="w-4 h-4 text-[#FF5500] mt-0.5" /><span>{formatTime12Hour(selectedCalendarOnly.startTime)} – {formatTime12Hour(selectedCalendarOnly.endTime)}</span></div>
-       <div className="flex gap-3"><Tag className="w-4 h-4 text-[#FF5500] mt-0.5" /><span>{selectedCalendarOnly.serviceNeeded}</span></div>
-       {selectedCalendarOnly.clientPhone && <div className="flex gap-3"><Phone className="w-4 h-4 text-[#FF5500] mt-0.5" /><span>{selectedCalendarOnly.clientPhone}</span></div>}
-       {selectedCalendarOnly.clientEmail && <div className="flex gap-3"><Mail className="w-4 h-4 text-[#FF5500] mt-0.5" /><span>{selectedCalendarOnly.clientEmail}</span></div>}
-       {selectedCalendarOnly.address && <div className="flex gap-3"><MapPin className="w-4 h-4 text-[#FF5500] mt-0.5" /><span>{selectedCalendarOnly.address}</span></div>}
+       <div className="flex gap-3"><Clock className="w-4 h-4 text-[#EF7E15] mt-0.5" /><span>{formatTime12Hour(selectedCalendarOnly.startTime)} – {formatTime12Hour(selectedCalendarOnly.endTime)}</span></div>
+       <div className="flex gap-3"><Tag className="w-4 h-4 text-[#EF7E15] mt-0.5" /><span>{selectedCalendarOnly.serviceNeeded}</span></div>
+       {selectedCalendarOnly.clientPhone && <div className="flex gap-3"><Phone className="w-4 h-4 text-[#EF7E15] mt-0.5" /><span>{selectedCalendarOnly.clientPhone}</span></div>}
+       {selectedCalendarOnly.clientEmail && <div className="flex gap-3"><Mail className="w-4 h-4 text-[#EF7E15] mt-0.5" /><span>{selectedCalendarOnly.clientEmail}</span></div>}
+       {selectedCalendarOnly.address && <div className="flex gap-3"><MapPin className="w-4 h-4 text-[#EF7E15] mt-0.5" /><span>{selectedCalendarOnly.address}</span></div>}
        <div className="grid grid-cols-2 gap-3 pt-2">
         <div className="rounded-xl bg-zinc-50 dark:bg-zinc-800 p-3">
          <p className="text-[10px] uppercase font-bold text-zinc-500">Representative</p>
@@ -713,7 +713,7 @@ export const Dashboard: React.FC = () => {
        <button
         disabled={pullingId === selectedCalendarOnly.id}
         onClick={() => handlePullToCrm(selectedCalendarOnly)}
-        className="w-full rounded-lg bg-[#FF5500] hover:bg-[#E64D00] text-white py-3 text-xs font-black flex items-center justify-center gap-2 disabled:opacity-50"
+        className="w-full rounded-lg bg-[#EF7E15] hover:bg-[#D66B0F] text-white py-3 text-xs font-black flex items-center justify-center gap-2 disabled:opacity-50"
        >
         <Download className="w-4 h-4" />
         {pullingId === selectedCalendarOnly.id ? 'Pulling to CRM...' : 'Pull to CRM'}

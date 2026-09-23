@@ -441,7 +441,7 @@ export const MainLayout: React.FC = () => {
 
  <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm truncate">
  <span className="font-black text-zinc-900 dark:text-white tracking-tight shrink-0">Mr.</span>
- <span className="font-black text-[#FF5500] tracking-tight shrink-0">Contract</span>
+ <span className="font-black text-[#EF7E15] tracking-tight shrink-0">Contract</span>
  <span className="text-zinc-400 dark:text-zinc-600 font-medium">/</span>
  <span className="font-bold text-black dark:text-zinc-300 truncate">{getPageBreadcrumb()}</span>
  </div>
@@ -558,7 +558,7 @@ export const MainLayout: React.FC = () => {
  className={({ isActive }) =>
  `flex flex-col items-center justify-center py-1 px-1.5 rounded-md transition-colors duration-120 min-w-[50px] min-h-[44px] relative ${
  isActive
- ? 'text-[#FF5500] font-bold'
+ ? 'text-[#EF7E15] font-bold'
  : 'text-zinc-500 dark:text-zinc-400 font-medium'
  }`
  }
@@ -566,7 +566,7 @@ export const MainLayout: React.FC = () => {
  <div className="relative">
  <User className="w-4.5 h-4.5"/>
  {newLeadsCount > 0 && (
- <span className="absolute -top-1.5 -right-2 px-1 min-w-[16px] h-4 rounded-md bg-[#FF5500] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">
+ <span className="absolute -top-1.5 -right-2 px-1 min-w-[16px] h-4 rounded-md bg-[#EF7E15] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">
  {newLeadsCount}
  </span>
  )}
@@ -581,7 +581,7 @@ export const MainLayout: React.FC = () => {
  className={({ isActive }) =>
  `flex flex-col items-center justify-center py-1 px-1.5 rounded-md transition-colors duration-120 min-w-[50px] min-h-[44px] ${
  isActive
- ? 'text-[#FF5500] font-bold'
+ ? 'text-[#EF7E15] font-bold'
  : 'text-zinc-500 dark:text-zinc-400 font-medium'
  }`
  }
@@ -597,7 +597,7 @@ export const MainLayout: React.FC = () => {
  className="flex flex-col items-center justify-center -mt-3 group cursor-pointer transition-colors duration-120"
  aria-label="Add Lead"
  >
- <div className="w-10 h-10 rounded-md bg-[#FF5500] group-hover:bg-[#E64D00] text-white flex items-center justify-center shadow-xs">
+ <div className="w-10 h-10 rounded-md bg-[#EF7E15] group-hover:bg-[#D66B0F] text-white flex items-center justify-center shadow-xs">
  <Plus className="w-5 h-5 stroke-[2.5]"/>
  </div>
  <span className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 mt-0.5">Add Lead</span>
@@ -609,7 +609,7 @@ export const MainLayout: React.FC = () => {
  className={({ isActive }) =>
  `flex flex-col items-center justify-center py-1 px-1.5 rounded-md transition-colors duration-120 min-w-[50px] min-h-[44px] relative ${
  isActive
- ? 'text-[#FF5500] font-bold'
+ ? 'text-[#EF7E15] font-bold'
  : 'text-zinc-500 dark:text-zinc-400 font-medium'
  }`
  }
@@ -624,7 +624,7 @@ export const MainLayout: React.FC = () => {
  className={({ isActive }) =>
  `flex flex-col items-center justify-center py-1 px-1.5 rounded-md transition-colors duration-120 min-w-[50px] min-h-[44px] ${
  isActive
- ? 'text-[#FF5500] font-bold'
+ ? 'text-[#EF7E15] font-bold'
  : 'text-zinc-500 dark:text-zinc-400 font-medium'
  }`
  }
@@ -641,7 +641,7 @@ export const MainLayout: React.FC = () => {
  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md w-full max-w-[1500px] p-4 sm:p-6 max-h-[94vh] overflow-y-auto shadow-lg relative">
  <div className="flex items-center justify-between pb-3 mb-3 border-b border-zinc-100 dark:border-zinc-800">
  <div className="flex items-center gap-2.5">
- <div className="w-8 h-8 rounded-md bg-[#FF5500]/10 flex items-center justify-center text-[#FF5500]">
+ <div className="w-8 h-8 rounded-md bg-[#EF7E15]/10 flex items-center justify-center text-[#EF7E15]">
  <CalendarClock className="w-4 h-4"/>
  </div>
  <div>
@@ -675,7 +675,7 @@ export const MainLayout: React.FC = () => {
  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md w-full max-w-2xl p-4 sm:p-6 max-h-[94vh] overflow-y-auto shadow-lg relative">
  <div className="flex items-center justify-between pb-3 mb-3 border-b border-zinc-100 dark:border-zinc-800">
  <div className="flex items-center gap-2.5">
- <div className="w-8 h-8 rounded-md bg-[#FF5500]/10 flex items-center justify-center text-[#FF5500]">
+ <div className="w-8 h-8 rounded-md bg-[#EF7E15]/10 flex items-center justify-center text-[#EF7E15]">
  <PlusCircle className="w-4 h-4"/>
  </div>
  <div>

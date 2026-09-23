@@ -95,7 +95,7 @@ if (!isActivityLogModalOpen) return null;
  const getActionIcon = (type: ActivityLog['actionType']) => {
  switch (type) {
  case 'add_lead':
- return <UserPlus className="w-4 h-4 text-[#FF5500]"/>;
+ return <UserPlus className="w-4 h-4 text-[#EF7E15]"/>;
  case 'schedule_client':
  return <CalendarCheck className="w-4 h-4 text-emerald-500"/>;
  case 'call':
@@ -114,7 +114,7 @@ if (!isActivityLogModalOpen) return null;
  const getActionBadgeClass = (type: ActivityLog['actionType']) => {
  switch (type) {
  case 'add_lead':
- return 'bg-orange-500/10 text-[#FF5500] border-orange-500/20';
+ return 'bg-orange-500/10 text-[#EF7E15] border-orange-500/20';
  case 'schedule_client':
  return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
  case 'call':
@@ -130,7 +130,7 @@ if (!isActivityLogModalOpen) return null;
  {/* Header */}
  <div className="flex items-center justify-between pb-3.5 mb-3 border-b border-zinc-100 dark:border-zinc-800">
  <div className="flex items-center gap-3">
- <div className="w-9 h-9 rounded-md bg-[#FF5500]/10 flex items-center justify-center text-[#FF5500]">
+ <div className="w-9 h-9 rounded-md bg-[#EF7E15]/10 flex items-center justify-center text-[#EF7E15]">
  <History className="w-4 h-4"/>
  </div>
  <div>
@@ -150,7 +150,7 @@ if (!isActivityLogModalOpen) return null;
  disabled={isLoading}
  title="Refresh logs"
  aria-label="Refresh logs"
- className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors duration-120 disabled:opacity-50 flex items-center justify-center focus-visible:outline-2 focus-visible:outline-[#FF5500]"
+ className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors duration-120 disabled:opacity-50 flex items-center justify-center focus-visible:outline-2 focus-visible:outline-[#EF7E15]"
  >
  <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
  </button>
@@ -173,7 +173,7 @@ if (!isActivityLogModalOpen) return null;
  placeholder="Search lead or action..."
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
- className="w-full pl-8 pr-3 py-1.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md text-xs font-medium text-zinc-900 dark:text-white outline-none focus:border-[#FF5500] transition-colors duration-120"
+ className="w-full pl-8 pr-3 py-1.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md text-xs font-medium text-zinc-900 dark:text-white outline-none focus:border-[#EF7E15] transition-colors duration-120"
  />
  </div>
 
@@ -182,7 +182,7 @@ if (!isActivityLogModalOpen) return null;
  <select
  value={selectedUserFilter}
  onChange={(e) => setSelectedUserFilter(e.target.value)}
- className="w-full px-3 py-1.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md text-xs font-medium text-zinc-900 dark:text-white outline-none focus:border-[#FF5500] cursor-pointer transition-colors duration-120"
+ className="w-full px-3 py-1.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md text-xs font-medium text-zinc-900 dark:text-white outline-none focus:border-[#EF7E15] cursor-pointer transition-colors duration-120"
  >
  <option value="ALL">All Team Members</option>
  {users.map((u) => (
@@ -198,7 +198,7 @@ if (!isActivityLogModalOpen) return null;
  <select
  value={selectedTypeFilter}
  onChange={(e) => setSelectedTypeFilter(e.target.value)}
- className="w-full px-3 py-1.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md text-xs font-medium text-zinc-900 dark:text-white outline-none focus:border-[#FF5500] cursor-pointer transition-colors duration-120"
+ className="w-full px-3 py-1.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md text-xs font-medium text-zinc-900 dark:text-white outline-none focus:border-[#EF7E15] cursor-pointer transition-colors duration-120"
  >
  <option value="ALL">All Actions</option>
  <option value="status_change">Status Changes</option>
@@ -215,7 +215,7 @@ if (!isActivityLogModalOpen) return null;
  <div className="flex-1 overflow-y-auto space-y-2 pr-1">
  {isLoading && logs.length === 0 ? (
  <div className="py-14 flex flex-col items-center justify-center text-zinc-400 gap-2">
- <div className="w-5 h-5 border-2 border-[#FF5500] border-t-transparent rounded-full animate-spin"/>
+ <div className="w-5 h-5 border-2 border-[#EF7E15] border-t-transparent rounded-full animate-spin"/>
  <span className="text-xs font-medium">Loading activity...</span>
  </div>
  ) : filteredLogs.length === 0 ? (
@@ -238,7 +238,7 @@ if (!isActivityLogModalOpen) return null;
  >
  {/* User Avatar */}
  <div
- className="w-7 h-7 rounded-md flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-xs mt-0.5 bg-[#FF5500]"
+ className="w-7 h-7 rounded-md flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-xs mt-0.5 bg-[#EF7E15]"
  title={`Action by ${log.userName}`}
  >
  {initial}
@@ -259,7 +259,7 @@ if (!isActivityLogModalOpen) return null;
  <span>{log.actionType.replace('_', ' ')}</span>
  </span>
  {log.clientName && (
- <span className="text-[11px] font-bold text-[#FF5500] bg-[#FF5500]/10 px-1.5 py-0.5 rounded-md">
+ <span className="text-[11px] font-bold text-[#EF7E15] bg-[#EF7E15]/10 px-1.5 py-0.5 rounded-md">
  {log.clientName}
  </span>
  )}

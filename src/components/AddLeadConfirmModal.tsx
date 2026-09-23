@@ -180,7 +180,7 @@ export const AddLeadConfirmModal: React.FC<AddLeadConfirmModalProps> = ({
               <span>Syncs to <strong>Google Spreadsheet Portal</strong></span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className={`w-1.5 h-1.5 rounded-full ${hasHouzzWebhook ? 'bg-emerald-500' : 'bg-[#FF5500]'}`} />
+              <div className={`w-1.5 h-1.5 rounded-full ${hasHouzzWebhook ? 'bg-emerald-500' : 'bg-[#EF7E15]'}`} />
               <span>{hasHouzzWebhook ? 'Houzz Pro Webhook' : 'Houzz Pro (Config in Settings)'}</span>
             </div>
           </div>
@@ -200,7 +200,7 @@ export const AddLeadConfirmModal: React.FC<AddLeadConfirmModalProps> = ({
             type="button"
             onClick={onConfirm}
             disabled={isSubmitting}
-            className="px-4 py-1.5 rounded-md bg-[#FF5500] hover:bg-[#E64D00] text-white font-bold text-xs shadow-xs transition-colors duration-120 flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+            className="px-4 py-1.5 rounded-md bg-[#EF7E15] hover:bg-[#D66B0F] text-white font-bold text-xs shadow-xs transition-colors duration-120 flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
           >
             {isSubmitting ? (
               <>

@@ -324,7 +324,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const inputStyle =
-    "w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-md focus:border-[#FF5500] dark:focus:border-[#FF5500] focus:outline-none text-xs font-semibold text-zinc-900 dark:text-white transition-colors duration-120 placeholder-zinc-400";
+    "w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-md focus:border-[#EF7E15] dark:focus:border-[#EF7E15] focus:outline-none text-xs font-semibold text-zinc-900 dark:text-white transition-colors duration-120 placeholder-zinc-400";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
@@ -350,7 +350,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             onClick={() => setActiveTab('general')}
             className={`py-2.5 px-3 text-xs font-bold border-b-2 transition-colors duration-120 flex items-center gap-2 cursor-pointer ${
               activeTab === 'general'
-                ? 'border-[#FF5500] text-zinc-900 dark:text-white font-extrabold'
+                ? 'border-[#EF7E15] text-zinc-900 dark:text-white font-extrabold'
                 : 'border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
             }`}
           >
@@ -362,14 +362,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             onClick={() => setActiveTab('integrations')}
             className={`py-2.5 px-3 text-xs font-bold border-b-2 transition-colors duration-120 flex items-center gap-2 cursor-pointer ${
               activeTab === 'integrations'
-                ? 'border-[#FF5500] text-zinc-900 dark:text-white font-extrabold'
+                ? 'border-[#EF7E15] text-zinc-900 dark:text-white font-extrabold'
                 : 'border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-200'
             }`}
           >
             <Webhook className="w-3.5 h-3.5" />
             <span>Integrations</span>
             {(!isCalendarConnected || !sheetsStatus?.configured) && (
-              <span className="w-2 h-2 rounded-full bg-[#FF5500]" title="Attention needed"></span>
+              <span className="w-2 h-2 rounded-full bg-[#EF7E15]" title="Attention needed"></span>
             )}
           </button>
         </div>
@@ -383,7 +383,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-md p-3.5 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-[#FF5500]" />
+                      <User className="w-3.5 h-3.5 text-[#EF7E15]" />
                       Active Worker Profile
                     </label>
                     <button
@@ -392,7 +392,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         onClose();
                         setIsSwitchUserModalOpen(true);
                       }}
-                      className="text-xs text-[#FF5500] hover:underline font-bold cursor-pointer"
+                      className="text-xs text-[#EF7E15] hover:underline font-bold cursor-pointer"
                     >
                       Switch Profile
                     </button>
@@ -411,7 +411,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button
                       type="submit"
                       disabled={isUpdatingUserName || !editingUserName.trim() || editingUserName.trim() === currentUser.name}
-                      className="px-3.5 py-2 bg-[#FF5500] hover:bg-[#e04b00] disabled:opacity-50 text-white text-xs font-bold rounded-md shadow-xs transition-colors duration-120 cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
+                      className="px-3.5 py-2 bg-[#EF7E15] hover:bg-[#e04b00] disabled:opacity-50 text-white text-xs font-bold rounded-md shadow-xs transition-colors duration-120 cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                       <span>{isUpdatingUserName ? 'Saving...' : 'Update Name'}</span>
@@ -449,7 +449,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     applyTheme(nextTheme);
                   }}
                   className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-120 focus:outline-none ${
-                    theme === 'dark' ? 'bg-[#FF5500]' : 'bg-zinc-300 dark:bg-zinc-600'
+                    theme === 'dark' ? 'bg-[#EF7E15]' : 'bg-zinc-300 dark:bg-zinc-600'
                   }`}
                 >
                   <span className="sr-only">Toggle Dark Mode</span>
@@ -534,7 +534,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <button
                         type="button"
                         onClick={handleAddSalesperson}
-                        className="bg-[#FF5500] hover:bg-[#E64D00] text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 transition-colors duration-120 cursor-pointer shrink-0 shadow-xs"
+                        className="bg-[#EF7E15] hover:bg-[#D66B0F] text-white px-4 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 transition-colors duration-120 cursor-pointer shrink-0 shadow-xs"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         Add Salesperson
@@ -580,7 +580,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <button
                     type="button"
                     onClick={handleAddLeadSource}
-                    className="bg-[#FF5500] hover:bg-[#E64D00] text-white px-3.5 py-1.5 rounded-md text-xs font-bold flex items-center gap-1 transition-colors duration-120 cursor-pointer shrink-0 shadow-xs"
+                    className="bg-[#EF7E15] hover:bg-[#D66B0F] text-white px-3.5 py-1.5 rounded-md text-xs font-bold flex items-center gap-1 transition-colors duration-120 cursor-pointer shrink-0 shadow-xs"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Add Source
@@ -624,7 +624,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <button
                     type="button"
                     onClick={handleAddLeadType}
-                    className="bg-[#FF5500] hover:bg-[#E64D00] text-white px-3.5 py-1.5 rounded-md text-xs font-bold flex items-center gap-1 transition-colors duration-120 cursor-pointer shrink-0 shadow-xs"
+                    className="bg-[#EF7E15] hover:bg-[#D66B0F] text-white px-3.5 py-1.5 rounded-md text-xs font-bold flex items-center gap-1 transition-colors duration-120 cursor-pointer shrink-0 shadow-xs"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Add Type
@@ -663,7 +663,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   onClick={() => setActiveIntegrationsSubTab('troubleshooting')}
                   className={`flex-1 py-1.5 px-3 rounded-md font-bold transition-colors duration-120 text-center cursor-pointer flex items-center justify-center gap-1.5 ${
                     activeIntegrationsSubTab === 'troubleshooting'
-                      ? 'bg-[#FF5500]/20 text-[#FF5500] border border-[#FF5500]/40 shadow-xs'
+                      ? 'bg-[#EF7E15]/20 text-[#EF7E15] border border-[#EF7E15]/40 shadow-xs'
                       : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                   }`}
                 >
@@ -679,7 +679,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-md p-3.5 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-[#FF5500]" />
+                        <Calendar className="w-3.5 h-3.5 text-[#EF7E15]" />
                         Shared Google Calendar (Server Integration)
                       </label>
                       {isCheckingCalendar ? (
@@ -733,7 +733,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
-                          <FileSpreadsheet className="w-3.5 h-3.5 text-[#FF5500]" />
+                          <FileSpreadsheet className="w-3.5 h-3.5 text-[#EF7E15]" />
                           Google Sheets (Service Account)
                         </label>
                       </div>
@@ -787,7 +787,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           type="checkbox"
                           checked={autoSyncToSheets}
                           onChange={(e) => setAutoSyncToSheets(e.target.checked)}
-                          className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#FF5500] focus:ring-0 focus:outline-none cursor-pointer"
+                          className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#EF7E15] focus:ring-0 focus:outline-none cursor-pointer"
                         />
                         <span>Auto-Sync Bookings to Spreadsheet</span>
                       </label>
@@ -795,11 +795,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
 
                   {/* Houzz Pro / Zapier Webhook Integration Setting */}
-                  <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-[#FF5500]/40 rounded-md p-3.5 space-y-2.5">
+                  <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-[#EF7E15]/40 rounded-md p-3.5 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
-                        <label className="text-xs font-semibold uppercase tracking-wider text-[#FF5500] flex items-center gap-1.5">
-                          <Send className="w-3.5 h-3.5 text-[#FF5500]" />
+                        <label className="text-xs font-semibold uppercase tracking-wider text-[#EF7E15] flex items-center gap-1.5">
+                          <Send className="w-3.5 h-3.5 text-[#EF7E15]" />
                           Zapier / Houzz Pro Webhook (Backend Shared)
                         </label>
                       </div>
@@ -848,7 +848,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               setTestingHouzz(false);
                             }
                           }}
-                          className="px-3 py-2 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-md text-xs font-bold transition-colors duration-120 cursor-pointer disabled:opacity-40 flex items-center gap-1.5 shrink-0 shadow-xs"
+                          className="px-3 py-2 bg-[#EF7E15] hover:bg-[#D66B0F] text-white rounded-md text-xs font-bold transition-colors duration-120 cursor-pointer disabled:opacity-40 flex items-center gap-1.5 shrink-0 shadow-xs"
                         >
                           <Send className={`w-3.5 h-3.5 ${testingHouzz ? 'animate-spin' : ''}`} />
                           <span>{testingHouzz ? 'Testing...' : 'Test Webhook'}</span>
@@ -875,7 +875,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             type="checkbox"
                             checked={autoSendToHouzz}
                             onChange={(e) => setAutoSendToHouzz(e.target.checked)}
-                            className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#FF5500] focus:ring-0 focus:outline-none cursor-pointer"
+                            className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#EF7E15] focus:ring-0 focus:outline-none cursor-pointer"
                           />
                           <span>Auto-send to Houzz Pro whenever an appointment is scheduled</span>
                         </label>
@@ -893,7 +893,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <label className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
-                          <Webhook className="w-4 h-4 text-[#FF5500]" />
+                          <Webhook className="w-4 h-4 text-[#EF7E15]" />
                           Inbound Lead Webhooks (Angi & Thumbtack)
                         </label>
                         <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -959,13 +959,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   {/* Switch to Troubleshooting Tip */}
                   <div className="bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700/60 rounded-md p-3 flex items-center justify-between gap-3 text-xs">
                     <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-                      <Activity className="w-4 h-4 text-[#FF5500] shrink-0" />
+                      <Activity className="w-4 h-4 text-[#EF7E15] shrink-0" />
                       <span>Looking to test leads, inspect live server logs, or diagnose parsing?</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => setActiveIntegrationsSubTab('troubleshooting')}
-                      className="px-3 py-1.5 bg-[#FF5500]/20 hover:bg-[#FF5500]/30 text-[#FF5500] border border-[#FF5500]/40 font-bold rounded-md shrink-0 transition-colors duration-120 cursor-pointer"
+                      className="px-3 py-1.5 bg-[#EF7E15]/20 hover:bg-[#EF7E15]/30 text-[#EF7E15] border border-[#EF7E15]/40 font-bold rounded-md shrink-0 transition-colors duration-120 cursor-pointer"
                     >
                       Troubleshooting →
                     </button>
@@ -979,7 +979,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   {/* Overview Card */}
                   <div className="bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700/60 rounded-md p-3.5 space-y-1">
                     <div className="flex items-center gap-2 text-zinc-900 dark:text-white font-bold text-xs uppercase tracking-wider">
-                      <Activity className="w-4 h-4 text-[#FF5500]" />
+                      <Activity className="w-4 h-4 text-[#EF7E15]" />
                       <span>Troubleshooting & Integration Diagnostics</span>
                     </div>
                     <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
@@ -1005,7 +1005,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         Google Sheets Sync
                       </span>
                       <div className="flex items-center gap-1.5">
-                        <span className={`w-2 h-2 rounded-full ${sheetsStatus?.configured ? 'bg-emerald-500' : 'bg-[#FF5500]'}`}></span>
+                        <span className={`w-2 h-2 rounded-full ${sheetsStatus?.configured ? 'bg-emerald-500' : 'bg-[#EF7E15]'}`}></span>
                         <span className="text-xs font-bold text-zinc-900 dark:text-white">
                           {sheetsStatus?.configured ? 'Service Account Active' : 'Credentials Needed'}
                         </span>
@@ -1021,7 +1021,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <h4 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                          <Terminal className="w-4 h-4 text-[#FF5500]" />
+                          <Terminal className="w-4 h-4 text-[#EF7E15]" />
                           Webhook Diagnostics Center
                         </h4>
                         <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -1048,7 +1048,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setIsDiagOpen(true)}
-                      className="w-full py-2 px-4 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-md text-xs font-bold transition-colors duration-120 flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                      className="w-full py-2 px-4 bg-[#EF7E15] hover:bg-[#D66B0F] text-white rounded-md text-xs font-bold transition-colors duration-120 flex items-center justify-center gap-2 cursor-pointer shadow-xs"
                     >
                       <Activity className="w-4 h-4" />
                       <span>Launch Webhook Diagnostics & Test Suite</span>
@@ -1125,7 +1125,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-1.5 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-md text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors duration-120 cursor-pointer"
+            className="px-4 py-1.5 bg-[#EF7E15] hover:bg-[#D66B0F] text-white rounded-md text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors duration-120 cursor-pointer"
           >
             <Save className="w-3.5 h-3.5 text-white" />
             <span>Save Settings</span>

@@ -963,7 +963,7 @@ export const ScheduledClientPage: React.FC = () => {
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
  placeholder="Search"
- className="w-full pl-9 pr-8 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#FF5500]"
+ className="w-full pl-9 pr-8 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#EF7E15]"
  />
  {searchQuery && (
  <button
@@ -983,7 +983,7 @@ export const ScheduledClientPage: React.FC = () => {
  <select
  value={salespersonFilter}
  onChange={(e) => setSalespersonFilter(e.target.value)}
- className="px-2.5 py-1.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#FF5500] cursor-pointer"
+ className="px-2.5 py-1.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#EF7E15] cursor-pointer"
  >
  <option value="ALL">All Reps</option>
  {representativeOptions.map((rep) => (
@@ -1001,7 +1001,7 @@ export const ScheduledClientPage: React.FC = () => {
  {calSyncStatus.status === 'error' && (
  <div className="bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/80 p-3.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-orange-900 dark:text-orange-200 shadow-2xs">
  <div className="flex items-start gap-2.5">
- <AlertCircle className="w-4 h-4 text-[#FF5500] shrink-0 mt-0.5"/>
+ <AlertCircle className="w-4 h-4 text-[#EF7E15] shrink-0 mt-0.5"/>
  <div className="space-y-1">
  <span className="font-bold block text-sm">Google Calendar Notice</span>
  <p className="text-orange-800 dark:text-orange-300 text-xs leading-relaxed">
@@ -1027,7 +1027,7 @@ export const ScheduledClientPage: React.FC = () => {
  <button
  onClick={() => loadCalendarEvents(true)}
  disabled={isSyncingCalendar}
- className="px-3.5 py-2 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-xl font-bold transition-all text-xs cursor-pointer flex items-center gap-1.5 shadow-xs"
+ className="px-3.5 py-2 bg-[#EF7E15] hover:bg-[#D66B0F] text-white rounded-xl font-bold transition-all text-xs cursor-pointer flex items-center gap-1.5 shadow-xs"
  >
  <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCalendar ? 'animate-spin' : ''}`} />
  <span>Retry Sync</span>
@@ -1040,7 +1040,7 @@ export const ScheduledClientPage: React.FC = () => {
  <div className="space-y-3">
  {filteredClients.length === 0 ? (
  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-12 text-center space-y-4 shadow-sm">
- <div className="w-16 h-16 rounded-3xl bg-[#FF5500]/10 text-[#FF5500] flex items-center justify-center mx-auto">
+ <div className="w-16 h-16 rounded-3xl bg-[#EF7E15]/10 text-[#EF7E15] flex items-center justify-center mx-auto">
  <CalendarClock className="w-8 h-8"/>
  </div>
  <div className="max-w-md mx-auto space-y-1.5">
@@ -1077,8 +1077,8 @@ export const ScheduledClientPage: React.FC = () => {
  <tr key={`${client.id || 'row'}_${idx}`} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 transition-colors">
  <td className="p-3.5 pl-5 font-bold text-zinc-900 dark:text-white">
  <div className="flex items-center gap-2">
- <div className="w-8 h-8 rounded-lg bg-[#FF5500]/10 border border-[#FF5500]/20 text-[#FF5500] flex items-center justify-center shrink-0">
- <User className="w-4 h-4 text-[#FF5500]" />
+ <div className="w-8 h-8 rounded-lg bg-[#EF7E15]/10 border border-[#EF7E15]/20 text-[#EF7E15] flex items-center justify-center shrink-0">
+ <User className="w-4 h-4 text-[#EF7E15]" />
  </div>
  <div>
  <div className="flex items-center gap-2 flex-wrap">
@@ -1107,13 +1107,13 @@ export const ScheduledClientPage: React.FC = () => {
  </td>
  <td className="p-3.5 text-zinc-700 dark:text-zinc-300 font-bold whitespace-nowrap">
  <div>{formatAppointmentDateNice(client.appointmentDate) || client.appointmentDate}</div>
- <div className="text-[11px] text-[#FF5500] font-black">{formatTime12Hour(client.startTime)}{client.endTime ? ` - ${formatTime12Hour(client.endTime)}` : ''}</div>
+ <div className="text-[11px] text-[#EF7E15] font-black">{formatTime12Hour(client.startTime)}{client.endTime ? ` - ${formatTime12Hour(client.endTime)}` : ''}</div>
  </td>
  <td className="p-3.5">
  <select
  value={client.salespersonCode || ''}
  onChange={(e) => handleSalespersonChange(client, e.target.value)}
- className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#FF5500] cursor-pointer max-w-[130px] truncate"
+ className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#EF7E15] cursor-pointer max-w-[130px] truncate"
  >
  <option value="">Unassigned</option>
  {representativeOptions.map((rep) => (
@@ -1132,7 +1132,7 @@ export const ScheduledClientPage: React.FC = () => {
  e.stopPropagation();
  void handleStatusChange(client, e.target.value);
  }}
- className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#FF5500] cursor-pointer"
+ className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#EF7E15] cursor-pointer"
  >
  <option value="Meeting Scheduled">Meeting Scheduled</option>
  <option value="Scheduled">Scheduled</option>
@@ -1196,7 +1196,7 @@ export const ScheduledClientPage: React.FC = () => {
  key={`${client.id || 'card'}_${idx}`}
  className={`bg-white dark:bg-zinc-900 border rounded-2xl transition-all shadow-xs overflow-hidden ${
  isExpanded
- ? 'border-[#FF5500]/60 ring-1 ring-[#FF5500]/30 shadow-md'
+ ? 'border-[#EF7E15]/60 ring-1 ring-[#EF7E15]/30 shadow-md'
  : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
  }`}
  >
@@ -1208,7 +1208,7 @@ export const ScheduledClientPage: React.FC = () => {
  {/* Left: Date badge + Client Name + Service */}
  <div className="flex items-center gap-3.5 min-w-0">
  {/* Date Block */}
- <div className="w-14 h-14 rounded-2xl bg-[#FF5500] text-white border border-[#FF5500] shadow-sm flex flex-col items-center justify-center shrink-0">
+ <div className="w-14 h-14 rounded-2xl bg-[#EF7E15] text-white border border-[#EF7E15] shadow-sm flex flex-col items-center justify-center shrink-0">
  <span className="text-[10px] font-black leading-none uppercase text-white/90">
  {monthStr || 'APPT'}
  </span>
@@ -1240,8 +1240,8 @@ export const ScheduledClientPage: React.FC = () => {
 
  {/* Subline: Time, Phone, Rep */}
  <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400 mt-1 flex-wrap">
- <span className="flex items-center gap-1 font-bold text-[#FF5500]">
- <Clock className="w-3.5 h-3.5 text-[#FF5500] shrink-0"/>
+ <span className="flex items-center gap-1 font-bold text-[#EF7E15]">
+ <Clock className="w-3.5 h-3.5 text-[#EF7E15] shrink-0"/>
  {formatAppointmentDateTime(client.appointmentDate, client.startTime || '09:00', client.endTime || '10:00')}
  </span>
  <span className="inline-flex items-center gap-1 font-semibold px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300">
@@ -1263,7 +1263,7 @@ export const ScheduledClientPage: React.FC = () => {
  client.status === 'Won Job' || client.status === 'Completed'
  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border-emerald-500/30'
  : client.status === 'Meeting Scheduled' || client.status === 'Scheduled' || client.status === 'Confirmed'
- ? 'bg-orange-500/15 text-[#FF5500] dark:text-orange-300 border-orange-500/30'
+ ? 'bg-orange-500/15 text-[#EF7E15] dark:text-orange-300 border-orange-500/30'
  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700'
  }`}
  >
@@ -1271,10 +1271,10 @@ export const ScheduledClientPage: React.FC = () => {
  </span>
 
  {/* Expand / Shrink Chevron Icon & Text */}
- <div className="flex items-center gap-1 text-xs font-bold text-zinc-400 hover:text-[#FF5500] transition-colors">
+ <div className="flex items-center gap-1 text-xs font-bold text-zinc-400 hover:text-[#EF7E15] transition-colors">
  <span>{isExpanded ? 'Shrink' : 'Details'}</span>
  {isExpanded ? (
- <ChevronUp className="w-4 h-4 text-[#FF5500]"/>
+ <ChevronUp className="w-4 h-4 text-[#EF7E15]"/>
  ) : (
  <ChevronDown className="w-4 h-4"/>
  )}
@@ -1290,7 +1290,7 @@ export const ScheduledClientPage: React.FC = () => {
  {/* Address & Google Maps Link */}
  <div className="bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-1">
  <span className="text-[10px] font-bold uppercase text-zinc-400 dark:text-zinc-500 flex items-center gap-1">
- <MapPin className="w-3 h-3 text-[#FF5500]"/> Location / Address
+ <MapPin className="w-3 h-3 text-[#EF7E15]"/> Location / Address
  </span>
  <p className="font-bold text-zinc-800 dark:text-zinc-200">
  {client.address || 'No address provided'}
@@ -1300,7 +1300,7 @@ export const ScheduledClientPage: React.FC = () => {
  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(client.address)}`}
  target="_blank"
  rel="noopener noreferrer"
- className="text-[11px] font-bold text-[#FF5500] hover:underline inline-flex items-center gap-1 pt-1"
+ className="text-[11px] font-bold text-[#EF7E15] hover:underline inline-flex items-center gap-1 pt-1"
  >
  <span>Open in Google Maps</span>
  <ExternalLink className="w-3 h-3"/>
@@ -1335,7 +1335,7 @@ export const ScheduledClientPage: React.FC = () => {
  <select
  value={client.salespersonCode || ''}
  onChange={(e) => handleSalespersonChange(client, e.target.value)}
- className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#FF5500] cursor-pointer"
+ className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#EF7E15] cursor-pointer"
  >
  <option value="">-- Unassigned --</option>
  {representativeOptions.map((rep) => (
@@ -1351,7 +1351,7 @@ export const ScheduledClientPage: React.FC = () => {
  href={client.calendarHtmlLink}
  target="_blank"
  rel="noopener noreferrer"
- className="text-[#FF5500] font-bold inline-flex items-center gap-1 hover:underline"
+ className="text-[#EF7E15] font-bold inline-flex items-center gap-1 hover:underline"
  >
  <Calendar className="w-3 h-3"/>
  <span>Google Calendar Event</span>
@@ -1393,7 +1393,7 @@ export const ScheduledClientPage: React.FC = () => {
  e.stopPropagation();
  void handleStatusChange(client, e.target.value);
  }}
- className="px-3 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-black text-zinc-900 dark:text-white cursor-pointer focus:outline-none focus:border-[#FF5500]"
+ className="px-3 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-black text-zinc-900 dark:text-white cursor-pointer focus:outline-none focus:border-[#EF7E15]"
  >
  {LEAD_STATUS_OPTIONS.map((opt) => (
  <option key={opt} value={opt}>
@@ -1415,7 +1415,7 @@ export const ScheduledClientPage: React.FC = () => {
 
  <button
  onClick={() => navigate('/follow-ups')}
- className="px-3 py-1.5 bg-[#FF5500]/10 hover:bg-[#FF5500]/20 text-[#FF5500] font-bold text-xs rounded-xl border border-[#FF5500]/30 transition-colors flex items-center gap-1.5 cursor-pointer"
+ className="px-3 py-1.5 bg-[#EF7E15]/10 hover:bg-[#EF7E15]/20 text-[#EF7E15] font-bold text-xs rounded-xl border border-[#EF7E15]/30 transition-colors flex items-center gap-1.5 cursor-pointer"
  >
  <Send className="w-3.5 h-3.5"/>
  <span>Outreach Console</span>
@@ -1445,7 +1445,7 @@ export const ScheduledClientPage: React.FC = () => {
  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
  <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
  <div className="flex items-center gap-2.5">
- <div className="w-8 h-8 rounded-xl bg-[#FF5500] text-white flex items-center justify-center font-black">
+ <div className="w-8 h-8 rounded-xl bg-[#EF7E15] text-white flex items-center justify-center font-black">
  <CalendarClock className="w-4 h-4"/>
  </div>
  <div>
@@ -1483,7 +1483,7 @@ export const ScheduledClientPage: React.FC = () => {
  value={formData.clientName}
  onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
  placeholder="e.g. Michael Henderson"
- className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#FF5500]"
+ className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#EF7E15]"
  />
  </div>
 
@@ -1497,7 +1497,7 @@ export const ScheduledClientPage: React.FC = () => {
  value={formData.clientPhone}
  onChange={(e) => setFormData({ ...formData, clientPhone: e.target.value })}
  placeholder="(555) 000-0000"
- className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#FF5500]"
+ className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#EF7E15]"
  />
  </div>
  <div>
@@ -1509,7 +1509,7 @@ export const ScheduledClientPage: React.FC = () => {
  value={formData.clientEmail}
  onChange={(e) => setFormData({ ...formData, clientEmail: e.target.value })}
  placeholder="client@example.com"
- className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#FF5500]"
+ className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#EF7E15]"
  />
  </div>
  </div>
@@ -1523,7 +1523,7 @@ export const ScheduledClientPage: React.FC = () => {
  value={formData.address}
  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
  placeholder="123 Main St, Springfield, IL"
- className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#FF5500]"
+ className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#EF7E15]"
  />
  </div>
 
@@ -1537,7 +1537,7 @@ export const ScheduledClientPage: React.FC = () => {
  required
  value={formData.appointmentDate}
  onChange={(e) => setFormData({ ...formData, appointmentDate: e.target.value })}
- className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#FF5500]"
+ className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#EF7E15]"
  />
  </div>
  <div>
@@ -1549,7 +1549,7 @@ export const ScheduledClientPage: React.FC = () => {
  required
  value={formData.startTime}
  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
- className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#FF5500]"
+ className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#EF7E15]"
  />
  </div>
  <div>
@@ -1560,7 +1560,7 @@ export const ScheduledClientPage: React.FC = () => {
  type="time"
  value={formData.endTime}
  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
- className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#FF5500]"
+ className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#EF7E15]"
  />
  </div>
  </div>
@@ -1575,7 +1575,7 @@ export const ScheduledClientPage: React.FC = () => {
  value={formData.serviceNeeded}
  onChange={(e) => setFormData({ ...formData, serviceNeeded: e.target.value })}
  placeholder="e.g. Chimney Restoration"
- className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#FF5500]"
+ className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#EF7E15]"
  />
  </div>
  <div>
@@ -1585,7 +1585,7 @@ export const ScheduledClientPage: React.FC = () => {
  <select
  value={formData.salespersonCode || ''}
  onChange={(e) => setFormData({ ...formData, salespersonCode: e.target.value })}
- className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#FF5500]"
+ className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#EF7E15]"
  >
  <option value="">-- Unassigned --</option>
  {representativeOptions.map((sp) => (
@@ -1606,7 +1606,7 @@ export const ScheduledClientPage: React.FC = () => {
  value={formData.notes}
  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
  placeholder="Special instructions, gate codes, or project details..."
- className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#FF5500]"
+ className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-[#EF7E15]"
  />
  </div>
 
@@ -1621,7 +1621,7 @@ export const ScheduledClientPage: React.FC = () => {
  <button
  type="submit"
  disabled={isSubmitting}
- className="px-5 py-2 bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-lg font-black shadow-sm flex items-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+ className="px-5 py-2 bg-[#EF7E15] hover:bg-[#D66B0F] text-white rounded-lg font-black shadow-sm flex items-center gap-2 cursor-pointer transition-all disabled:opacity-50"
  >
  {isSubmitting ? (
  <span>Saving...</span>

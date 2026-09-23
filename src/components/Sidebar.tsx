@@ -427,14 +427,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
  showExpanded ? 'px-3 py-2 gap-3 min-h-[36px]' : 'p-2 justify-center min-h-[36px]'
  } rounded-md font-semibold text-xs transition-colors duration-120 cursor-pointer w-full text-left ${
  isFollowUpsActive
- ? 'bg-[#FF5500]/10 text-[#FF5500] font-bold'
+ ? 'bg-[#EF7E15]/10 text-[#EF7E15] font-bold'
  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
  }`}
  >
  <Clock
  className={`w-4.5 h-4.5 shrink-0 transition-colors ${
  isFollowUpsActive
- ? 'text-[#FF5500] stroke-[2.2]'
+ ? 'text-[#EF7E15] stroke-[2.2]'
  : 'text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-white'
  }`}
  />
@@ -452,15 +452,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
  <span
  className={`px-1.5 py-0.5 min-w-[18px] h-4.5 rounded-md text-[10px] font-bold flex items-center justify-center tabular-nums ${
  isFollowUpsActive
- ? 'bg-[#FF5500] text-white'
- : 'bg-[#FF5500] text-white'
+ ? 'bg-[#EF7E15] text-white'
+ : 'bg-[#EF7E15] text-white'
  }`}
  >
  {totalFollowUpsCount}
  </span>
  ) : (
  <span
- className={`absolute top-2 right-2 w-2 h-2 rounded-full ring-2 ring-white dark:ring-[#09090b] bg-[#FF5500]`}
+ className={`absolute top-2 right-2 w-2 h-2 rounded-full ring-2 ring-white dark:ring-[#09090b] bg-[#EF7E15]`}
  />
  )}
  </>
@@ -485,7 +485,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  className={() =>
  `group relative flex items-center px-3 py-1.5 gap-2.5 min-h-[32px] rounded-md font-medium text-xs transition-colors duration-120 cursor-pointer ${
  isSubActive
- ? 'bg-[#FF5500]/10 text-[#FF5500] font-bold'
+ ? 'bg-[#EF7E15]/10 text-[#EF7E15] font-bold'
  : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800/40'
  }`
  }
@@ -494,7 +494,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  {subItem.name}
  </span>
  {subItem.badge !== undefined && (
- <span className="px-1.5 py-0.5 min-w-[16px] h-4 rounded-md text-[10px] font-bold flex items-center justify-center bg-[#FF5500] text-white tabular-nums">
+ <span className="px-1.5 py-0.5 min-w-[16px] h-4 rounded-md text-[10px] font-bold flex items-center justify-center bg-[#EF7E15] text-white tabular-nums">
  {subItem.badge}
  </span>
  )}
@@ -513,7 +513,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  <div className={`p-4 pb-3 flex ${showExpanded ? 'items-center justify-between gap-2' : 'flex-col items-center gap-4'} bg-white dark:bg-black`}>
  <div className="flex items-center gap-3 overflow-hidden">
  {/* Logo Mark: Orange rounded squircle with bold white 'M' */}
- <div className="w-10 h-10 rounded-md bg-[#FF5500] shrink-0 flex items-center justify-center">
+ <div className="w-10 h-10 rounded-md bg-[#EF7E15] shrink-0 flex items-center justify-center">
  <span className="text-white font-black text-xl leading-none tracking-tighter">
  M
  </span>
@@ -525,7 +525,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  <span className="font-extrabold text-base tracking-tight text-zinc-900 dark:text-white">
  Mr.
  </span>
- <span className="font-extrabold text-base tracking-tight text-[#FF5500]">
+ <span className="font-extrabold text-base tracking-tight text-[#EF7E15]">
  Contract
  </span>
  </div>
@@ -568,7 +568,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  <button
  type="button"
  onClick={handleAddLeadClick}
- className="w-full py-3 px-4 min-h-[44px] bg-[#FF5500] hover:bg-[#E64D00] text-white font-bold text-sm rounded-md transition-colors duration-120 flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+ className="w-full py-3 px-4 min-h-[44px] bg-[#EF7E15] hover:bg-[#D66B0F] text-white font-bold text-sm rounded-md transition-colors duration-120 flex items-center justify-center gap-2 shadow-sm cursor-pointer"
  >
  <PlusCircle className="w-5 h-5 text-white shrink-0 stroke-[2.5]"/>
  <span className="tracking-wide text-white font-bold">
@@ -580,7 +580,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  type="button"
  onClick={handleAddLeadClick}
  title="Add Lead"
- className="w-12 h-12 mx-auto min-h-[44px] min-w-[44px] bg-[#FF5500] hover:bg-[#E64D00] text-white rounded-md transition-colors duration-120 flex items-center justify-center shadow-sm cursor-pointer"
+ className="w-12 h-12 mx-auto min-h-[44px] min-w-[44px] bg-[#EF7E15] hover:bg-[#D66B0F] text-white rounded-md transition-colors duration-120 flex items-center justify-center shadow-sm cursor-pointer"
  >
  <PlusCircle className="w-5 h-5 text-white shrink-0 stroke-[2.5]"/>
  </button>
@@ -606,7 +606,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  showExpanded ? 'px-3 py-2 gap-3 min-h-[36px]' : 'p-2 justify-center min-h-[36px]'
  } rounded-md font-semibold text-xs transition-colors duration-120 cursor-pointer ${
  isCurrentActive
- ? 'bg-[#FF5500] text-white font-bold'
+ ? 'bg-[#EF7E15] text-white font-bold'
  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
  }`
  }
@@ -632,8 +632,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
  <span
  className={`px-1.5 py-0.5 min-w-[18px] h-4.5 rounded-md text-[10px] font-bold flex items-center justify-center tabular-nums ${
  isCurrentActive
- ? 'bg-white text-[#FF5500]'
- : 'bg-[#FF5500] text-white'
+ ? 'bg-white text-[#EF7E15]'
+ : 'bg-[#EF7E15] text-white'
  }`}
  >
  {item.badge}
@@ -641,7 +641,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  ) : (
  <span
  className={`absolute top-2 right-2 w-2 h-2 rounded-full ring-2 ring-white dark:ring-[#09090b] ${
- isCurrentActive ? 'bg-white' : 'bg-[#FF5500]'
+ isCurrentActive ? 'bg-white' : 'bg-[#EF7E15]'
  }`}
  />
  )}
@@ -669,7 +669,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  showExpanded ? 'px-3 py-2 gap-3 min-h-[36px]' : 'p-2 justify-center min-h-[36px]'
  } rounded-md font-semibold text-xs transition-colors duration-120 cursor-pointer ${
  isCurrentActive
- ? 'bg-[#FF5500] text-white font-bold'
+ ? 'bg-[#EF7E15] text-white font-bold'
  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
  }`
  }
@@ -695,8 +695,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
  <span
  className={`px-1.5 py-0.5 min-w-[18px] h-4.5 rounded-md text-[10px] font-bold flex items-center justify-center tabular-nums ${
  isCurrentActive
- ? 'bg-white text-[#FF5500]'
- : 'bg-[#FF5500] text-white'
+ ? 'bg-white text-[#EF7E15]'
+ : 'bg-[#EF7E15] text-white'
  }`}
  >
  {item.badge}
@@ -704,7 +704,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  ) : (
  <span
  className={`absolute top-2 right-2 w-2 h-2 rounded-full ring-2 ring-white dark:ring-[#09090b] ${
- isCurrentActive ? 'bg-white' : 'bg-[#FF5500]'
+ isCurrentActive ? 'bg-white' : 'bg-[#EF7E15]'
  }`}
  />
  )}
@@ -731,7 +731,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  title={!showExpanded ? `Worker: ${currentUser.name} (Click to switch)` : undefined}
  >
  <div
- className="w-6 h-6 rounded-md flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-2xs bg-[#FF5500]"
+ className="w-6 h-6 rounded-md flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-2xs bg-[#EF7E15]"
  >
  {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
  </div>
@@ -740,7 +740,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
  <div className="text-zinc-900 dark:text-white font-bold truncate">
  {currentUser.name}
  </div>
- <div className="text-[10px] text-[#FF5500] font-semibold tracking-tight">
+ <div className="text-[10px] text-[#EF7E15] font-semibold tracking-tight">
  Switch Profile
  </div>
  </div>

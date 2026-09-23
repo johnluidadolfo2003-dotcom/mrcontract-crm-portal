@@ -563,7 +563,7 @@ export const CustomerServicePage: React.FC = () => {
  onClick={() => setStageFilter(pill.key)}
  className={`p-3 rounded-xl border text-left transition-colors cursor-pointer flex flex-col justify-between ${
  isSelected
- ? 'bg-[#FF5500] border-[#FF5500] text-white'
+ ? 'bg-[#EF7E15] border-[#EF7E15] text-white'
  : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 text-zinc-800 dark:text-zinc-200'
  }`}
  >
@@ -598,7 +598,7 @@ export const CustomerServicePage: React.FC = () => {
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
  placeholder="Search clients, phone, notes..."
- className="w-full pl-9 pr-7 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#FF5500]"
+ className="w-full pl-9 pr-7 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#EF7E15]"
  />
  {searchQuery && (
  <button
@@ -616,7 +616,7 @@ export const CustomerServicePage: React.FC = () => {
  <select
  value={sourceFilter}
  onChange={(e) => setSourceFilter(e.target.value)}
- className="w-full px-2.5 py-1.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs sm:text-sm font-normal text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#FF5500] cursor-pointer"
+ className="w-full px-2.5 py-1.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs sm:text-sm font-normal text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#EF7E15] cursor-pointer"
  >
  <option value="ALL">All Sources ({allFollowUps.length})</option>
  {availableSources.map((src) => {
@@ -699,7 +699,7 @@ export const CustomerServicePage: React.FC = () => {
  }}
  className={`p-4 rounded-xl border transition-colors cursor-pointer space-y-1.5 ${
  isSelected
- ? 'bg-orange-50/70 dark:bg-orange-950/20 border-[#FF5500] dark:border-[#FF5500]'
+ ? 'bg-orange-50/70 dark:bg-orange-950/20 border-[#EF7E15] dark:border-[#EF7E15]'
  : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
  }`}
  >
@@ -711,7 +711,7 @@ export const CustomerServicePage: React.FC = () => {
  <span
  className={`text-xs font-medium px-2.5 py-0.5 rounded-full border shrink-0 ${
  timing.variant === 'due'
- ? 'bg-[#FF5500] text-white border-[#FF5500]'
+ ? 'bg-[#EF7E15] text-white border-[#EF7E15]'
  : timing.variant === 'overdue'
  ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700'
  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700'
@@ -776,7 +776,7 @@ export const CustomerServicePage: React.FC = () => {
  <span
  className={`text-xs font-medium px-2.5 py-0.5 rounded-full border ${
  selectedTiming.variant === 'due'
- ? 'bg-[#FF5500] text-white border-[#FF5500]'
+ ? 'bg-[#EF7E15] text-white border-[#EF7E15]'
  : selectedTiming.variant === 'overdue'
  ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700'
  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700'
@@ -796,7 +796,7 @@ export const CustomerServicePage: React.FC = () => {
  {selectedLead.clientPhone && (
  <a
  href={`tel:${selectedLead.clientPhone}`}
- className="px-4 py-2 bg-[#FF5500] hover:bg-[#E64D00] text-white font-semibold text-xs sm:text-sm rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+ className="px-4 py-2 bg-[#EF7E15] hover:bg-[#D66B0F] text-white font-semibold text-xs sm:text-sm rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
  >
  <Phone className="w-4 h-4"/>
  <span>Call {selectedLead.clientPhone}</span>
@@ -861,7 +861,7 @@ export const CustomerServicePage: React.FC = () => {
  value={selectedLead.status || 'New'}
  disabled={updatingStatus}
  onChange={(e) => handleUpdateStatus(e.target.value)}
- className="px-3 py-1.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs sm:text-sm font-semibold text-zinc-900 dark:text-white cursor-pointer focus:outline-none focus:border-[#FF5500]"
+ className="px-3 py-1.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs sm:text-sm font-semibold text-zinc-900 dark:text-white cursor-pointer focus:outline-none focus:border-[#EF7E15]"
  >
  {LEAD_STATUS_OPTIONS.map((opt) => (
  <option key={opt} value={opt}>
@@ -895,7 +895,7 @@ export const CustomerServicePage: React.FC = () => {
  onClick={() => setSelectedScriptDay(d)}
  className={`py-2 px-1 rounded-xl text-xs sm:text-sm font-semibold transition-colors text-center cursor-pointer ${
  isSelected
- ? 'bg-[#FF5500] text-white border border-[#FF5500]'
+ ? 'bg-[#EF7E15] text-white border border-[#EF7E15]'
  : isRecommended
  ? 'bg-zinc-50 dark:bg-zinc-800/50 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-600'
  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-zinc-200 dark:border-zinc-700'
@@ -961,7 +961,7 @@ export const CustomerServicePage: React.FC = () => {
  currentScript.key
  )
  }
- className="py-2.5 px-5 bg-[#FF5500] hover:bg-[#E64D00] disabled:opacity-50 text-white font-semibold text-xs sm:text-sm rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer"
+ className="py-2.5 px-5 bg-[#EF7E15] hover:bg-[#D66B0F] disabled:opacity-50 text-white font-semibold text-xs sm:text-sm rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer"
  >
  <Send className={`w-3.5 h-3.5 ${isSendingEmail ? 'animate-spin' : ''}`} />
  <span>{isSendingEmail ? 'Sending...' : 'Send email'}</span>
