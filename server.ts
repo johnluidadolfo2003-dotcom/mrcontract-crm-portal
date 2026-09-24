@@ -10,6 +10,7 @@ import * as sheetsService from './server/sheetsService.ts';
 import * as durableStore from './server/durableStore.ts';
 import * as calendarService from './server/calendarService.ts';
 import * as houzzDelivery from './server/houzzDelivery.ts';
+import { extractAngiLabeledFields, normalizeAngiEmailTextForParsing } from './server/angiEmailParser.ts';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -634,16 +635,19 @@ function extractFromEmailText(rawText: string, defaultSource: string = 'Angi'): 
   }
 
   // Strip HTML if HTML email
-  const clean = rawText
-    .replace(/<br\s*[\/]?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n')
-    .replace(/<\/div>/gi, '\n')
-    .replace(/<\/tr>/gi, '\n')
-    .replace(/<\/td>/gi, '\n')
-    .replace(/<[^>]+>/gi, ' ')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/\t/g, ' ');
+  const clean = normalizeAngiEmailTextForParsing(
+    rawText
+      .replace(/<br\s*[\/]?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n')
+      .replace(/<\/div>/gi, '\n')
+      .replace(/<\/tr>/gi, '\n')
+      .replace(/<\/td>/gi, '\n')
+      .replace(/<[^>]+>/gi, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/\t/g, ' ')
+  );
+  const labeledFields = extractAngiLabeledFields(clean);
 
   const rawLines = clean
     .split(/\r?\n/)
@@ -651,7 +655,7 @@ function extractFromEmailText(rawText: string, defaultSource: string = 'Angi'): 
     .filter((l) => l.length > 0);
 
   // 1. Service / Task Requested
-  let serviceNeeded = '';
+  let serviceNeeded = labeledFields.serviceNeeded;
   // Check "You have a new lead!" pattern which precedes task in official Angi emails
   for (let i = 0; i < rawLines.length; i++) {
     if (/you have a new lead/i.test(rawLines[i])) {
@@ -682,7 +686,7 @@ function extractFromEmailText(rawText: string, defaultSource: string = 'Angi'): 
   }
 
   // 2. Client Name
-  let clientName = '';
+  let clientName = labeledFields.clientName;
   // Check official Angi "Customer Information" block
   for (let i = 0; i < rawLines.length; i++) {
     if (/^customer\s*information$/i.test(rawLines[i])) {
@@ -736,7 +740,7 @@ function extractFromEmailText(rawText: string, defaultSource: string = 'Angi'): 
   }
 
   // 3. Phone Number
-  let clientPhone = '';
+  let clientPhone = labeledFields.clientPhone;
   const phonePattern = /(?:phone|cell|mobile|tel|telephone|contact\s*(?:#|number|phone))[:\s\-]*([+\d\s().-]{10,20})/i;
   const phoneMatch = clean.match(phonePattern);
   if (phoneMatch) {
@@ -751,7 +755,7 @@ function extractFromEmailText(rawText: string, defaultSource: string = 'Angi'): 
   }
 
   // 4. Email Address (filtering out internal Angi/HomeAdvisor addresses)
-  let clientEmail = '';
+  let clientEmail = labeledFields.clientEmail;
   const emailPattern = /(?:email|e-mail|email\s*address)[:\s\-]*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i;
   const emailMatch = clean.match(emailPattern);
   if (emailMatch && !/angi\.com|homeadvisor\.com|zapier|service\.com|noreply/i.test(emailMatch[1])) {
@@ -764,7 +768,7 @@ function extractFromEmailText(rawText: string, defaultSource: string = 'Angi'): 
   }
 
   // 5. Address / Location
-  let address = '';
+  let address = labeledFields.address;
 
   // Check multi-line Project Location or Address headers
   for (let i = 0; i < rawLines.length; i++) {
@@ -866,8 +870,8 @@ function extractFromEmailText(rawText: string, defaultSource: string = 'Angi'): 
     leadFee = feeMatch[1].replace(/\s+/g, '');
   }
 
-  // 7. Notes / Comments (kept empty when creating new leads as requested)
-  const notes = '';
+  // 7. Notes / Comments
+  const notes = labeledFields.comments || '';
 
   return {
     clientName,
