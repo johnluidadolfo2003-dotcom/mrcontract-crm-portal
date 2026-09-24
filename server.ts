@@ -140,7 +140,7 @@ function heuristicExtractText(text: string): any {
     }
   }
 
-  let clientName = labeledFields.clientName;
+  let clientName = '';
   const nameMatch = text.match(/(?:name|client|customer)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/i);
   if (nameMatch) {
     clientName = nameMatch[1];
@@ -151,7 +151,7 @@ function heuristicExtractText(text: string): any {
     }
   }
 
-  let address = labeledFields.address;
+  let address = '';
   const addrMatch = text.match(/\d+\s+[A-Za-z0-9\s,.-]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Court|Ct|Circle|Cir|Way|Boulevard|Blvd)[.,]?\s*(?:[A-Za-z\s]+,\s*[A-Z]{2}\s*\d{5})?/i);
   if (addrMatch) {
     address = addrMatch[0].trim();
@@ -686,7 +686,7 @@ function extractFromEmailText(rawText: string, defaultSource: string = 'Angi'): 
   }
 
   // 2. Client Name
-  let clientName = '';
+  let clientName = labeledFields.clientName;
   // Check official Angi "Customer Information" block
   for (let i = 0; i < rawLines.length; i++) {
     if (/^customer\s*information$/i.test(rawLines[i])) {
@@ -768,7 +768,7 @@ function extractFromEmailText(rawText: string, defaultSource: string = 'Angi'): 
   }
 
   // 5. Address / Location
-  let address = '';
+  let address = labeledFields.address;
 
   // Check multi-line Project Location or Address headers
   for (let i = 0; i < rawLines.length; i++) {
@@ -870,7 +870,7 @@ function extractFromEmailText(rawText: string, defaultSource: string = 'Angi'): 
     leadFee = feeMatch[1].replace(/\s+/g, '');
   }
 
-  // 7. Notes / Comments (kept empty when creating new leads as requested)
+  // 7. Notes / Comments
   const notes = labeledFields.comments || '';
 
   return {
