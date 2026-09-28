@@ -777,12 +777,22 @@ export const NewLeadsPage: React.FC = () => {
  </div>
  <div className="space-y-1">
  <h3 className="text-base font-bold text-zinc-900 dark:text-white">No New Leads Found</h3>
+ {leads.length === 0 && !loadError && (
+ <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto">
+ Leads marked Followed Up, Meeting Scheduled, or another status remain in Leads.
+ </p>
+ )}
  {leads.length > 0 && (
  <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto">
  No leads match your search query.
  </p>
  )}
  </div>
+ {leads.length === 0 && !loadError && (
+ <button type="button" onClick={() => navigate('/leads')} className="text-xs font-semibold text-[#C55D0C] hover:underline dark:text-[#FFAA60]">
+ View all leads
+ </button>
+ )}
  </div>
  ) : viewMode === 'clean' ? (
         /* CLEAN VIEW: 1 COLUMN HORIZONTAL ROW CARDS (STANDARDIZED WITH TODAY'S TASKS & SPREADSHEET VIEWS) */
