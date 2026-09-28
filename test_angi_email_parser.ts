@@ -32,6 +32,6 @@ const replyWithOlderLead = `You have a new lead!\nInstall a Pre-Fabricated Firep
 const current = currentAngiMessage(replyWithOlderLead);
 assert.match(current, /Alex New/);
 assert.doesNotMatch(current, /Bailey Old/);
-assert.equal(currentAngiMessage('You have a new lead!\\nCustomer Information\\nAlex New'), 'You have a new lead!\\nCustomer Information\\nAlex New');
+assert.equal(currentAngiMessage('You have a new lead!\nCustomer Information\nAlex New'), 'You have a new lead!\nCustomer Information\nAlex New');
 
 console.log('Angi flattened-email parser tests passed.');
