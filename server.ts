@@ -1275,12 +1275,10 @@ async function tryAutoAppendToGoogleSheet(
     }
 
     const configFile = path.join(process.cwd(), 'data', 'config.json');
-    // Weakness 28: Use central sheetsService.getDefaultSpreadsheetId()
-    let spreadsheetId = sheetsService.getDefaultSpreadsheetId();
+    const spreadsheetId = sheetsService.getDefaultSpreadsheetId();
     if (fs.existsSync(configFile)) {
       try {
         const configData = JSON.parse(fs.readFileSync(configFile, 'utf-8'));
-        if (configData.spreadsheetId) spreadsheetId = configData.spreadsheetId;
         if (configData.autoSyncToSheets === false && !options.force) return false;
       } catch {}
     }
@@ -1615,6 +1613,17 @@ app.post('/api/webhooks/angi', async (req, res) => {
       durableStore.enqueueDelivery(lead.id, 'sheets', lead, lead.leadSource || 'Angi');
     }
 
+    // Render's local JSON files may be lost on restart. Do not acknowledge a
+    // webhook as successful until the durable Google Sheet has the lead.
+    if (!sheetSynced) {
+      return res.status(503).json({
+        success: false,
+        error: 'Lead received locally, but Google Sheets could not save it. Retry this Zap run.',
+        leadId: lead.id,
+        sheetSync: { success: false, status: 'queued_for_retry' },
+      });
+    }
+
     const houzzResult = await houzzDelivery.dispatchLeadToHouzz({
       leadId: lead.id,
       payload: lead,
@@ -1829,6 +1838,7 @@ function configuredLeadSourceTabs(): string[] {
 
 async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
   let result: { rows: any[] } = { rows: [] };
+  let sheetError: unknown = null;
   try {
     const spreadsheetId = sheetsService.getDefaultSpreadsheetId();
     const details = await sheetsService.getSpreadsheetDetails(spreadsheetId, forceFresh);
@@ -1848,6 +1858,7 @@ async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
       ? await sheetsService.readAllTabs(spreadsheetId, tabs, forceFresh)
       : { rows: [] };
   } catch (error) {
+    sheetError = error;
     console.warn('[New Leads] Google Sheets unavailable; showing locally received leads:', error);
   }
   let transient: any[] = [];
@@ -1855,6 +1866,14 @@ async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
     const raw = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'incoming_leads.json'), 'utf8'));
     if (Array.isArray(raw)) transient = raw;
   } catch {}
+
+  // An empty JSON file does not prove there are no leads. On a fresh Render
+  // instance it may simply mean that its temporary filesystem was reset.
+  if (sheetError && transient.length === 0) {
+    const unavailable: any = new Error('Google Sheets is unavailable. The CRM cannot verify the New Leads list. Check the Sheets connection and try again.');
+    unavailable.status = 503;
+    throw unavailable;
+  }
 
   const transientByContact = new Map(transient.map((lead) => [canonicalContactKey(lead), lead]));
   const seen = new Set<string>();
