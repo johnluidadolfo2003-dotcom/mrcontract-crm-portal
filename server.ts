@@ -10,7 +10,7 @@ import * as sheetsService from './server/sheetsService.ts';
 import * as durableStore from './server/durableStore.ts';
 import * as calendarService from './server/calendarService.ts';
 import * as houzzDelivery from './server/houzzDelivery.ts';
-import { extractAngiLabeledFields, normalizeAngiEmailTextForParsing } from './server/angiEmailParser.ts';
+import { currentAngiMessage, extractAngiLabeledFields, normalizeAngiEmailTextForParsing } from './server/angiEmailParser.ts';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -636,7 +636,7 @@ function extractFromEmailText(rawText: string, defaultSource: string = 'Angi'): 
 
   // Strip HTML if HTML email
   const clean = normalizeAngiEmailTextForParsing(
-    rawText
+    currentAngiMessage(rawText)
       .replace(/<br\s*[\/]?>/gi, '\n')
       .replace(/<\/p>/gi, '\n')
       .replace(/<\/div>/gi, '\n')
@@ -1419,10 +1419,12 @@ function saveIncomingLeadAndLog(
     } catch {}
   }
 
+  // A quoted earlier email may contain an Angi job number. Never use a number
+  // found anywhere in the body as the identity of this new customer.
   const externalEventId = String(
-    parsed.sourceEventId || parsed.eventId || parsed.leadId || parsed.rawPayload?.id ||
-    parsed.rawPayload?.eventId || parsed.rawPayload?.leadId ||
-    String(parsed.rawPayload?.rawEmail || '').match(/#(\d{6,})/)?.[1] || ''
+    parsed.sourceEventId || parsed.eventId || parsed.leadId ||
+    parsed.rawPayload?.messageId || parsed.rawPayload?.message_id ||
+    parsed.rawPayload?.id || parsed.rawPayload?.eventId || parsed.rawPayload?.leadId || ''
   ).trim();
   const stableInput = externalEventId || [
     parsed.leadSource, parsed.clientPhone, parsed.clientEmail, parsed.clientName, parsed.serviceNeeded
@@ -1826,23 +1828,28 @@ function configuredLeadSourceTabs(): string[] {
 }
 
 async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
-  const spreadsheetId = sheetsService.getDefaultSpreadsheetId();
-  const details = await sheetsService.getSpreadsheetDetails(spreadsheetId, forceFresh);
-  const tabs = details.sheets
-    .map((sheet) => sheet.title)
-    .filter((title) => {
-      const normalized = title.trim().toLowerCase();
-      return normalized &&
-        !normalized.startsWith('_') &&
-        !normalized.includes('summary') &&
-        !normalized.includes('dashboard') &&
-        !normalized.includes('zapier') &&
-        !normalized.includes('appointment') &&
-        !normalized.includes('history');
-    });
-  const result = tabs.length
-    ? await sheetsService.readAllTabs(spreadsheetId, tabs, forceFresh)
-    : { headers: sheetsService.DEFAULT_SHEET_HEADERS, rows: [] };
+  let result: { rows: any[] } = { rows: [] };
+  try {
+    const spreadsheetId = sheetsService.getDefaultSpreadsheetId();
+    const details = await sheetsService.getSpreadsheetDetails(spreadsheetId, forceFresh);
+    const tabs = details.sheets
+      .map((sheet) => sheet.title)
+      .filter((title) => {
+        const normalized = title.trim().toLowerCase();
+        return normalized &&
+          !normalized.startsWith('_') &&
+          !normalized.includes('summary') &&
+          !normalized.includes('dashboard') &&
+          !normalized.includes('zapier') &&
+          !normalized.includes('appointment') &&
+          !normalized.includes('history');
+      });
+    result = tabs.length
+      ? await sheetsService.readAllTabs(spreadsheetId, tabs, forceFresh)
+      : { rows: [] };
+  } catch (error) {
+    console.warn('[New Leads] Google Sheets unavailable; showing locally received leads:', error);
+  }
   let transient: any[] = [];
   try {
     const raw = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'incoming_leads.json'), 'utf8'));
