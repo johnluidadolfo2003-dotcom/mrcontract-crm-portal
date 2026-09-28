@@ -497,13 +497,15 @@ export function detectColumnMapping(headerRow: string[]) {
     typeCol: typeCol !== -1 ? typeCol : 5,
     leadFeeCol: leadFeeCol !== -1 ? leadFeeCol : 6,
     statusCol: statusCol !== -1 ? statusCol : 7,
-    sourceCol: sourceCol !== -1 ? sourceCol : 8,
-    dateCol: dateCol !== -1 ? dateCol : 9,
-    startCol: startCol !== -1 ? startCol : 10,
-    endCol: endCol !== -1 ? endCol : 11,
-    spCol: spCol !== -1 ? spCol : 12,
+    // Optional columns must match a real header. On the Thumbtack tab,
+    // columns I/J are Lead Category and Refund Status, not source/date.
+    sourceCol,
+    dateCol,
+    startCol,
+    endCol,
+    spCol,
     carrierCol: carrierCol !== -1 ? carrierCol : -1,
-    notesCol: notesCol !== -1 ? notesCol : 13,
+    notesCol,
   };
 }
 
