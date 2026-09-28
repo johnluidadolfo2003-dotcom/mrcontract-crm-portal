@@ -23,6 +23,15 @@ export function normalizeAngiEmailTextForParsing(rawText: string): string {
     .trim();
 }
 
+// Gmail can include the previous Angi notification below a reply. Only the
+// newest message should supply customer details for the current webhook.
+export function currentAngiMessage(rawText: string): string {
+  const text = String(rawText || '');
+  const replyBoundary = /^(?:On .+ wrote:|-----Original Message-----|Begin forwarded message:|From:\s*Angi\b|>\s*(?:You have a new lead!?|Customer Information))\s*$/im;
+  const match = replyBoundary.exec(text);
+  return match && match.index > 0 ? text.slice(0, match.index).trim() : text;
+}
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^\${}()|[\]\\]/g, '\\$&');
 }
