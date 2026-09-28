@@ -75,6 +75,7 @@ export const NewLeadsPage: React.FC = () => {
  const [leadToDelete, setLeadToDelete] = useState<NewLeadRecord | null>(null);
  const [isWebhookDiagOpen, setIsWebhookDiagOpen] = useState(false);
  const [syncIssue, setSyncIssue] = useState<{ message: string; details: string } | null>(null);
+ const [loadError, setLoadError] = useState<string | null>(null);
 
   const config = loadAppConfig();
   const [selectedLeadForDrawer, setSelectedLeadForDrawer] = useState<SheetRowRecord | null>(null);
@@ -228,8 +229,10 @@ export const NewLeadsPage: React.FC = () => {
  try {
   const canonical = await fetchNewLeads(forceFresh);
   setLeads(canonical);
+  setLoadError(null);
  } catch (err) {
   console.warn('Unable to refresh canonical New leads:', err);
+  setLoadError(err instanceof Error ? err.message : 'Unable to load New Leads.');
  }
  };
 
@@ -683,6 +686,12 @@ export const NewLeadsPage: React.FC = () => {
 
  return (
  <div className={`p-4 sm:p-6 space-y-5 font-sans transition-all ${viewMode === 'table' ? 'w-full max-w-none px-4 sm:px-6 md:px-8' : 'max-w-7xl mx-auto'}`}>
+
+ {loadError && (
+ <div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-3.5 text-xs font-semibold text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
+ New Leads could not refresh: {loadError}
+ </div>
+ )}
 
  {syncMsg && (
  <div className="bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-semibold p-3.5 rounded-xl flex items-center justify-between shadow-2xs">
