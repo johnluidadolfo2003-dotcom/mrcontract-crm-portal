@@ -1770,5 +1770,3 @@ export async function saveServiceAccountCredentials(credentialsJson: string): Pr
  }
  return await res.json();
 }
-
-
