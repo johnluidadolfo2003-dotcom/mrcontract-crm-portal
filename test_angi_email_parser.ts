@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { extractAngiLabeledFields, normalizeAngiEmailTextForParsing } from './server/angiEmailParser.ts';
+import { currentAngiMessage, extractAngiLabeledFields, normalizeAngiEmailTextForParsing } from './server/angiEmailParser.ts';
 
 const flattenedEmail =
   'Dear Daniel, You\'ve been matched to a Repair a Brick or Stone Fireplace (Gas) Lead! ' +
@@ -27,5 +27,11 @@ assert.deepEqual(parsed, {
   jobNumber: '329574609',
   comments: 'Cap on chimney needs checked or replaced',
 });
+
+const replyWithOlderLead = `You have a new lead!\nInstall a Pre-Fabricated Fireplace Unit (Gas)\nCustomer Information\nAlex New\n(412) 996-6255\nalex@customer.test\n215 Oak Drive, Pittsburgh, PA 15220\n\nOn Mon, Sep 28, 2026 at 11:29 PM Angi <no-reply@angi.com> wrote:\n> You have a new lead!\n> Repair a Pre-Fabricated Fireplace Unit (Gas)\n> Customer Information\n> Bailey Old\n> (724) 561-5625\n> bailey@customer.test`;
+const current = currentAngiMessage(replyWithOlderLead);
+assert.match(current, /Alex New/);
+assert.doesNotMatch(current, /Bailey Old/);
+assert.equal(currentAngiMessage('You have a new lead!\\nCustomer Information\\nAlex New'), 'You have a new lead!\\nCustomer Information\\nAlex New');
 
 console.log('Angi flattened-email parser tests passed.');
