@@ -941,7 +941,7 @@ async function parseIncomingLeadPayload(body: any, defaultSource: string = 'Angi
     if (!extractedEmailData.clientName && !(Date.now() < aiDeniedUntil) && process.env.NODE_ENV !== 'test') {
       try {
         const response = await callGeminiWithFallback({
-          contents: `Extract client details from this contractor lead notification email from Angi/HomeAdvisor:\n\n${rawEmailCandidate.slice(0, 3000)}`,
+          contents: `Extract client details from this contractor lead notification email from Angi/HomeAdvisor:\n\n${currentAngiMessage(rawEmailCandidate).slice(0, 3000)}`,
           config: {
             responseMimeType: 'application/json',
             responseSchema: {
