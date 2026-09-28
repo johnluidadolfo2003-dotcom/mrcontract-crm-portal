@@ -311,7 +311,6 @@ export function detectColumnMapping(headerRow: string[]): ColumnMapping {
  const sourceCol = findBestCol([
  (h) => h === 'lead source' || h === 'source' || h === 'platform' || h === 'lead channel' || h === 'channel',
  (h) => (h.includes('source') || h.includes('platform') || h.includes('channel')) && !h.includes('category'),
- (h) => h === 'lead category' || h === 'category',
  ]);
 
  // Appt Date, Start Time, End Time, Salesperson, Notes
@@ -340,12 +339,12 @@ export function detectColumnMapping(headerRow: string[]): ColumnMapping {
  typeCol: typeCol !== -1 ? typeCol : 5,
  leadFeeCol: leadFeeCol !== -1 ? leadFeeCol : 6,
  statusCol: statusCol !== -1 ? statusCol : 7,
- sourceCol: sourceCol !== -1 ? sourceCol : 8,
- dateCol: dateCol !== -1 ? dateCol : 9,
- startCol: startCol !== -1 ? startCol : 10,
- endCol: endCol !== -1 ? endCol : 11,
- spCol: spCol !== -1 ? spCol : 12,
- notesCol: notesCol !== -1 ? notesCol : 13,
+ sourceCol,
+ dateCol,
+ startCol,
+ endCol,
+ spCol,
+ notesCol,
  carrierCol: carrierCol !== -1 ? carrierCol : -1,
  };
 }
@@ -967,7 +966,9 @@ export function parseSheetValuesToRecords(
  let endTime = getVal(mapping.endCol);
 
  // Scan raw values (EXCLUDING lead creation timestamp) for embedded appointment dates or times (e.g. 10:00 AM, 10:00-12:00, or 2026-09-03)
- const textCellsWithoutTs = row.filter((_, idx) => mapping.tsCol < 0 || idx !== mapping.tsCol);
+ const textCellsWithoutTs = row.filter((_, idx) =>
+  idx !== mapping.tsCol && !/refund\s*status|lead\s*category/i.test(headerRow[idx] || '')
+ );
  const allRowText = textCellsWithoutTs.join(' ');
  if (!appointmentDate) {
  const mDateIso = allRowText.match(/\b(202\d)-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01])\b/);
