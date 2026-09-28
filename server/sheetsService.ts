@@ -191,12 +191,21 @@ export function resolveServiceAccountCredentials(customEnv?: any): { credentials
 }
 
 /**
- * Get default Google Spreadsheet ID strictly from GOOGLE_SPREADSHEET_ID environment variable.
+ * Use the same spreadsheet for webhook writes and CRM reads. Existing server
+ * configurations may contain a spreadsheetId that overrides the environment.
  */
 export function getDefaultSpreadsheetId(customEnv?: any): string {
   const envSource = customEnv || (typeof process !== 'undefined' && process.env ? process.env : {});
+  if (!customEnv) {
+    try {
+      const config = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'config.json'), 'utf8'));
+      if (typeof config.spreadsheetId === 'string' && config.spreadsheetId.trim()) {
+        return extractSpreadsheetId(config.spreadsheetId);
+      }
+    } catch {}
+  }
   if (envSource.GOOGLE_SPREADSHEET_ID && typeof envSource.GOOGLE_SPREADSHEET_ID === 'string' && envSource.GOOGLE_SPREADSHEET_ID.trim()) {
-    return envSource.GOOGLE_SPREADSHEET_ID.trim();
+    return extractSpreadsheetId(envSource.GOOGLE_SPREADSHEET_ID);
   }
   return '1arAGlZO9VyY1St_ywT9ZtEaKyLaFfr3RIzw0-ebhJX0';
 }
