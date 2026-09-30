@@ -537,9 +537,6 @@ export async function createGoogleCalendarEvent(
 
  const data = await res.json().catch(() => ({}));
  if (!res.ok || !data.success || !data.event) {
- if (res.status === 409 || data.conflict || data.error?.includes('already has an appointment')) {
- throw new Error('This salesperson already has an appointment at this time.');
- }
  throw new Error(data.error || data.message || `Failed to create calendar event (HTTP ${res.status}).`);
  }
 
@@ -604,9 +601,6 @@ export async function updateGoogleCalendarEvent(
 
  const data = await response.json().catch(() => ({}));
  if (!response.ok || !data.success) {
- if (response.status === 409 || data.conflict || data.error?.includes('already has an appointment')) {
- throw new Error('This salesperson already has an appointment at this time.');
- }
  throw new Error(data.error || data.message || `Failed to update calendar event (HTTP ${response.status}).`);
  }
 

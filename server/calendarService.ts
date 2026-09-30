@@ -744,8 +744,8 @@ function normalizeCalendarPayloadTimes(payload: any): any {
   };
 }
 
-// In-flight booking lock per salesperson to coordinate simultaneous booking requests
-// Different salespeople run with their own lock and are allowed appointments at the same time.
+// Serialize simultaneous calendar writes per salesperson.
+// This lock does not restrict the appointment date or time.
 const salespersonBookingLocks = new Map<string, Promise<void>>();
 
 export async function runWithSalespersonLock<T>(spKey: string, fn: () => Promise<T>): Promise<T> {
@@ -771,109 +771,6 @@ export async function runWithSalespersonLock<T>(spKey: string, fn: () => Promise
 }
 
 /**
- * Check the assigned salesperson's schedule before confirming to prevent overlapping bookings
- */
-export async function checkSalespersonScheduleOverlap(
-  accessToken: string,
-  calendarId: string,
-  salesperson: string,
-  startISO: string,
-  endISO: string,
-  excludeEventId?: string
-): Promise<{ hasOverlap: boolean; conflictingEvent?: any; unverified?: boolean; error?: string }> {
-  if (!salesperson || !startISO || !endISO) {
-    return { hasOverlap: false };
-  }
-
-  const reqStartMs = new Date(startISO).getTime();
-  const reqEndMs = new Date(endISO).getTime();
-
-  if (isNaN(reqStartMs) || isNaN(reqEndMs) || reqStartMs >= reqEndMs) {
-    return { hasOverlap: false };
-  }
-
-  try {
-    // Check events around the requested appointment time (+/- 24 hours buffer)
-    const windowMin = new Date(reqStartMs - 24 * 60 * 60 * 1000).toISOString();
-    const windowMax = new Date(reqEndMs + 24 * 60 * 60 * 1000).toISOString();
-
-    let pageToken: string | undefined = undefined;
-    let pageCount = 0;
-    const maxPages = 4;
-    const allItems: any[] = [];
-
-    do {
-      pageCount++;
-      const params = new URLSearchParams({
-        singleEvents: 'true',
-        timeMin: windowMin,
-        timeMax: windowMax,
-        maxResults: '250',
-      });
-      if (pageToken) params.append('pageToken', pageToken);
-
-      const queryUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
-        calendarId
-      )}/events?${params.toString()}`;
-
-      const res = await fetch(queryUrl, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!res.ok) {
-        const errText = await res.text().catch(() => '');
-        console.warn(`[Calendar Schedule Check] Unable to fetch schedule (HTTP ${res.status}): ${errText}`);
-        return { 
-          hasOverlap: false, 
-          unverified: true, 
-          error: `Salesperson schedule could not be verified from Google Calendar API (HTTP ${res.status}).` 
-        };
-      }
-
-      const data = await res.json().catch(() => ({ items: [] }));
-      if (data.items && Array.isArray(data.items)) {
-        allItems.push(...data.items);
-      }
-      pageToken = data.nextPageToken;
-    } while (pageToken && pageCount < maxPages);
-
-    for (const item of allItems) {
-      if (item.status === 'cancelled') continue;
-      if (excludeEventId && item.id === excludeEventId) continue;
-
-      const itemStartStr = item.start?.dateTime || item.start?.date;
-      const itemEndStr = item.end?.dateTime || item.end?.date;
-      if (!itemStartStr || !itemEndStr) continue;
-
-      const itemStartMs = new Date(itemStartStr).getTime();
-      const itemEndMs = new Date(itemEndStr).getTime();
-      if (isNaN(itemStartMs) || isNaN(itemEndMs)) continue;
-
-      // Intervals overlap if itemStart < reqEnd && itemEnd > reqStart
-      const overlaps = itemStartMs < reqEndMs && itemEndMs > reqStartMs;
-      if (!overlaps) continue;
-
-      const eventSp = extractSalesperson(item);
-      if (eventSp && isSameSalesperson(salesperson, eventSp)) {
-        return { hasOverlap: true, conflictingEvent: item };
-      }
-    }
-  } catch (err: any) {
-    console.error('[Calendar Schedule Check Error]:', err);
-    return {
-      hasOverlap: false,
-      unverified: true,
-      error: `Salesperson schedule could not be verified from Google Calendar API: ${err.message || 'Network error'}`
-    };
-  }
-
-  return { hasOverlap: false };
-}
-
-/**
  * Create a new event on Google Calendar
  */
 export async function createCalendarEvent(
@@ -885,7 +782,6 @@ export async function createCalendarEvent(
   event?: any;
   calendarId: string;
   authSource?: string;
-  conflict?: boolean;
   error?: string;
   googleReason?: string;
   googleMessage?: string;
@@ -911,36 +807,8 @@ export async function createCalendarEvent(
   }
 
   const salesperson = extractSalesperson(payload);
-  const startISO = payload.start?.dateTime || payload.start?.date || (typeof payload.start === 'string' ? payload.start : '');
-  const endISO = payload.end?.dateTime || payload.end?.date || (typeof payload.end === 'string' ? payload.end : '');
-
-  // Coordinate simultaneous booking requests so two workers cannot both reserve the same available slot.
-  // Different salespeople run with their own lock and are allowed appointments at the same time.
+  // Serialize writes for this salesperson while allowing appointments at any time.
   return await runWithSalespersonLock(salesperson, async () => {
-    // 1. Check assigned salesperson’s schedule before confirming
-    if (salesperson && startISO && endISO) {
-      const overlap = await checkSalespersonScheduleOverlap(
-        auth.token!,
-        calendarId,
-        salesperson,
-        startISO,
-        endISO
-      );
-
-      if (overlap.hasOverlap) {
-        return {
-          success: false,
-          calendarId,
-          authSource: auth.source,
-          conflict: true,
-          error: 'This salesperson already has an appointment at this time.',
-          errorCode: 'APPOINTMENT_OVERLAP',
-          status: 409,
-        };
-      }
-    }
-
-    // 2. Insert into Google Calendar
     try {
       const googleRes = await fetch(
         `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?sendUpdates=all`,
@@ -1020,7 +888,6 @@ export async function updateCalendarEvent(
   event?: any;
   calendarId: string;
   authSource?: string;
-  conflict?: boolean;
   error?: string;
   googleReason?: string;
   googleMessage?: string;
@@ -1046,35 +913,8 @@ export async function updateCalendarEvent(
   }
 
   const salesperson = extractSalesperson(payload);
-  const startISO = payload.start?.dateTime || payload.start?.date || (typeof payload.start === 'string' ? payload.start : '');
-  const endISO = payload.end?.dateTime || payload.end?.date || (typeof payload.end === 'string' ? payload.end : '');
-
-  // Coordinate simultaneous booking requests and check schedule before confirming
+  // Serialize writes for this salesperson while allowing appointments at any time.
   return await runWithSalespersonLock(salesperson, async () => {
-    // 1. Check assigned salesperson’s schedule before confirming (excluding current eventId)
-    if (salesperson && startISO && endISO) {
-      const overlap = await checkSalespersonScheduleOverlap(
-        auth.token!,
-        calendarId,
-        salesperson,
-        startISO,
-        endISO,
-        eventId
-      );
-
-      if (overlap.hasOverlap) {
-        return {
-          success: false,
-          calendarId,
-          authSource: auth.source,
-          conflict: true,
-          error: 'This salesperson already has an appointment at this time.',
-          errorCode: 'APPOINTMENT_OVERLAP',
-          status: 409,
-        };
-      }
-    }
-
     try {
       const googleRes = await fetch(
         `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}?sendUpdates=all`,

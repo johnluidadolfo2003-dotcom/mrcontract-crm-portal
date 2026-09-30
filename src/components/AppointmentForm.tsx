@@ -36,9 +36,6 @@ import { AppointmentFormData, AppConfig } from '../types';
 import { DEFAULT_LEAD_SOURCES, DEFAULT_LEAD_TYPES, isLeadSourceTab } from '../config';
 import { AddressAutocomplete } from './ui/AddressAutocomplete';
 import {
- getCachedCalendarEvents,
- isSameSalesperson,
- getTimezoneOffsetString,
  parseCalendarEventToFormData,
  parseDateTimeFromISO,
  fetchAllGoogleCalendarEvents,
@@ -571,50 +568,6 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
  ) {
  setValidationError('Please enter a valid Email address (e.g. name@domain.com) or leave it blank.');
  return;
- }
-
- // Check for salesperson schedule conflict in cached appointments
- try {
- const cachedEvents = getCachedCalendarEvents();
- if (
- Array.isArray(cachedEvents) &&
- cachedEvents.length > 0 &&
- formData.salespersonCode &&
- formData.appointmentDate &&
- formData.startTime &&
- formData.endTime
- ) {
- const targetTz = config.timeZone || 'America/New_York';
- const startOffset = getTimezoneOffsetString(formData.appointmentDate, formData.startTime, targetTz);
- const endOffset = getTimezoneOffsetString(formData.appointmentDate, formData.endTime, targetTz);
- const reqStart = new Date(`${formData.appointmentDate}T${formData.startTime}:00${startOffset}`).getTime();
- const reqEnd = new Date(`${formData.appointmentDate}T${formData.endTime}:00${endOffset}`).getTime();
-
- if (!isNaN(reqStart) && !isNaN(reqEnd) && reqStart < reqEnd) {
- const overlap = cachedEvents.find((evt: any) => {
- if (evt.status === 'cancelled' || evt.id === editingEventId) return false;
- const eStartStr = evt.start?.dateTime || evt.start?.date;
- const eEndStr = evt.end?.dateTime || evt.end?.date;
- if (!eStartStr || !eEndStr) return false;
- const eStart = new Date(eStartStr).getTime();
- const eEnd = new Date(eEndStr).getTime();
- if (isNaN(eStart) || isNaN(eEnd)) return false;
-
- if (eStart < reqEnd && eEnd > reqStart) {
- const parsed = parseCalendarEventToFormData(evt, config);
- return isSameSalesperson(formData.salespersonCode, parsed.formData.salespersonCode);
- }
- return false;
- });
-
- if (overlap) {
- setValidationError('This salesperson already has an appointment at this time.');
- return;
- }
- }
- }
- } catch (checkErr) {
- console.warn('Pre-validation overlap check note:', checkErr);
  }
 
  setValidationError(null);
