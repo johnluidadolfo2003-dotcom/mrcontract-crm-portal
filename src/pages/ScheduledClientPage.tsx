@@ -578,11 +578,6 @@ export const ScheduledClientPage: React.FC = () => {
  : await createGoogleCalendarEvent(payload, config.calendarId);
  } catch (calErr: any) {
  console.warn('Google Calendar sync notice:', calErr);
- if (calErr?.message?.includes('already has an appointment')) {
- setErrorMessage('This salesperson already has an appointment at this time.');
- setIsSubmitting(false);
- return;
- }
  if (editingClient) {
   setErrorMessage(calErr?.message || 'The existing Calendar appointment could not be updated.');
   setIsSubmitting(false);

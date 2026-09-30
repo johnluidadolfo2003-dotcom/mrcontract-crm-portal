@@ -317,12 +317,7 @@ export const MainLayout: React.FC = () => {
  } catch (err: any) {
  console.error('Failed to publish calendar event:', err);
  setIsConfirmationOpen(false);
- const isConflict = err?.message?.includes('already has an appointment');
- if (isConflict) {
- showToast('error', 'This salesperson already has an appointment at this time.');
- } else {
  showToast('error', 'The shared calendar is currently unavailable. Please contact an administrator.');
- }
  } finally {
  setIsSubmitting(false);
  }
