@@ -70,6 +70,35 @@ async function runTests() {
   }
   console.log('✓ Payload construction and canonical field parity verified.');
 
+  // An older Thumbtack lead sent this month must get this month's tag.
+  const olderThumbtackLead = {
+    ...testPayload,
+    leadSource: 'Thumbtack',
+    createdAt: '2026-09-28T12:00:00Z',
+    tag: 'SEPTEMBER',
+    tags: ['SEPTEMBER'],
+    monthTag: 'SEPTEMBER',
+  };
+  for (const [sentAt, expectedTag] of [
+    ['2026-10-02T14:00:00Z', 'OCTOBER'],
+    ['2026-11-01T05:00:00Z', 'NOVEMBER'],
+    ['2027-01-01T05:00:00Z', 'JANUARY'],
+    ['2026-10-01T03:59:59Z', 'SEPTEMBER'],
+    ['2026-10-01T04:00:00Z', 'OCTOBER'],
+  ]) {
+    const payload = constructHouzzPayload('older-thumbtack', olderThumbtackLead, new Date(sentAt));
+    for (const record of [payload, ...canonicalContainers.map((key) => payload[key])]) {
+      if (record.tag !== expectedTag || record.monthTag !== expectedTag ||
+          record.tags.length !== 1 || record.tags[0] !== expectedTag) {
+        throw new Error(`Wrong month tag for submission at ${sentAt}: expected ${expectedTag}`);
+      }
+    }
+    if (payload.timestamp !== new Date(sentAt).toISOString()) {
+      throw new Error('Submission timestamp must use the same time as the month tag');
+    }
+  }
+  console.log('✓ Current submission month tags and New York month boundaries verified.');
+
   // 3. Test Sanitization (Requirement 3 & 6)
   console.log('\n[Test 3] Secret Sanitization');
   const secretLeak = 'Error on https://hooks.zapier.com/hooks/catch/123/456?token=secret123 Authorization: Bearer abcdef';
