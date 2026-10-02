@@ -1876,6 +1876,9 @@ async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
   }
 
   const transientByContact = new Map(transient.map((lead) => [canonicalContactKey(lead), lead]));
+  // A Sheet row is authoritative even after its status changes. Otherwise a
+  // stale local webhook copy can keep a Followed Up or Scheduled lead in New.
+  const sheetContacts = new Set((result.rows || []).map(canonicalContactKey));
   const seen = new Set<string>();
   const leads: any[] = [];
 
@@ -1936,7 +1939,7 @@ async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
   for (const lead of transient) {
     const key = canonicalContactKey(lead);
     const status = String(lead.status || 'New').trim().toLowerCase();
-    if (!seen.has(key) && ['new', 'new lead', 'active'].includes(status) && !isExampleOrTestLead(lead)) {
+    if (!seen.has(key) && !sheetContacts.has(key) && ['new', 'new lead', 'active'].includes(status) && !isExampleOrTestLead(lead)) {
       seen.add(key);
       const durableMetadata = durableStore.getLeadMetadata(lead.id);
       leads.push({ ...lead, ...(durableMetadata || {}), id: lead.id, sheetSynced: false });
