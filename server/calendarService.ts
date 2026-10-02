@@ -1,5 +1,6 @@
 import { OAuth2Client, JWT } from 'google-auth-library';
 import * as sheetsService from './sheetsService';
+import { includeSalesTeamGuests } from '../src/lib/appointmentGuests.ts';
 
 let cachedOAuth2Client: OAuth2Client | null = null;
 let cachedCredentialsKey = '';
@@ -792,6 +793,7 @@ export async function createCalendarEvent(
   status?: number;
 }> {
   payload = normalizeCalendarPayloadTimes(payload);
+  payload = { ...payload, attendees: includeSalesTeamGuests(Array.isArray(payload?.attendees) ? payload.attendees : []) };
   const auth = await getCalendarAccessToken(reqCalendarId, clientToken);
   const calendarId = resolveCalendarId(reqCalendarId);
 
@@ -898,6 +900,7 @@ export async function updateCalendarEvent(
   status?: number;
 }> {
   payload = normalizeCalendarPayloadTimes(payload);
+  payload = { ...payload, attendees: includeSalesTeamGuests(Array.isArray(payload?.attendees) ? payload.attendees : []) };
   const auth = await getCalendarAccessToken(reqCalendarId, clientToken);
   const calendarId = resolveCalendarId(reqCalendarId);
 
@@ -1257,4 +1260,3 @@ export async function getCalendarHealthStatus(reqCalendarId?: string, clientToke
     };
   }
 }
-

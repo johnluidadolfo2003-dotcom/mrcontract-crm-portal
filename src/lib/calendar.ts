@@ -2,6 +2,7 @@ import { AppointmentFormData, AppConfig, GoogleCalendarEventPayload, CreatedCale
 import { loadAppConfig } from '../config';
 import { clearCachedAccessToken, getCachedAccessToken, googleSignIn } from './firebase';
 import { isGoogleCalendarAuthFailure } from './googleToken';
+import { includeSalesTeamGuests, isAlwaysInvitedSalesEmail } from './appointmentGuests';
 
 export const BUSINESS_TIME_ZONE = 'America/New_York';
 
@@ -174,7 +175,7 @@ export function buildEventPayload(
     attendeeSet.add(clientEmail.toLowerCase().trim());
   }
 
-  const attendees = Array.from(attendeeSet).map((email) => ({ email }));
+  const attendees = includeSalesTeamGuests(Array.from(attendeeSet).map((email) => ({ email })));
 
   // 5. Description Format
   const rawType = (leadType || '').trim();
@@ -849,7 +850,9 @@ export function parseCalendarEventToFormData(
  }
 
  if (!clientEmail && Array.isArray(event.attendees)) {
- const clientAttendee = event.attendees.find((a: any) => a.email && typeof a.email === 'string');
+ const clientAttendee = event.attendees.find((a: any) =>
+  typeof a.email === 'string' && a.email && !isAlwaysInvitedSalesEmail(a.email) && !a.organizer && !a.self
+ );
  if (clientAttendee) {
  clientEmail = clientAttendee.email;
  }
