@@ -173,7 +173,7 @@ export function parseAddressParts(fullAddress: string) {
   };
 }
 
-export function constructHouzzPayload(leadId: string, leadData: any): any {
+export function constructHouzzPayload(leadId: string, leadData: any, sentAt: Date = new Date()): any {
   // clientName is the authoritative value entered in the CRM form. Normalize
   // whitespace only; never replace it with a cached Zapier sample or Sheet name.
   const submittedClientName = String(leadData?.clientName || '').trim().replace(/\s+/g, ' ');
@@ -190,12 +190,12 @@ export function constructHouzzPayload(leadId: string, leadData: any): any {
   const serviceNeeded = (leadData.serviceNeeded || leadData.service || leadData.leadType || '').trim();
   const leadSource = (leadData.leadSource || leadData.source || 'Web App').trim();
   const notes = (leadData.notes || leadData.message || '').trim();
-  const createdAt = leadData.createdAt ? new Date(leadData.createdAt) : new Date();
-  const safeCreatedAt = Number.isNaN(createdAt.getTime()) ? new Date() : createdAt;
+  // The tag describes this new Houzz submission, not when the CRM first
+  // received the lead. Thumbtack leads may be sent in a later month.
   const monthTag = new Intl.DateTimeFormat('en-US', {
     month: 'long',
     timeZone: 'America/New_York',
-  }).format(safeCreatedAt).toUpperCase();
+  }).format(sentAt).toUpperCase();
 
   // Keep one canonical CRM record and repeat that same object under the common
   // Zapier/Houzz containers. Existing Zaps may read top-level or nested fields;
@@ -238,6 +238,9 @@ export function constructHouzzPayload(leadId: string, leadData: any): any {
     leadSource,
     source: leadSource,
     leadFee: String(leadData.leadFee || '').trim(),
+    tag: monthTag,
+    tags: [monthTag],
+    monthTag,
     notes,
     message: notes,
     status: String(leadData.status || 'New').trim(),
@@ -312,7 +315,7 @@ export function constructHouzzPayload(leadId: string, leadData: any): any {
     notes,
     message: notes,
     status: leadData.status || 'New',
-    timestamp: new Date().toISOString(),
+    timestamp: sentAt.toISOString(),
   };
 }
 
