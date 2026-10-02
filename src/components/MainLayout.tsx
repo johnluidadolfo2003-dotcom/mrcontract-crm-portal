@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Outlet, useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { SettingsModal } from './SettingsModal';
@@ -535,6 +535,7 @@ export const MainLayout: React.FC = () => {
        )}
 
        {/* Child Pages Outlet */}
+ <Suspense fallback={<div className="flex min-h-[40vh] items-center justify-center text-sm text-zinc-500" role="status">Loading page…</div>}>
  <Outlet
  context={{
  config,
@@ -549,6 +550,7 @@ export const MainLayout: React.FC = () => {
  openAddLeadModal: () => setIsAddLeadModalOpen(true),
  }}
  />
+ </Suspense>
 
  {/* Mobile Bottom Navigation Bar (Phone thumb-friendly) */}
  <nav

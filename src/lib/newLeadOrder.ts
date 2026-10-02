@@ -1,3 +1,4 @@
+import { getDateTimeFormatter } from './dateTimeFormatters';
 export interface NewLeadSortable {
  newestOrder?: number;
  createdAt?: string;
@@ -22,7 +23,7 @@ export function compareNewestLeads(a: NewLeadSortable, b: NewLeadSortable): numb
 }
 
 function getDateKeyInTimeZone(date: Date, timeZone: string): string {
- const parts = new Intl.DateTimeFormat('en-US', {
+ const parts = getDateTimeFormatter('en-US', {
   timeZone,
   year: 'numeric',
   month: '2-digit',

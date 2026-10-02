@@ -1873,6 +1873,9 @@ async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
     throw unavailable;
   }
 
+  // One snapshot per response avoids re-reading/parsing the entire metadata
+  // file for every lead while blocking other requests on the Node event loop.
+  const metadataById = durableStore.safeReadJsonFile<Record<string, any>>('lead_metadata.json', {});
   const sheetContactKeys = new Set((result.rows || []).map(canonicalContactKey));
   const transientByContact = new Map(transient.map((lead) => [canonicalContactKey(lead), lead]));
   const seen = new Set<string>();
@@ -1899,7 +1902,7 @@ async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
       sheetSynced: true,
     };
     const key = canonicalContactKey(sheetLead);
-    const orderMetadata = durableStore.getLeadMetadata(`order_${key}`);
+    const orderMetadata = metadataById[`order_${key}`];
     const orderedSheetLead = orderMetadata
       ? {
           ...sheetLead,
@@ -1918,7 +1921,7 @@ async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
           sheetSynced: true,
         }
       : orderedSheetLead;
-    const durableMetadata = durableStore.getLeadMetadata(contactMerged.id);
+    const durableMetadata = metadataById[contactMerged.id];
     const merged = durableMetadata
       ? { ...contactMerged, ...durableMetadata, id: contactMerged.id, rowIndex: row.rowIndex, statusColIndex: row.statusColIndex, sheetSynced: true }
       : contactMerged;
@@ -1938,7 +1941,7 @@ async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
     const status = String(lead.status || 'New').trim().toLowerCase();
     if (!sheetContactKeys.has(key) && !seen.has(key) && ['new', 'new lead', 'active'].includes(status) && !isExampleOrTestLead(lead)) {
       seen.add(key);
-      const durableMetadata = durableStore.getLeadMetadata(lead.id);
+      const durableMetadata = metadataById[lead.id];
       leads.push({ ...lead, ...(durableMetadata || {}), id: lead.id, sheetSynced: false });
     }
   }

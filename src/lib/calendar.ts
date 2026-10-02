@@ -1,3 +1,4 @@
+import { getDateTimeFormatter } from './dateTimeFormatters';
 import { AppointmentFormData, AppConfig, GoogleCalendarEventPayload, CreatedCalendarEvent } from '../types';
 import { loadAppConfig } from '../config';
 import { clearCachedAccessToken, getCachedAccessToken, googleSignIn } from './firebase';
@@ -94,7 +95,7 @@ export function getTimezoneOffsetString(
 
  const [, year, month, day, hour, minute] = match;
  const utcGuess = Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute));
- const parts = new Intl.DateTimeFormat('en-US', {
+ const parts = getDateTimeFormatter('en-US', {
  timeZone,
  year: 'numeric',
  month: '2-digit',
@@ -233,7 +234,9 @@ export function setCachedCalendarEvents(events: any[]): void {
  if (typeof window === 'undefined') return;
  try {
  if (Array.isArray(events)) {
- localStorage.setItem('mrcontract_calendar_events_cache', JSON.stringify(events));
+ const serialized = JSON.stringify(events);
+ if (localStorage.getItem('mrcontract_calendar_events_cache') === serialized) return;
+ localStorage.setItem('mrcontract_calendar_events_cache', serialized);
  window.dispatchEvent(new CustomEvent('calendar_events_updated', { detail: events }));
  }
  } catch {}
@@ -678,13 +681,13 @@ export function parseDateTimeFromISO(
  try {
  const d = new Date(trimmed);
  if (!isNaN(d.getTime())) {
- const date = new Intl.DateTimeFormat('en-CA', {
+ const date = getDateTimeFormatter('en-CA', {
  timeZone,
  year: 'numeric',
  month: '2-digit',
  day: '2-digit',
  }).format(d);
- const time = new Intl.DateTimeFormat('en-GB', {
+ const time = getDateTimeFormatter('en-GB', {
  timeZone,
  hour: '2-digit',
  minute: '2-digit',

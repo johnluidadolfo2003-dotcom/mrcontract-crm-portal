@@ -1,3 +1,4 @@
+import { ListPagination, usePaginatedList } from '../components/ui/ListPagination';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -493,6 +494,8 @@ export const CustomerServicePage: React.FC = () => {
  const selectedInfo = selectedLead ? getEstimateFollowUpInfo(selectedLead) : null;
  const selectedTiming = selectedInfo ? getFollowUpTimingIndicator(selectedInfo) : null;
 
+ const { visibleItems: visibleFollowUps, pagination } = usePaginatedList(filteredLeads, JSON.stringify([sourceFilter, searchQuery, stageFilter]));
+
  return (
  <div className="flex-1 relative pb-16 bg-white dark:bg-black">
  {/* Main Workspace */}
@@ -668,6 +671,7 @@ export const CustomerServicePage: React.FC = () => {
  </div>
  </div>
 
+ <ListPagination {...pagination} />
  {/* Scrollable Leads List Container */}
  <div className="space-y-2.5 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
  {loading ? (
@@ -682,7 +686,7 @@ export const CustomerServicePage: React.FC = () => {
  <p className="text-xs text-zinc-500 dark:text-zinc-500">Try selecting another source or follow-up milestone.</p>
  </div>
  ) : (
- filteredLeads.map((lead, idx) => {
+ visibleFollowUps.map((lead, idx) => {
  const isSelected = selectedLead?.rowIndex === lead.rowIndex && (!selectedLead.tabName || lead.tabName === selectedLead.tabName);
  const info = getEstimateFollowUpInfo(lead);
  const timing = getFollowUpTimingIndicator(info);

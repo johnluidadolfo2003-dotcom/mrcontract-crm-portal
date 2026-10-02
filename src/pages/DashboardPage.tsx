@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { subscribeDashboardUpdates } from '../lib/dashboardUpdates';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
  Users,
@@ -184,10 +185,17 @@ export const Dashboard: React.FC = () => {
  const [removingId, setRemovingId] = useState<string | null>(null);
  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
- const loadDashboardData = useCallback(async () => {
+ const loadInFlight = useRef(false);
+ const refreshQueued = useRef(false);
+ const loadDashboardData = useCallback(async (forceFresh = false) => {
+  if (loadInFlight.current) {
+   if (forceFresh) refreshQueued.current = true;
+   return;
+  }
+  loadInFlight.current = true;
   setRefreshing(true);
   try {
-   const canonical = await fetchNewLeads().catch(() => getNewLeads());
+   const canonical = await fetchNewLeads(forceFresh).catch(() => getNewLeads());
    setNewLeadsCount(canonical.length);
 
    const now = Date.now();
@@ -210,7 +218,7 @@ export const Dashboard: React.FC = () => {
     } catch (error) {
      console.warn('Dashboard spreadsheet-tab notice:', error);
     }
-    const result = await readAllSpreadsheetTabs(undefined, spreadsheetId, tabs, true);
+    const result = await readAllSpreadsheetTabs(undefined, spreadsheetId, tabs, forceFresh);
     records = (result.rows || []).filter((row) =>
      isLeadSourceTab(row.tabName || row.leadSource || '')
     );
@@ -224,23 +232,30 @@ export const Dashboard: React.FC = () => {
    console.warn('Dashboard refresh notice:', error);
    setMessage({ type: 'error', text: error?.message || 'Dashboard could not refresh.' });
   } finally {
+   loadInFlight.current = false;
    setRefreshing(false);
    setLoading(false);
+   if (refreshQueued.current) {
+    refreshQueued.current = false;
+    void loadDashboardData(true);
+   }
   }
  }, [config.spreadsheetId, config.leadSources, timeZone]);
 
  useEffect(() => {
   loadDashboardData();
-  const intervalId = window.setInterval(loadDashboardData, 60000);
-  const handleRefresh = () => loadDashboardData();
-  window.addEventListener('dashboard_data_refresh', handleRefresh);
-  window.addEventListener('scheduled_clients_updated', handleRefresh);
-  window.addEventListener('new_leads_updated', handleRefresh);
+  const intervalId = window.setInterval(() => {
+   if (document.visibilityState === 'visible') void loadDashboardData();
+  }, 60000);
+  const unsubscribe = subscribeDashboardUpdates(
+   window,
+   (event) => setNewLeadsCount(Array.isArray((event as CustomEvent).detail) ? (event as CustomEvent).detail.length : getNewLeads().length),
+   (event) => setScheduledList(Array.isArray((event as CustomEvent).detail) ? (event as CustomEvent).detail : getScheduledClients()),
+   () => { void loadDashboardData(true); },
+  );
   return () => {
    window.clearInterval(intervalId);
-   window.removeEventListener('dashboard_data_refresh', handleRefresh);
-   window.removeEventListener('scheduled_clients_updated', handleRefresh);
-   window.removeEventListener('new_leads_updated', handleRefresh);
+   unsubscribe();
   };
  }, [loadDashboardData]);
 
@@ -404,7 +419,7 @@ export const Dashboard: React.FC = () => {
 
    setSelectedCalendarOnly(null);
    showMessage('success', `${item.clientName} was pulled into Meeting Scheduled.`);
-   await loadDashboardData();
+   await loadDashboardData(true);
    window.dispatchEvent(new CustomEvent('dashboard_data_refresh'));
   } catch (error: any) {
    showMessage('error', error?.message || 'The Calendar client could not be pulled into the CRM.');
@@ -447,7 +462,7 @@ export const Dashboard: React.FC = () => {
    setSelectedLead(null);
    setSelectedCalendarOnly(null);
    showMessage('success', 'Duplicate CRM record and Calendar event removed.');
-   await loadDashboardData();
+   await loadDashboardData(true);
    window.dispatchEvent(new CustomEvent('dashboard_data_refresh'));
   } catch (error: any) {
    showMessage('error', error?.message || 'The duplicate could not be removed.');
@@ -473,7 +488,7 @@ export const Dashboard: React.FC = () => {
    newStatus
   );
   setSelectedLead({ ...lead, status: newStatus });
-  await loadDashboardData();
+  await loadDashboardData(true);
  };
 
  return (
@@ -490,7 +505,7 @@ export const Dashboard: React.FC = () => {
 
    <div className="flex items-center justify-end">
     <button
-     onClick={loadDashboardData}
+     onClick={() => loadDashboardData(true)}
      disabled={refreshing}
      className="p-2.5 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 transition-colors duration-120 cursor-pointer disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center"
      title="Refresh dashboard and Google Calendar"
@@ -662,7 +677,7 @@ export const Dashboard: React.FC = () => {
     onStatusChange={handleDrawerStatusChange}
     onLeadUpdate={async () => {
      setSelectedLead(null);
-     await loadDashboardData();
+     await loadDashboardData(true);
     }}
     statusOptions={LEAD_STATUS_OPTIONS}
     salespeople={config.salespeople}

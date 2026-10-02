@@ -1,3 +1,4 @@
+import { ListPagination, usePaginatedList } from '../components/ui/ListPagination';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -930,6 +931,8 @@ export const ScheduledClientPage: React.FC = () => {
  ).length;
  const completedCount = enrichedScheduledClients.filter((c) => c.status === 'Won Job' || c.status === 'Completed').length;
 
+ const { visibleItems: visibleClients, pagination } = usePaginatedList(filteredClients, JSON.stringify([searchQuery, statusFilter, salespersonFilter, viewMode]));
+
  return (
  <div className="flex-1 relative pb-20 bg-white dark:bg-black">
  {/* Main Container */}
@@ -1031,6 +1034,7 @@ export const ScheduledClientPage: React.FC = () => {
  </div>
  )}
 
+ <ListPagination {...pagination} />
  {/* Scheduled Clients List (Organized & Shrinkable/Expandable) */}
  <div className="space-y-3">
  {filteredClients.length === 0 ? (
@@ -1068,7 +1072,7 @@ export const ScheduledClientPage: React.FC = () => {
  </tr>
  </thead>
  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800 text-xs">
- {filteredClients.map((client, idx) => (
+ {visibleClients.map((client, idx) => (
  <tr key={`${client.id || 'row'}_${idx}`} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 transition-colors">
  <td className="p-3.5 pl-5 font-bold text-zinc-900 dark:text-white">
  <div className="flex items-center gap-2">
@@ -1163,7 +1167,7 @@ export const ScheduledClientPage: React.FC = () => {
  </div>
  </div>
  ) : (
- filteredClients.map((client, idx) => {
+ visibleClients.map((client, idx) => {
  const isExpanded = expandedIds.has(client.id);
  let monthStr = '';
  let dayStr: string | number = '';

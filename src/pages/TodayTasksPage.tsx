@@ -1,3 +1,4 @@
+import { ListPagination, usePaginatedList } from '../components/ui/ListPagination';
 import React, { useState, useEffect } from 'react';
 import {
  Calendar,
@@ -78,6 +79,8 @@ export const TodayTasksPage: React.FC = () => {
  const appointments = filteredTasks.filter((t) => t.category === 'appointment');
  const newLeads = filteredTasks.filter((t) => t.category === 'new_lead');
  const followUps = filteredTasks.filter((t) => t.category === 'follow_up_3d' || t.category === 'follow_up_7d');
+
+ const { visibleItems: visibleTasks, pagination } = usePaginatedList(filteredTasks, JSON.stringify([selectedRep, selectedCategory]));
 
  return (
  <div className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
@@ -174,6 +177,7 @@ export const TodayTasksPage: React.FC = () => {
  </select>
  </div>
 
+ <ListPagination {...pagination} />
  {/* Task List Grid */}
  {isLoading ? (
  <div className="py-20 text-center">
@@ -190,7 +194,7 @@ export const TodayTasksPage: React.FC = () => {
  </div>
  ) : (
  <div className="space-y-3">
- {filteredTasks.map((task) => {
+ {visibleTasks.map((task) => {
  const isAppt = task.category === 'appointment';
  const isNew = task.category === 'new_lead';
  const isFollowUp = task.category.startsWith('follow_up');
