@@ -1,3 +1,4 @@
+import { ListPagination, usePaginatedList } from '../components/ui/ListPagination';
 import React, { useState, useEffect } from 'react';
 import {
  FileSpreadsheet,
@@ -301,6 +302,7 @@ export const SpreadsheetPage: React.FC = () => {
 
  // New features state
  const [quickTab, setQuickTab] = useState<'ALL' | 'NEW' | 'OVERDUE' | 'MEETINGS' | 'FOLLOW_UPS' | 'WON' | 'LOST'>('ALL');
+ const [kanbanLimits, setKanbanLimits] = useState<Record<string, number>>({});
  const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'THIS_WEEK' | 'THIS_MONTH'>('ALL');
  const [sortBy, setSortBy] = useState<'NEWEST' | 'OLDEST' | 'PRIORITY' | 'NAME'>('NEWEST');
  const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
@@ -1256,6 +1258,8 @@ export const SpreadsheetPage: React.FC = () => {
  ? `https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/edit`
  : null;
 
+ const { visibleItems: visibleRows, pagination } = usePaginatedList(filteredRows, JSON.stringify([selectedTab, statusFilter, quickTab, csSearchQuery, sortBy, viewMode]));
+
  return (
  <div className="flex-1 relative pb-16 bg-white dark:bg-black">
  
@@ -1333,6 +1337,7 @@ export const SpreadsheetPage: React.FC = () => {
       </div>
       )}
 
+ {viewMode !== 'kanban' && <ListPagination {...pagination} />}
  {/* Client Data View: Compact (Name & Status) or Full Table */}
  <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md overflow-hidden shadow-sm">
  {loading ? (
@@ -1349,13 +1354,14 @@ export const SpreadsheetPage: React.FC = () => {
               <div className="p-4 overflow-x-auto h-[calc(100vh-200px)] flex flex-col bg-zinc-50 dark:bg-zinc-950">
                 <div className="flex gap-3 min-w-max pb-4 h-full">
                   {LEAD_STATUS_OPTIONS.map(status => {
-                    const colRows = filteredRows.filter(r => (r.status || 'New') === status);
+                    const allColRows = filteredRows.filter(r => (r.status || 'New') === status);
+                    const colRows = allColRows.slice(0, kanbanLimits[status] || 50);
                     if (colRows.length === 0) return null;
                     return (
                       <div key={status} className="w-80 bg-white dark:bg-zinc-900 rounded-md border border-zinc-200 dark:border-zinc-800 flex flex-col h-full shadow-xs">
                         <div className="px-3.5 py-2.5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between sticky top-0 bg-white dark:bg-zinc-900 rounded-t-md z-10 shrink-0">
                           <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-xs">{status}</h3>
-                          <span className="text-[11px] font-bold text-white bg-[#EF7E15] px-1.5 py-0.5 rounded-md tabular-nums">{colRows.length}</span>
+                          <span className="text-[11px] font-bold text-white bg-[#EF7E15] px-1.5 py-0.5 rounded-md tabular-nums">{allColRows.length}</span>
                         </div>
                         <div className="p-2.5 flex-1 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-zinc-800">
                           {colRows.map((r, rIdx) => {
@@ -1375,6 +1381,11 @@ export const SpreadsheetPage: React.FC = () => {
                               </div>
                             );
                           })}
+                          {colRows.length < allColRows.length && (
+                            <button type="button" onClick={() => setKanbanLimits((current) => ({ ...current, [status]: (current[status] || 50) + 50 }))} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-xs font-semibold">
+                              Show 50 more ({allColRows.length - colRows.length} remaining)
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -1386,7 +1397,7 @@ export const SpreadsheetPage: React.FC = () => {
  <div>
 
  <div className="divide-y divide-zinc-200 dark:divide-zinc-800/60">
- {filteredRows.map((r, idx) => {
+ {visibleRows.map((r, idx) => {
  const tabStr = r.tabName || selectedTab || 'sheet';
  const rowKey = `${tabStr}_${r.rowIndex !== undefined ? r.rowIndex : idx}_${idx}`;
  const { selectedStatus, allOptions } = getStatusOptionsForRecord(r.status);
@@ -1480,7 +1491,7 @@ export const SpreadsheetPage: React.FC = () => {
  </tr>
  </thead>
  <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/60 font-medium">
- {filteredRows.map((r, idx) => {
+ {visibleRows.map((r, idx) => {
  const tabStr = r.tabName || selectedTab || 'sheet';
  const rowKey = `${tabStr}_${r.rowIndex !== undefined ? r.rowIndex : idx}_${idx}`;
  const { selectedStatus, allOptions } = getStatusOptionsForRecord(r.status);

@@ -557,14 +557,33 @@ export function invalidateInMemoryCache(spreadsheetId: string) {
 // Global shared status overrides cache across team users
 let memorySharedOverrides: Record<string, { status: string; timestamp?: number; updatedBy?: string }> = {};
 
+let overridesInFlight: Promise<Record<string, any>> | null = null;
+let storedOverridesRaw: string | null = null;
+let storedOverrides: Record<string, any> = {};
+function readStoredOverrides(): Record<string, any> {
+ const raw = typeof window !== 'undefined' ? localStorage.getItem('mrcontract_status_overrides') : null;
+ if (raw !== storedOverridesRaw) {
+  storedOverridesRaw = raw;
+  try { storedOverrides = raw ? JSON.parse(raw) : {}; } catch { storedOverrides = {}; }
+ }
+ return storedOverrides;
+}
 export async function fetchSharedStatusOverrides(): Promise<Record<string, any>> {
+ if (overridesInFlight) return overridesInFlight;
+ overridesInFlight = loadSharedStatusOverrides();
+ try { return await overridesInFlight; } finally { overridesInFlight = null; }
+}
+
+async function loadSharedStatusOverrides(): Promise<Record<string, any>> {
  try {
  const res = await fetch('/api/status-overrides');
  if (res.ok) {
  const data = await res.json();
  if (data && data.overrides) {
- memorySharedOverrides = { ...memorySharedOverrides, ...data.overrides };
- if (typeof window !== 'undefined') {
+ const next = { ...memorySharedOverrides, ...data.overrides };
+ const changed = JSON.stringify(next) !== JSON.stringify(memorySharedOverrides);
+ memorySharedOverrides = next;
+ if (changed && typeof window !== 'undefined') {
  localStorage.setItem('mrcontract_status_overrides', JSON.stringify(memorySharedOverrides));
  window.dispatchEvent(new CustomEvent('status_overrides_updated'));
  }
@@ -635,10 +654,7 @@ export function getStatusOverride(
  }
  }
 
- const storageKey = `mrcontract_status_overrides`;
- const raw = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
- if (!raw) return null;
- const overrides = JSON.parse(raw);
+ const overrides = readStoredOverrides();
  if (overrides[key1] && overrides[key1].status) {
  return overrides[key1].status;
  }
@@ -667,9 +683,7 @@ export function getStatusOverrideTimestamp(
   const timestamp = Number(entry?.timestamp);
   if (Number.isFinite(timestamp) && timestamp > 0) return timestamp;
 
-  const raw = typeof window !== 'undefined' ? localStorage.getItem('mrcontract_status_overrides') : null;
-  if (!raw) return null;
-  const overrides = JSON.parse(raw);
+ const overrides = readStoredOverrides();
   const saved = overrides[rowKey] || (nameKey ? overrides[nameKey] : null);
   const savedTimestamp = Number(saved?.timestamp);
   return Number.isFinite(savedTimestamp) && savedTimestamp > 0 ? savedTimestamp : null;

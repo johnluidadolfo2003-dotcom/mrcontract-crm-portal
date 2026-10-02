@@ -1,3 +1,4 @@
+import { ListPagination, usePaginatedList } from '../components/ui/ListPagination';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -684,6 +685,8 @@ export const NewLeadsPage: React.FC = () => {
  })
  .sort(compareNewestLeads);
 
+ const { visibleItems: visibleLeads, pagination } = usePaginatedList(filteredLeads, JSON.stringify([searchTerm, sourceFilter, viewMode]));
+
  return (
  <div className={`p-4 sm:p-6 space-y-5 font-sans transition-all ${viewMode === 'table' ? 'w-full max-w-none px-4 sm:px-6 md:px-8' : 'max-w-7xl mx-auto'}`}>
 
@@ -769,6 +772,7 @@ export const NewLeadsPage: React.FC = () => {
  </div>
  </div>
 
+ <ListPagination {...pagination} />
  {/* Leads Content */}
  {filteredLeads.length === 0 ? (
  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-12 text-center space-y-4 shadow-sm">
@@ -787,7 +791,7 @@ export const NewLeadsPage: React.FC = () => {
  ) : viewMode === 'clean' ? (
         /* CLEAN VIEW: 1 COLUMN HORIZONTAL ROW CARDS (STANDARDIZED WITH TODAY'S TASKS & SPREADSHEET VIEWS) */
         <div className="flex flex-col gap-3 w-full">
-          {filteredLeads.map((lead) => {
+          {visibleLeads.map((lead) => {
             // Keep TODAY visible until midnight in the configured U.S. business timezone.
             const isToday = wasLeadCreatedToday(
               lead,
@@ -941,7 +945,7 @@ export const NewLeadsPage: React.FC = () => {
  </tr>
  </thead>
  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium">
- {filteredLeads.map((lead) => {
+ {visibleLeads.map((lead) => {
  const isToday = wasLeadCreatedToday(
   lead,
   config.timeZone || 'America/New_York'
