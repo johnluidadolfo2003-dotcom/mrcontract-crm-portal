@@ -229,7 +229,8 @@ export const MainLayout: React.FC = () => {
  const calendarResult = await createGoogleCalendarEvent(pendingPayload, config.calendarId);
  let sheetSynced = false;
 
- if (config.spreadsheetId && config.autoSyncToSheets !== false) {
+ if ((lastSubmittedFormData.sourceRowIndex && lastSubmittedFormData.sourceRowIndex > 1) ||
+ (config.spreadsheetId && (lastSubmittedFormData.sourceLeadId || config.autoSyncToSheets !== false))) {
  try {
  if (lastSubmittedFormData.sourceRowIndex && lastSubmittedFormData.sourceRowIndex > 1) {
  const sheetResponse = await fetch('/api/sheets/update-lead', {
@@ -312,7 +313,11 @@ export const MainLayout: React.FC = () => {
  setIsScheduleModalOpen(false);
  setPendingPayload(null);
  setLastSubmittedFormData(null);
+ if (lastSubmittedFormData.sourceLeadId && !sheetSynced) {
+ showToast('error', 'Appointment saved in Calendar, but the lead status could not be saved to Google Sheets. Refresh and update its status to Meeting Scheduled; do not create the appointment again.');
+ } else {
  showToast('success', `Appointment for "${lastSubmittedFormData.clientName}" published to Google Calendar!`);
+ }
  window.dispatchEvent(new CustomEvent('dashboard_data_refresh'));
  } catch (err: any) {
  console.error('Failed to publish calendar event:', err);

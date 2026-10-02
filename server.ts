@@ -1,4 +1,5 @@
 import express from 'express';
+import { canonicalContactKey, reconcileIncomingLeadStatus } from './server/leadStatusReconciliation.ts';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type, ThinkingLevel } from '@google/genai';
 import multer from 'multer';
@@ -1806,12 +1807,9 @@ app.post('/api/integrations/houzz-result', (req, res) => {
 });
 
 // Canonical lead API: Google Sheets is the source of truth for Sidebar -> New.
-function canonicalContactKey(lead: any): string {
-  const phone = String(lead?.clientPhone || '').replace(/\D/g, '');
-  if (phone.length >= 7) return `phone_${phone.slice(-10)}`;
-  const email = String(lead?.clientEmail || '').trim().toLowerCase();
-  if (email.includes('@')) return `email_${email}`;
-  return `name_${String(lead?.clientName || '').trim().toLowerCase()}`;
+function syncIncomingLeadStatus(sheetTab: string, lead: any, status: string): void {
+  const incoming = durableStore.safeReadJsonFile<any[]>('incoming_leads.json', []);
+  durableStore.safeWriteJsonFile('incoming_leads.json', reconcileIncomingLeadStatus(incoming, { ...lead, leadSource: sheetTab }, status));
 }
 
 function getLeadNewestOrder(lead: any): number {
@@ -1875,6 +1873,7 @@ async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
     throw unavailable;
   }
 
+  const sheetContactKeys = new Set((result.rows || []).map(canonicalContactKey));
   const transientByContact = new Map(transient.map((lead) => [canonicalContactKey(lead), lead]));
   const seen = new Set<string>();
   const leads: any[] = [];
@@ -1923,6 +1922,7 @@ async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
     const merged = durableMetadata
       ? { ...contactMerged, ...durableMetadata, id: contactMerged.id, rowIndex: row.rowIndex, statusColIndex: row.statusColIndex, sheetSynced: true }
       : contactMerged;
+    merged.status = 'New'; // The matching Sheet row determines the stage.
     // Every row explicitly saved in Google Sheets is a real CRM record, even
     // when its name contains "Test". Do not hide form-created validation leads
     // during the background refresh.
@@ -1936,7 +1936,7 @@ async function readCanonicalNewLeads(forceFresh = false): Promise<any[]> {
   for (const lead of transient) {
     const key = canonicalContactKey(lead);
     const status = String(lead.status || 'New').trim().toLowerCase();
-    if (!seen.has(key) && ['new', 'new lead', 'active'].includes(status) && !isExampleOrTestLead(lead)) {
+    if (!sheetContactKeys.has(key) && !seen.has(key) && ['new', 'new lead', 'active'].includes(status) && !isExampleOrTestLead(lead)) {
       seen.add(key);
       const durableMetadata = durableStore.getLeadMetadata(lead.id);
       leads.push({ ...lead, ...(durableMetadata || {}), id: lead.id, sheetSynced: false });
@@ -3052,6 +3052,8 @@ app.post('/api/sheets/update-status', async (req, res) => {
     // 1. Update in Google Sheet via Service Account with dynamic row verification
     await sheetsService.updateCell(targetId, tab, rowIndex, colIdx, newStatus, clientName, clientPhone);
 
+    syncIncomingLeadStatus(tab, { clientName, clientPhone }, newStatus);
+
     // 2. Also record in shared team status overrides file
     const overridesFile = path.join(process.cwd(), 'data', 'status_overrides.json');
     let overrides: Record<string, any> = {};
@@ -3102,6 +3104,8 @@ app.post('/api/sheets/update-lead', async (req, res) => {
       leadData?.clientName,
       leadData?.clientPhone
     );
+
+    if (leadData?.status) syncIncomingLeadStatus(tab, leadData, leadData.status);
 
     // If status was updated, record in overrides
     if (leadData?.status) {
