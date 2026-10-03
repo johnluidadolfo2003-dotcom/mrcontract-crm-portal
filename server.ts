@@ -1668,13 +1668,29 @@ app.post('/api/webhooks/thumbtack', async (req, res) => {
 
     console.log('[Webhook] Authenticated Thumbtack lead received.');
     const parsed = await parseIncomingLeadPayload(req.body, 'Thumbtack');
-    const lead = saveIncomingLeadAndLog(parsed, req, { skipAutoHouzz: true });
+    const lead = saveIncomingLeadAndLog(parsed, req, { skipAutoSheet: true, skipAutoHouzz: true });
+
+    // The local lead file is temporary on Render. Only acknowledge delivery
+    // after the lead is present in the durable Google Sheet.
+    const sheetSynced = await tryAutoAppendToGoogleSheet(lead, { force: true });
+    setIncomingLeadSheetSyncState(lead.id, sheetSynced);
+    lead.sheetSynced = sheetSynced;
+    if (!sheetSynced) {
+      durableStore.enqueueDelivery(lead.id, 'sheets', lead, 'Thumbtack');
+      return res.status(503).json({
+        success: false,
+        error: 'Lead received locally, but Google Sheets could not save it. Retry this webhook delivery.',
+        leadId: lead.id,
+        sheetSync: { success: false, status: 'queued_for_retry' },
+      });
+    }
 
     return res.status(200).json({
       success: true,
-      message: 'Thumbtack lead received and recorded successfully.',
+      message: 'Thumbtack lead saved in CRM and Google Sheets.',
       leadId: lead.id,
       lead,
+      sheetSync: { success: true, status: 'synced' },
     });
   } catch (err: any) {
     console.error('Error processing Thumbtack webhook:', err);
@@ -3702,7 +3718,7 @@ setInterval(async () => {
         return { success: false, error: `HTTP ${res.status}: ${text}` };
       } else {
         const sheetId = (item as any).spreadsheetId || sheetsService.getDefaultSpreadsheetId();
-        const tabName = (item as any).tabName || 'Angi';
+        const tabName = (item as any).tabName || item.source || 'Angi';
         await sheetsService.appendLeadRow(sheetId, tabName, item.payload, item.payload?.status || 'New');
         if (item.leadId) setIncomingLeadSheetSyncState(item.leadId, true);
         return { success: true };
