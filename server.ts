@@ -5,7 +5,7 @@ import { GoogleGenAI, Type, ThinkingLevel } from '@google/genai';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
-import { timingSafeEqual, createHash } from 'crypto';
+import { timingSafeEqual } from 'crypto';
 import sharp from 'sharp';
 import * as sheetsService from './server/sheetsService.ts';
 import * as durableStore from './server/durableStore.ts';
@@ -13,6 +13,7 @@ import * as calendarService from './server/calendarService.ts';
 import * as houzzDelivery from './server/houzzDelivery.ts';
 import { sendCompletedThumbtackDetails } from './server/thumbtackHouzz.ts';
 import { hasHouzzRequiredInfo, hasHouzzSubmissionStarted } from './src/lib/houzzReadiness.ts';
+import { incomingLeadIdentity, selectLeadEmailBody } from './server/angiIntake.ts';
 import { currentAngiMessage, extractAngiLabeledFields, normalizeAngiEmailTextForParsing } from './server/angiEmailParser.ts';
 
 const app = express();
@@ -692,7 +693,7 @@ function extractFromEmailText(rawText: string, defaultSource: string = 'Angi'): 
   let clientName = labeledFields.clientName;
   // Check official Angi "Customer Information" block
   for (let i = 0; i < rawLines.length; i++) {
-    if (/^customer\s*information$/i.test(rawLines[i])) {
+    if (!clientName && /^customer\s*information$/i.test(rawLines[i])) {
       if (i + 1 < rawLines.length) {
         const nextCandidate = rawLines[i + 1].trim();
         // Ignore headers or buttons
@@ -918,22 +919,7 @@ async function parseIncomingLeadPayload(body: any, defaultSource: string = 'Angi
   const task = b.task || b.service || nestedLead.task || nestedLead.service || {};
 
   // Check if raw email text was supplied (from Zapier Gmail trigger or email parser)
-  const rawEmailCandidate =
-    b.rawEmail ||
-    b.body_plain ||
-    b.body ||
-    b.body_html ||
-    b['body-plain'] ||
-    b['stripped-text'] ||
-    b.snippet ||
-    b.message ||
-    b.email_body ||
-    b.text ||
-    b.content ||
-    nestedLead.rawEmail ||
-    nestedLead.body ||
-    nestedLead.text ||
-    '';
+  const rawEmailCandidate = selectLeadEmailBody(b, nestedLead);
 
   let extractedEmailData: any = null;
   if (typeof rawEmailCandidate === 'string' && rawEmailCandidate.length > 20) {
@@ -1241,14 +1227,15 @@ async function parseIncomingLeadPayload(body: any, defaultSource: string = 'Angi
 // Deduplication cache for Google Sheets appends to guarantee leads are sent only once
 const recentSheetAppends = new Map<string, number>();
 
-function getSheetAppendKey(phone: string, name: string): string {
+function getSheetAppendKey(phone: string, name: string, leadId?: string): string {
+  if (leadId) return `id_${leadId}`;
   const cleanPhone = (phone || '').replace(/\D/g, '');
   const cleanName = (name || '').toLowerCase().trim();
   return `${cleanPhone}_${cleanName}`;
 }
 
-function canAppendToSheet(phone: string, name: string): boolean {
-  const key = getSheetAppendKey(phone, name);
+function canAppendToSheet(phone: string, name: string, leadId?: string): boolean {
+  const key = getSheetAppendKey(phone, name, leadId);
   if (key === '_') return true;
 
   const now = Date.now();
@@ -1272,7 +1259,7 @@ async function tryAutoAppendToGoogleSheet(
   try {
     const phone = lead.clientPhone || lead.phone || lead.phoneNumber || '';
     const name = lead.clientName || lead.name || lead.fullName || '';
-    if (!canAppendToSheet(phone, name)) {
+    if (!canAppendToSheet(phone, name, lead.id)) {
       console.log(`[Google Sheet] Deduplicating auto-append for ${name} (${phone}) - already appended recently.`);
       return true;
     }
@@ -1287,7 +1274,7 @@ async function tryAutoAppendToGoogleSheet(
     }
     const targetTab = (lead.leadSource || 'Angi').trim();
     await sheetsService.appendLeadRow(spreadsheetId, targetTab, lead, lead.status || 'New');
-    recentSheetAppends.set(getSheetAppendKey(phone, name), Date.now());
+    recentSheetAppends.set(getSheetAppendKey(phone, name, lead.id), Date.now());
     return true;
   } catch (e) {
     console.warn('Server auto-append via Service Account note:', e);
@@ -1422,20 +1409,12 @@ function saveIncomingLeadAndLog(
 
   // A quoted earlier email may contain an Angi job number. Never use a number
   // found anywhere in the body as the identity of this new customer.
-  const externalEventId = String(
-    parsed.sourceEventId || parsed.eventId || parsed.leadId ||
-    parsed.rawPayload?.messageId || parsed.rawPayload?.message_id ||
-    parsed.rawPayload?.id || parsed.rawPayload?.eventId || parsed.rawPayload?.leadId || ''
-  ).trim();
-  const stableInput = externalEventId || [
-    parsed.leadSource, parsed.clientPhone, parsed.clientEmail, parsed.clientName, parsed.serviceNeeded
-  ].map((value) => String(value || '').trim().toLowerCase()).join('|');
-  const stableHash = createHash('sha256').update(stableInput).digest('hex').slice(0, 20);
-  const leadId = `wh_lead_${stableHash}`;
+  const leadId = incomingLeadIdentity(parsed);
   const newestOrder = Date.now();
   const now = new Date(newestOrder).toISOString();
 
-  const existingLead = existingLeads.find((item: any) => item.id === leadId);
+  const existingLead = existingLeads.find((item: any) => item.id === leadId ||
+    (parsed.leadSource === 'Angi' && incomingLeadIdentity(item) === leadId));
   if (existingLead) return existingLead;
 
   const newLeadRecord = {
@@ -1609,7 +1588,7 @@ app.post('/api/webhooks/angi', async (req, res) => {
 
     // Sheets is part of the Angi transaction: wait for a confirmed append before
     // reporting the result. A failed append is queued for automatic retry.
-    const sheetSynced = await tryAutoAppendToGoogleSheet(lead, { force: true });
+    const sheetSynced = lead.sheetSynced === true || await tryAutoAppendToGoogleSheet(lead, { force: true });
     setIncomingLeadSheetSyncState(lead.id, sheetSynced);
     lead.sheetSynced = sheetSynced;
     if (!sheetSynced) {

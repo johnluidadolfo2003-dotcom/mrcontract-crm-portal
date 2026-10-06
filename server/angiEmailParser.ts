@@ -14,6 +14,20 @@ const LABEL_PATTERN =
 const SECTION_PATTERN =
   'Click\\s+the\\s+link\\s+below|To\\s+set\\s+an\\s+appointment|Are\\s+you\\s+creating|Thank\\s+you\\s+for|Terms\\s+of\\s+Use|Privacy\\s+Policy|Unsubscribe';
 
+export function angiEmailToText(rawText: string): string {
+  return String(rawText || '')
+    .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
+    .replace(/<br\s*\/?\s*>|<\/(?:p|div|tr|td|li|h[1-6])>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&#(x[0-9a-f]+|\d+);/gi, (_match, number) => {
+      const code = number[0].toLowerCase() === 'x' ? parseInt(number.slice(1), 16) : Number(number);
+      return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : ' ';
+    })
+    .replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"').replace(/&apos;/gi, "'")
+    .replace(/&lt;/gi, '<').replace(/&gt;/gi, '>');
+}
+
 export function normalizeAngiEmailTextForParsing(rawText: string): string {
   return String(rawText || '')
     .replace(/\u00a0/g, ' ')
@@ -26,10 +40,15 @@ export function normalizeAngiEmailTextForParsing(rawText: string): string {
 // Gmail can include the previous Angi notification below a reply. Only the
 // newest message should supply customer details for the current webhook.
 export function currentAngiMessage(rawText: string): string {
-  const text = String(rawText || '');
-  const replyBoundary = /^(?:On .+ wrote:|-----Original Message-----|Begin forwarded message:|From:\s*Angi\b|>\s*(?:You have a new lead!?|Customer Information))\s*$/im;
-  const match = replyBoundary.exec(text);
-  return match && match.index > 0 ? text.slice(0, match.index).trim() : text;
+  const text = angiEmailToText(rawText);
+  const replyBoundary = /^[ \t]*(?:On .+ wrote:|-----Original Message-----|Begin forwarded message:|From:\s*Angi\b[^\r\n]*|>\s*(?:You have a new lead!?|Customer Information))\s*$/gim;
+  for (const match of text.matchAll(replyBoundary)) {
+    const prefix = text.slice(0, match.index).trim();
+    // An actual message header is not the start of an older quoted lead.
+    if (/^\s*From:/i.test(match[0]) && !/Customer\s*(?:Name|Information)|Client\s*Name/i.test(prefix)) continue;
+    if (match.index! > 0) return prefix;
+  }
+  return text;
 }
 
 function escapeRegExp(value: string): string {

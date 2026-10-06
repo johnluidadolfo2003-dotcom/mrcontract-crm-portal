@@ -1108,12 +1108,12 @@ async function executeAppendLeadRow(
         for (let i = 0; i < allSheetRows.length; i++) {
           const r = allSheetRows[i];
           if (!r || r.length === 0) continue;
-          const rName = (r[1] || '').trim().toLowerCase();
-          const rPhoneDigits = (r[2] || '').replace(/\D/g, '');
-          const rEmail = (r[3] || '').trim().toLowerCase();
-          const rAddress = (r[4] || '').trim().toLowerCase();
-          const rNotes = (r[6] || '').trim();
-          const rStatus = (r[7] || '').trim().toLowerCase();
+          const rName = (r[mapping.nameCol >= 0 ? mapping.nameCol : 1] || '').trim().toLowerCase();
+          const rPhoneDigits = (r[mapping.phoneCol >= 0 ? mapping.phoneCol : 2] || '').replace(/\D/g, '');
+          const rEmail = (r[mapping.emailCol >= 0 ? mapping.emailCol : 3] || '').trim().toLowerCase();
+          const rAddress = (r[mapping.addrCol >= 0 ? mapping.addrCol : 4] || '').trim().toLowerCase();
+          const rNotes = (r[mapping.notesCol] || '').trim();
+          const rStatus = (r[mapping.statusCol >= 0 ? mapping.statusCol : 7] || '').trim().toLowerCase();
 
           // Weakness 5: If an existing record was marked Finished or Lost long ago, allow a new inquiry rather than assuming it's a duplicate
           const isCompletedStatus =
@@ -1128,8 +1128,7 @@ async function executeAppendLeadRow(
           const sourceEventMatch = incomingSourceId && rNotes.includes(`EventID:${incomingSourceId}`);
           const phoneMatch = incomingPhoneDigits.length >= 7 && rPhoneDigits.length >= 7 && (
             rPhoneDigits === incomingPhoneDigits ||
-            rPhoneDigits.endsWith(incomingPhoneDigits.slice(-7)) ||
-            incomingPhoneDigits.endsWith(rPhoneDigits.slice(-7))
+            (rPhoneDigits.length >= 10 && incomingPhoneDigits.length >= 10 && rPhoneDigits.slice(-10) === incomingPhoneDigits.slice(-10))
           );
           const nameMatch = incomingName.length > 2 && rName.length > 2 && (
             rName === incomingName || rName.includes(incomingName) || incomingName.includes(rName)
