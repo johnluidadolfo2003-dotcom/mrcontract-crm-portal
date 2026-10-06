@@ -35,3 +35,21 @@ assert.doesNotMatch(current, /Bailey Old/);
 assert.equal(currentAngiMessage('You have a new lead!\nCustomer Information\nAlex New'), 'You have a new lead!\nCustomer Information\nAlex New');
 
 console.log('Angi flattened-email parser tests passed.');
+
+const { angiEmailToText } = await import('./server/angiEmailParser.ts');
+const { selectLeadEmailBody, incomingLeadIdentity } = await import('./server/angiIntake.ts');
+const htmlReply = '<div>Customer Name: Alex New</div><div>Phone: 412-555-0199</div><div>On Tuesday Angi wrote:</div><div>Customer Name: Bailey Old</div>';
+assert.doesNotMatch(currentAngiMessage(htmlReply), /Bailey Old/);
+assert.equal(extractAngiLabeledFields(currentAngiMessage(htmlReply)).clientName, 'Alex New');
+assert.equal(angiEmailToText('D&#39;Angelo &amp; Sons&nbsp;'), "D'Angelo & Sons ");
+const completeHtml = '<p>Customer Name: Alex New</p><p>Phone: 412-555-0199</p>';
+assert.equal(selectLeadEmailBody({ body_plain: 'You have a new lead', body_html: completeHtml }), completeHtml);
+assert.equal(selectLeadEmailBody({ snippet: 'truncated', bodyPlain: 'Customer Name: Alex New' }), 'Customer Name: Alex New');
+const first = { leadSource: 'Angi', clientName: 'First Client', clientPhone: '4125550199', rawPayload: { id: 'shared-thread' } };
+const second = { ...first, clientName: 'Second Client', clientPhone: '7245550199' };
+assert.notEqual(incomingLeadIdentity(first), incomingLeadIdentity(second), 'A reply with a new customer must not reuse the first lead ID');
+assert.equal(incomingLeadIdentity(first), incomingLeadIdentity(structuredClone(first)), 'Retry must preserve the lead ID');
+console.log('Angi HTML replies, full body selection, and message identity tests passed.');
+
+const headerEmail = '\nFrom: Angi <no-reply@angi.com>\nCustomer Name: Alex New\nPhone: 412-555-0199';
+assert.match(currentAngiMessage(headerEmail), /Alex New/);
