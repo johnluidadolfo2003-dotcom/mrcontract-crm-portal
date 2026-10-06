@@ -11,6 +11,8 @@ import * as sheetsService from './server/sheetsService.ts';
 import * as durableStore from './server/durableStore.ts';
 import * as calendarService from './server/calendarService.ts';
 import * as houzzDelivery from './server/houzzDelivery.ts';
+import { sendCompletedThumbtackDetails } from './server/thumbtackHouzz.ts';
+import { hasHouzzRequiredInfo, hasHouzzSubmissionStarted } from './src/lib/houzzReadiness.ts';
 import { currentAngiMessage, extractAngiLabeledFields, normalizeAngiEmailTextForParsing } from './server/angiEmailParser.ts';
 
 const app = express();
@@ -2093,17 +2095,28 @@ app.get('/api/webhooks/incoming-leads', (req, res) => {
   }
 });
 
+// Lightweight delivery status for an open lead drawer (no Sheets download).
+app.get('/api/leads/:id/houzz-status', (req, res) => {
+  const alias = durableStore.getLeadMetadata(req.params.id);
+  const id = alias?.houzzLeadId || req.params.id;
+  const metadata = durableStore.getLeadMetadata(id);
+  const incoming = durableStore.safeReadJsonFile<any[]>('incoming_leads.json', []);
+  const lead = incoming.find((item) => item.id === id);
+  return res.json({ success: true, houzzStatus: metadata?.houzzStatus || lead?.houzzStatus || '', houzzError: metadata?.houzzError || lead?.houzzError || '' });
+});
+
 app.post('/api/webhooks/incoming-leads/:id/send-to-houzz', async (req, res) => {
   try {
     const incomingFile = path.join(process.cwd(), 'data', 'incoming_leads.json');
     if (!fs.existsSync(incomingFile)) return res.status(404).json({ success: false, error: 'Lead not found.' });
     const leads = JSON.parse(fs.readFileSync(incomingFile, 'utf-8'));
-    const lead = Array.isArray(leads) ? leads.find((item: any) => item.id === req.params.id) : null;
+    const id = durableStore.getLeadMetadata(req.params.id)?.houzzLeadId || req.params.id;
+    const lead = Array.isArray(leads) ? leads.find((item: any) => item.id === id) : null;
     if (!lead) return res.status(404).json({ success: false, error: 'Lead not found.' });
     const source = String(lead.leadSource || lead.webhookSource || '').trim().toLowerCase();
     if (source !== 'thumbtack') return res.status(403).json({ success: false, error: 'Only Thumbtack leads can be sent manually. Angi leads are sent automatically.' });
-    const existingStatus = String(lead.houzzStatus || lead.houzzResult || '').toLowerCase();
-    if (existingStatus.startsWith('sent to ')) return res.status(409).json({ success: false, error: 'This lead has already been sent to Houzz Pro.' });
+    if (!hasHouzzRequiredInfo(lead)) return res.status(400).json({ success: false, error: 'Complete the name, contact, address, and service, then save the lead.' });
+    if (hasHouzzSubmissionStarted({ ...lead, ...durableStore.getLeadMetadata(lead.id) })) return res.status(409).json({ success: false, error: 'This lead has already been sent to Houzz Pro.' });
     const result = await houzzDelivery.dispatchLeadToHouzz({ leadId: lead.id, payload: lead, webhookUrl: getBackendWebhookUrl() });
     return res.status(result.success ? 200 : 502).json({ success: result.success, message: result.safeSummary, delivery: result });
   } catch (err: any) {
@@ -2140,7 +2153,9 @@ app.patch('/api/webhooks/incoming-leads/:id', (req, res) => {
     if (notes !== undefined) leads[index].notes = notes;
     if (sheetSynced !== undefined) leads[index].sheetSynced = sheetSynced;
     fs.writeFileSync(incomingFile, JSON.stringify(leads, null, 2), 'utf-8');
-    return res.json({ success: true, lead: leads[index] });
+    const hasDetailsEdit = [clientName, clientPhone, clientEmail, address, serviceNeeded].some((value) => value !== undefined);
+    const savedLead = hasDetailsEdit ? sendCompletedThumbtackDetails(leads[index], getBackendWebhookUrl()) : leads[index];
+    return res.json({ success: true, lead: savedLead });
   } catch (err: any) {
     return res.status(500).json({ success: false, error: err.message });
   }
@@ -3109,6 +3124,7 @@ app.post('/api/sheets/update-lead', async (req, res) => {
     );
 
     if (leadData?.status) syncIncomingLeadStatus(tab, leadData, leadData.status);
+    sendCompletedThumbtackDetails({ ...leadData, tabName: tab, leadSource: tab, rowIndex }, getBackendWebhookUrl());
 
     // If status was updated, record in overrides
     if (leadData?.status) {

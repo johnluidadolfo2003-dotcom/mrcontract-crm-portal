@@ -30,6 +30,7 @@ import {
  Filter,
  AlertCircle,
 } from 'lucide-react';
+import { hasHouzzRequiredInfo } from '../lib/houzzReadiness';
 import { getNewLeads, fetchNewLeads, migrateLegacyNewLeads, deleteNewLead, updateNewLeadStatus, updateNewLeadInfo, NewLeadRecord } from '../lib/newLeads';
 import { compareNewestLeads, wasLeadCreatedToday } from '../lib/newLeadOrder';
 import { logAuditActivity } from '../lib/activityLogger';
@@ -150,10 +151,9 @@ export const NewLeadsPage: React.FC = () => {
           notes: updatedLead.notes,
         }),
       });
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || 'The Thumbtack webhook record could not be updated.');
-      }
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'The Thumbtack webhook record could not be updated.');
+      Object.assign(updatedLead, { houzzStatus: result.lead?.houzzStatus || '', houzzResult: result.lead?.houzzResult || '' });
     }
     if (isAngiLead(updatedLead as unknown as NewLeadRecord) && updatedLead.angiAccount) {
       const response = await fetch(`/api/leads/${encodeURIComponent(leadId)}/angi-account`, {
@@ -268,6 +268,8 @@ export const NewLeadsPage: React.FC = () => {
  // 1. Update in Google Sheets if spreadsheet is connected
  if (config.spreadsheetId) {
  await updateLeadInSpreadsheet(undefined, config.spreadsheetId, {
+ id: editingLead.id,
+ originalContact: { clientName: editingLead.clientName, clientPhone: editingLead.clientPhone, clientEmail: editingLead.clientEmail },
  tabName: editFormData.leadSource || editingLead.leadSource || 'Angi',
  rowIndex: editingLead.rowIndex,
  clientName: editFormData.clientName.trim(),
@@ -293,6 +295,8 @@ export const NewLeadsPage: React.FC = () => {
  leadFee: editFormData.leadFee.trim(),
  notes: editFormData.notes.trim(),
  });
+
+ await handleDrawerLeadUpdate({ ...editingLead, ...editFormData, tabName: editFormData.leadSource, rawValues: [] } as unknown as SheetRowRecord);
 
  // 3. Log audit activity
  logAuditActivity({
@@ -583,7 +587,7 @@ export const NewLeadsPage: React.FC = () => {
  };
 
  const renderHouzzAction = (lead: NewLeadRecord, compact = false) => {
- if (!lead.isWebhookLead) return <span aria-hidden="true" className={compact ? 'inline-block w-[148px]' : 'inline-block w-[160px]'} />;
+ if (!lead.isWebhookLead && String(lead.leadSource || '').toLowerCase() !== 'thumbtack') return <span aria-hidden="true" className={compact ? 'inline-block w-[148px]' : 'inline-block w-[160px]'} />;
 
  const source = String(lead.leadSource || lead.webhookSource || '').trim().toLowerCase();
  const status = String(lead.houzzStatus || lead.houzzResult || '').toLowerCase();
@@ -595,7 +599,7 @@ export const NewLeadsPage: React.FC = () => {
  const sizeClass = compact ? 'w-[148px] px-2.5 py-1.5 rounded-lg justify-center whitespace-nowrap' : 'w-[160px] px-3.5 py-2 rounded-xl justify-center whitespace-nowrap';
 
  if (source === 'angi') {
- const label = confirmed ? 'Created in Houzz Pro' : accepted ? 'Zapier accepted' : failed ? 'Auto-send failed' : 'Sending automatically';
+ const label = confirmed ? 'Created in Houzz Pro' : accepted ? 'Awaiting Houzz' : failed ? 'Auto-send failed' : 'Sending automatically';
  return (
  <button
  type="button"
@@ -620,20 +624,21 @@ export const NewLeadsPage: React.FC = () => {
  return (
  <button
  type="button"
- disabled={sending || sent}
+ disabled={sending || sent || !failed || !hasHouzzRequiredInfo(lead)}
  onClick={(event) => {
  event.stopPropagation();
  handleSendThumbtackToHouzz(lead);
  }}
- title={confirmed ? 'Houzz Pro confirmed creation.' : accepted ? 'Zapier accepted the lead; waiting for Houzz confirmation.' : 'Send this Thumbtack lead to Houzz Pro.'}
+ title={confirmed ? 'Houzz Pro confirmed creation.' : accepted ? 'Zapier accepted the lead; waiting for Houzz confirmation.' : failed ? (lead.houzzError || 'Retry Houzz creation.') : 'Complete and save the details to send automatically.'}
  className={`${sizeClass} text-xs font-bold inline-flex items-center gap-1.5 transition-colors border ${
  sent
  ? 'bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/30 cursor-not-allowed'
- : 'bg-[#EF7E15] hover:bg-[#D66B0F] text-white border-[#EF7E15] cursor-pointer disabled:opacity-60 disabled:cursor-wait'
+ : failed ? 'bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/30 cursor-pointer disabled:opacity-60'
+ : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 cursor-default'
  }`}
  >
- {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : sent ? <Check className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
- <span>{sending ? 'Sending...' : confirmed ? 'Created in Houzz Pro' : accepted ? 'Zapier accepted' : failed ? 'Retry Houzz Pro' : 'Send to Houzz Pro'}</span>
+ {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : sent ? <Check className="w-3.5 h-3.5" /> : failed ? <AlertCircle className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
+ <span>{sending ? 'Sending...' : confirmed ? 'Created in Houzz Pro' : accepted ? 'Awaiting Houzz' : failed ? 'Retry Houzz Pro' : 'Complete & save'}</span>
  </button>
  );
  };

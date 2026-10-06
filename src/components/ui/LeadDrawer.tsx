@@ -25,6 +25,7 @@ import { SalespersonOption } from '../../types';
 import { loadAppConfig } from '../../config';
 import { updateNewLeadInfo } from '../../lib/newLeads';
 import { isFollowedUpStage } from '../../lib/leadScheduling';
+import { hasHouzzRequiredInfo as isHouzzReady } from '../../lib/houzzReadiness';
 
 const ANGI_ACCOUNT_OPTIONS = [
   { value: 'not_identified', label: 'Angi (Not Identified)' },
@@ -86,7 +87,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
   const [editEstimateSentAt, setEditEstimateSentAt] = useState('');
 
   const leadKey = lead
-    ? (lead as any).id || lead.clientPhone || lead.clientEmail || lead.clientName || `row_${lead.rowIndex}`
+    ? (lead as any).id || `sheet_${encodeURIComponent(lead.tabName || lead.leadSource || 'Thumbtack')}_${lead.rowIndex}`
     : '';
 
   useEffect(() => {
@@ -122,6 +123,27 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
       setActivities(getLeadActivities(leadKey));
     }
   }, [lead, leadKey]);
+
+  const [deliveryState, setDeliveryState] = useState<{ id: string; status: string; error: string }>({ id: '', status: '', error: '' });
+  useEffect(() => {
+    const id = leadKey;
+    if (!isOpen || !id || String(lead?.leadSource || lead?.tabName || '').toLowerCase() !== 'thumbtack') return;
+    let active = true;
+    let inFlight = false;
+    const refresh = async () => {
+      if (inFlight || document.visibilityState === 'hidden') return;
+      inFlight = true;
+      try {
+        const response = await fetch(`/api/leads/${encodeURIComponent(id)}/houzz-status`);
+        const data = await response.json();
+        if (active && response.ok) setDeliveryState({ id, status: data.houzzStatus || '', error: data.houzzError || '' });
+      } catch { /* Keep the last known delivery status during a connection interruption. */ }
+      finally { inFlight = false; }
+    };
+    void refresh();
+    const interval = setInterval(refresh, 3000);
+    return () => { active = false; clearInterval(interval); };
+  }, [isOpen, leadKey]);
 
   if (!lead) return null;
 
@@ -190,6 +212,8 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
       // 1. If spreadsheet is configured, sync to Google Sheet
       if (config.spreadsheetId) {
         await updateLeadInSpreadsheet(undefined, config.spreadsheetId, {
+          id: leadKey,
+          originalContact: { clientName: lead.clientName, clientPhone: lead.clientPhone, clientEmail: lead.clientEmail },
           tabName: lead.tabName || editSource.trim(),
           rowIndex: lead.rowIndex,
           clientName: updatedRecord.clientName,
@@ -274,7 +298,9 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
   };
 
   const inputClass = "w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:border-[#EF7E15] dark:focus:border-[#EF7E15] rounded-md px-3.5 py-2 text-sm text-zinc-900 dark:text-white font-medium outline-none transition-colors duration-120 placeholder-zinc-400";
-  const houzzState = String((lead as any).houzzStatus || (lead as any).houzzResult || '').trim().toLowerCase();
+  const houzzState = String((deliveryState.id === leadKey && deliveryState.status) || (lead as any).houzzStatus || (lead as any).houzzResult || '').trim().toLowerCase();
+  const isHouzzSending = isSendingToHouzz || houzzState.startsWith('sending');
+  const isHouzzFailed = houzzState.startsWith('failed');
   const isConfirmedInHouzz = houzzState.includes('created in houzz pro');
   const isHouzzAccepted = houzzState.includes('accepted by zapier');
   const normalizedLeadSource = String(lead.leadSource || lead.tabName || '').trim().toLowerCase();
@@ -282,12 +308,7 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
   const isAngiLead = normalizedLeadSource === 'angi';
   const angiAccountLabel = ANGI_ACCOUNT_OPTIONS.find((option) => option.value === (lead.angiAccount || 'not_identified'))?.label
     || 'Angi (Not Identified)';
-  const hasHouzzRequiredInfo = Boolean(
-    lead.clientName?.trim() &&
-    (lead.clientPhone?.trim() || lead.clientEmail?.trim()) &&
-    lead.address?.trim() &&
-    (lead.serviceNeeded || lead.leadType || '').trim()
-  );
+  const hasHouzzRequiredInfo = isHouzzReady(lead);
 
   return (
     <>
@@ -734,34 +755,39 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                 </div>
               </div>
 
-              {/* Thumbtack leads require a human review before Houzz creation. */}
+              {/* Saved, complete Thumbtack details are sent automatically. */}
               {isThumbtackLead && (
-                <div className="p-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md space-y-2">
+                <div role="status" aria-live="polite" className="p-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md space-y-2">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">Houzz Pro</h3>
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
                         {isConfirmedInHouzz
                           ? 'This lead is already in Houzz Pro.'
+                          : isHouzzSending
+                            ? 'Sending automatically to create this lead in Houzz Pro…'
                           : isHouzzAccepted
                             ? 'Zapier accepted this lead. Waiting for Houzz confirmation.'
+                            : isHouzzFailed
+                              ? 'Houzz creation failed. Retry or save the completed details again.'
                             : hasHouzzRequiredInfo
-                              ? 'Information is complete and ready to send.'
-                              : 'Complete the name, contact, address, and service before sending.'}
+                              ? 'Save these details to create the lead in Houzz Pro automatically.'
+                              : 'Complete the name, contact, address, and service, then save. Sending is automatic.'}
                       </p>
                     </div>
+                    {isHouzzSending && <Loader2 className="w-4 h-4 animate-spin text-[#EF7E15] shrink-0" aria-hidden="true" />}
                     {isConfirmedInHouzz && <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" aria-hidden="true" />}
                   </div>
-                  {!isConfirmedInHouzz && !isHouzzAccepted && (
+                  {isHouzzFailed && !isHouzzSending && (
                     <button
                       type="button"
                       disabled={!hasHouzzRequiredInfo || isSendingToHouzz || !onSendToHouzz}
                       onClick={() => onSendToHouzz?.(lead)}
                       className="w-full h-8.5 bg-[#EF7E15] hover:bg-[#D66B0F] disabled:bg-zinc-300 dark:disabled:bg-zinc-800 disabled:text-zinc-500 text-white rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-colors duration-120 cursor-pointer disabled:cursor-not-allowed"
-                      title={hasHouzzRequiredInfo ? 'Create this Thumbtack lead in Houzz Pro' : 'Complete the required lead information first'}
+                      title={hasHouzzRequiredInfo ? 'Retry creating this lead in Houzz Pro' : 'Complete the required lead information first'}
                     >
                       {isSendingToHouzz ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-                      <span>{isSendingToHouzz ? 'Sending…' : 'Create in Houzz Pro'}</span>
+                      <span>{isSendingToHouzz ? 'Sending…' : 'Retry Houzz Pro'}</span>
                     </button>
                   )}
                 </div>
