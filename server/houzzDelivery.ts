@@ -377,6 +377,13 @@ export function updateLeadHouzzState(
 ): void {
   if (!leadId) return;
 
+  // A fast downstream callback can arrive before the Catch Hook response.
+  // Keep the final Houzz result instead of replacing it with acceptance.
+  if (state.activityStatus === 'Accepted by Zapier') {
+    const finalStatus = durableStore.getLeadMetadata(leadId)?.houzzStatus;
+    if (finalStatus === 'Created in Houzz Pro' || finalStatus === 'Failed in Houzz Pro') return;
+  }
+
   const dataDir = path.join(process.cwd(), 'data');
   const incomingFile = path.join(dataDir, 'incoming_leads.json');
 
@@ -404,6 +411,8 @@ export function updateLeadHouzzState(
   try {
     durableStore.saveLeadMetadata({
       leadId,
+      houzzStatus: state.activityStatus,
+      houzzResult: state.activityStatus,
       houzzDispatchStatus: state.success ? 'confirmed' : state.activityStatus.startsWith('Sending') ? 'sending' : 'failed',
       houzzDispatchAt: state.attemptAt || new Date().toISOString(),
       houzzError: state.error || undefined,

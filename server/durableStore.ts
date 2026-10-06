@@ -57,6 +57,9 @@ export interface LeadDurableMetadata {
   newestOrder?: number;
   houzzDispatchStatus?: 'pending' | 'sending' | 'confirmed' | 'failed';
   houzzDispatchAt?: string;
+  houzzLeadId?: string;
+  houzzStatus?: string;
+  houzzResult?: string;
   houzzError?: string;
   sheetSynced?: boolean;
   sheetRowIndex?: number;

@@ -1396,6 +1396,8 @@ export async function updateLeadInSpreadsheet(
  accessToken: string | undefined,
  spreadsheetId: string,
  lead: {
+ id?: string;
+ originalContact?: { clientName?: string; clientPhone?: string; clientEmail?: string };
  tabName?: string;
  rowIndex?: number;
  clientName?: string;
@@ -1424,6 +1426,8 @@ export async function updateLeadInSpreadsheet(
  sheetTab: targetTab,
  rowIndex: lead.rowIndex,
  leadData: {
+ id: lead.id,
+ originalContact: lead.originalContact,
  clientName: lead.clientName,
  clientPhone: lead.clientPhone,
  clientEmail: lead.clientEmail,
@@ -1495,6 +1499,8 @@ export async function updateLeadInSpreadsheet(
  sheetTab: tab,
  rowIndex: match.rowIndex,
  leadData: {
+ id: lead.id,
+ originalContact: lead.originalContact,
  clientName: lead.clientName || match.clientName,
  clientPhone: lead.clientPhone || match.clientPhone,
  clientEmail: lead.clientEmail || match.clientEmail,
