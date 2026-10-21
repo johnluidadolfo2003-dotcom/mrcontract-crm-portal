@@ -1,3 +1,4 @@
+import { recordAngiIntakeFailure } from './server/angiIntakeLog.ts';
 import { DEFAULT_LEAD_SOURCES, mergeLeadSources, normalizeLeadSource } from './src/lib/leadSources.ts';
 import express from 'express';
 import { canonicalContactKey, reconcileIncomingLeadStatus } from './server/leadStatusReconciliation.ts';
@@ -14,8 +15,8 @@ import * as calendarService from './server/calendarService.ts';
 import * as houzzDelivery from './server/houzzDelivery.ts';
 import { sendCompletedThumbtackDetails } from './server/thumbtackHouzz.ts';
 import { hasHouzzRequiredInfo, hasHouzzSubmissionStarted } from './src/lib/houzzReadiness.ts';
-import { incomingLeadIdentity, selectLeadEmailBody } from './server/angiIntake.ts';
-import { currentAngiMessage, extractAngiLabeledFields, normalizeAngiEmailTextForParsing } from './server/angiEmailParser.ts';
+import { incomingLeadIdentity, selectLeadEmailBody, processAngiDelivery, preferCurrentAngiCustomer, assertCurrentAngiLeadEmail } from './server/angiIntake.ts';
+import { currentAngiMessage, extractFromEmailText } from './server/angiEmailParser.ts';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -619,277 +620,6 @@ function extractAngiServiceFromSubject(subject: unknown): string {
 }
 
 // Helper function to extract structured lead details from raw email text (Angi, HomeAdvisor, etc.)
-function extractFromEmailText(rawText: string, defaultSource: string = 'Angi'): {
-  clientName: string;
-  clientPhone: string;
-  clientEmail: string;
-  address: string;
-  serviceNeeded: string;
-  leadFee: string;
-  notes: string;
-} {
-  if (!rawText || typeof rawText !== 'string') {
-    return {
-      clientName: '',
-      clientPhone: '',
-      clientEmail: '',
-      address: '',
-      serviceNeeded: '',
-      leadFee: '',
-      notes: '',
-    };
-  }
-
-  // Strip HTML if HTML email
-  const clean = normalizeAngiEmailTextForParsing(
-    currentAngiMessage(rawText)
-      .replace(/<br\s*[\/]?>/gi, '\n')
-      .replace(/<\/p>/gi, '\n')
-      .replace(/<\/div>/gi, '\n')
-      .replace(/<\/tr>/gi, '\n')
-      .replace(/<\/td>/gi, '\n')
-      .replace(/<[^>]+>/gi, ' ')
-      .replace(/&nbsp;/gi, ' ')
-      .replace(/&amp;/gi, '&')
-      .replace(/\t/g, ' ')
-  );
-  const labeledFields = extractAngiLabeledFields(clean);
-
-  const rawLines = clean
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0);
-
-  // 1. Service / Task Requested
-  let serviceNeeded = labeledFields.serviceNeeded;
-  // Check "You have a new lead!" pattern which precedes task in official Angi emails
-  for (let i = 0; i < rawLines.length; i++) {
-    if (/you have a new lead/i.test(rawLines[i])) {
-      if (i + 1 < rawLines.length && !/customer information|angi|view lead/i.test(rawLines[i + 1])) {
-        serviceNeeded = rawLines[i + 1].trim();
-        break;
-      }
-    }
-  }
-
-  if (!serviceNeeded) {
-    const servicePattern = /(?:service\s*(?:requested|needed)?|task(?:\s*name)?|project(?:\s*type)?|category|job\s*type|work\s*requested)[:\-]+\s*([^\r\n]{3,100})/i;
-    const serviceMatch = clean.match(servicePattern);
-    if (serviceMatch) {
-      const s = serviceMatch[1].trim();
-      if (!/angi|homeadvisor|pro|click here|view lead|customer information|^(?:label|details|information|description|needed|requested|type|category)\b/i.test(s)) {
-        serviceNeeded = s;
-      }
-    }
-  }
-
-  // Fallback for Subject line like "New Customer Match: Clean & Inspect Chimney - from Angi #..."
-  if (!serviceNeeded) {
-    const subjectMatch = clean.match(/(?:match|lead)[:\-]+\s*([^#\-\r\n]{3,60})(?:\s*-\s*from Angi|\s*#\d+|$)/i);
-    if (subjectMatch && !/angi|lead|information/i.test(subjectMatch[1].trim())) {
-      serviceNeeded = subjectMatch[1].trim();
-    }
-  }
-
-  // 2. Client Name
-  let clientName = labeledFields.clientName;
-  // Check official Angi "Customer Information" block
-  for (let i = 0; i < rawLines.length; i++) {
-    if (!clientName && /^customer\s*information$/i.test(rawLines[i])) {
-      if (i + 1 < rawLines.length) {
-        const nextCandidate = rawLines[i + 1].trim();
-        // Ignore headers or buttons
-        if (
-          nextCandidate.length >= 3 &&
-          nextCandidate.length <= 45 &&
-          !/view lead|send a message|\d{3}|@|angi/i.test(nextCandidate)
-        ) {
-          clientName = nextCandidate;
-          break;
-        }
-      }
-    }
-  }
-
-  if (!clientName) {
-    for (const line of rawLines) {
-      const nameMatch = line.match(
-        /(?:customer\s*name|client\s*name|homeowner\s*name|consumer\s*name|customer|client|homeowner|contact\s*name|consumer|^name)[:\s\-]+([A-Za-z'.-]+(?:[ \t]+[A-Za-z'.-]+)+)/i
-      );
-      if (nameMatch) {
-        const cand = nameMatch[1].trim();
-        if (!/angi|homeadvisor|service|lead|pro|notification|details|information|alert/i.test(cand)) {
-          clientName = cand;
-          break;
-        }
-      }
-    }
-  }
-
-  if (!clientName) {
-    for (const line of rawLines) {
-      const m = line.match(/^(?:name|customer|client)[:\s\-]+([A-Za-z'.-]+(?:[ \t]+[A-Za-z'.-]+)+)$/i);
-      if (m) {
-        clientName = m[1].trim();
-        break;
-      }
-    }
-  }
-
-  // Normalize all-caps name (e.g. "JAN MCCOY" -> "Jan Mccoy" / "Jan McCoy")
-  if (clientName && clientName === clientName.toUpperCase() && clientName.length > 3) {
-    clientName = clientName
-      .toLowerCase()
-      .split(' ')
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(' ');
-  }
-
-  // 3. Phone Number
-  let clientPhone = labeledFields.clientPhone;
-  const phonePattern = /(?:phone|cell|mobile|tel|telephone|contact\s*(?:#|number|phone))[:\s\-]*([+\d\s().-]{10,20})/i;
-  const phoneMatch = clean.match(phonePattern);
-  if (phoneMatch) {
-    const p = phoneMatch[1].replace(/[^\d()\-+.\s]/g, '').trim();
-    if (p.replace(/\D/g, '').length >= 10) {
-      clientPhone = p;
-    }
-  }
-  if (!clientPhone) {
-    const generalPhone = clean.match(/(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/);
-    if (generalPhone) clientPhone = generalPhone[0].trim();
-  }
-
-  // 4. Email Address (filtering out internal Angi/HomeAdvisor addresses)
-  let clientEmail = labeledFields.clientEmail;
-  const emailPattern = /(?:email|e-mail|email\s*address)[:\s\-]*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i;
-  const emailMatch = clean.match(emailPattern);
-  if (emailMatch && !/angi\.com|homeadvisor\.com|zapier|service\.com|noreply/i.test(emailMatch[1])) {
-    clientEmail = emailMatch[1].trim();
-  }
-  if (!clientEmail) {
-    const allEmails = clean.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
-    const valid = allEmails.find((em) => !/angi\.com|homeadvisor\.com|zapier|service\.com|noreply|mailer/i.test(em));
-    if (valid) clientEmail = valid.trim();
-  }
-
-  // 5. Address / Location
-  let address = labeledFields.address;
-
-  // Check multi-line Project Location or Address headers
-  for (let i = 0; i < rawLines.length; i++) {
-    if (/^(?:project\s*location|job\s*location|property\s*address|customer\s*address|address|location)[:\s]*$/i.test(rawLines[i])) {
-      if (i + 1 < rawLines.length) {
-        const line1 = rawLines[i + 1].trim();
-        if (!/angi|homeadvisor|view lead|unsubscribe|reply/i.test(line1) && !line1.includes('@')) {
-          if (i + 2 < rawLines.length && /\b[A-Z]{2}\s*,?\s*\d{5}\b/i.test(rawLines[i + 2])) {
-            address = `${line1}, ${rawLines[i + 2].trim()}`;
-          } else {
-            address = line1;
-          }
-          break;
-        }
-      }
-    }
-  }
-
-  // Check labeled inline address (e.g. "Location: 631 W Waldheim Rd, Pittsburgh, PA 15215")
-  if (!address) {
-    const addrPattern = /(?:project\s*location|job\s*location|property\s*address|customer\s*address|street\s*address|address|location)[:\s\-]+([^\r\n]{5,120})/i;
-    const addrMatch = clean.match(addrPattern);
-    if (addrMatch) {
-      const a = addrMatch[1].trim();
-      if (!/angi|homeadvisor|not available|view online|view lead|unsubscribe/i.test(a)) {
-        address = a;
-      }
-    }
-  }
-
-  // Check Customer Information block (if address follows phone/email)
-  if (!address) {
-    for (let i = 0; i < rawLines.length; i++) {
-      if (/^customer\s*information$/i.test(rawLines[i])) {
-        // Collect following lines until a blank line or footer
-        for (let j = i + 1; j < Math.min(rawLines.length, i + 7); j++) {
-          const l = rawLines[j].trim();
-          if (/\b[A-Z]{2}\s*,?\s*\d{5}\b/i.test(l) && !l.includes('@')) {
-            // Found city/state/zip! Check if previous line had street
-            if (j > i + 1) {
-              const prev = rawLines[j - 1].trim();
-              if (
-                /\d+\s+[A-Za-z0-9]/.test(prev) &&
-                !prev.includes('@') &&
-                !/^\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/.test(prev)
-              ) {
-                address = `${prev}, ${l}`;
-                break;
-              }
-            }
-            address = l;
-            break;
-          }
-        }
-      }
-      if (address) break;
-    }
-  }
-
-  // Check lines matching city, state zip format (e.g. "631 W Waldheim Rd, Pittsburgh, PA 15215" or "Pittsburgh, PA 15215")
-  if (!address) {
-    for (let i = 0; i < rawLines.length; i++) {
-      const line = rawLines[i];
-      if (
-        /\b[A-Z]{2}\s*,?\s*\d{5}\b/i.test(line) &&
-        !/angi|homeadvisor|reply|view lead|unsubscribe|copyright/i.test(line) &&
-        !line.includes('@')
-      ) {
-        // Check if previous line is a street address line
-        if (i > 0) {
-          const prev = rawLines[i - 1].trim();
-          if (
-            /\d+\s+[A-Za-z0-9]/.test(prev) &&
-            !prev.includes('@') &&
-            !/^\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/.test(prev) &&
-            !/angi|homeadvisor|view lead/i.test(prev)
-          ) {
-            address = `${prev}, ${line.trim()}`;
-            break;
-          }
-        }
-        address = line.trim();
-        break;
-      }
-    }
-  }
-
-  if (!address) {
-    const streetMatch = clean.match(
-      /\d+\s+[A-Za-z0-9\s,.-]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Court|Ct|Circle|Cir|Way|Boulevard|Blvd|Highway|Hwy)[.,]?\s*(?:[A-Za-z\s]+,\s*[A-Z]{2}\s*\d{5})?/i
-    );
-    if (streetMatch && !/view lead|angi|homeadvisor/i.test(streetMatch[0])) address = streetMatch[0].trim();
-  }
-
-  // 6. Lead Fee / Price
-  let leadFee = '';
-  const feeMatch = clean.match(/(?:lead\s*(?:fee|price|cost)|fee|price|cost)[:\s\-]*(\$\s*\d+(?:\.\d{2})?)/i);
-  if (feeMatch) {
-    leadFee = feeMatch[1].replace(/\s+/g, '');
-  }
-
-  // 7. Notes / Comments
-  const notes = labeledFields.comments || '';
-
-  return {
-    clientName,
-    clientPhone,
-    clientEmail,
-    address,
-    serviceNeeded: serviceNeeded || '',
-    leadFee,
-    notes,
-  };
-}
-
 // --- Incoming Webhooks & Lead Capture (Angi, Thumbtack, Zapier) ---
 
 async function parseIncomingLeadPayload(body: any, defaultSource: string = 'Angi') {
@@ -922,6 +652,7 @@ async function parseIncomingLeadPayload(body: any, defaultSource: string = 'Angi
 
   // Check if raw email text was supplied (from Zapier Gmail trigger or email parser)
   const rawEmailCandidate = selectLeadEmailBody(b, nestedLead);
+  if (defaultSource.toLowerCase() === 'angi') assertCurrentAngiLeadEmail(b, nestedLead, rawEmailCandidate);
 
   let extractedEmailData: any = null;
   if (typeof rawEmailCandidate === 'string' && rawEmailCandidate.length > 20) {
@@ -1213,7 +944,7 @@ async function parseIncomingLeadPayload(body: any, defaultSource: string = 'Angi
   ).trim();
   const notes = rawNotes;
 
-  return {
+  return preferCurrentAngiCustomer({
     clientName,
     clientPhone,
     clientEmail,
@@ -1223,7 +954,7 @@ async function parseIncomingLeadPayload(body: any, defaultSource: string = 'Angi
     leadFee,
     notes,
     rawPayload: b,
-  };
+  }, extractedEmailData);
 }
 
 // Deduplication cache for Google Sheets appends to guarantee leads are sent only once
@@ -1573,6 +1304,44 @@ function saveIncomingLeadAndLog(
   return newLeadRecord;
 }
 
+async function processAngiNotification(body: any, req: express.Request) {
+  const parsed = await parseIncomingLeadPayload(body, 'Angi');
+  const lead = saveIncomingLeadAndLog(parsed, req, { skipAutoSheet: true, skipAutoHouzz: true });
+
+  // Sheets is part of the Angi transaction: wait for a confirmed append before
+  // reporting the result. A failed append is queued for automatic retry.
+  const sheetSynced = lead.sheetSynced === true || await tryAutoAppendToGoogleSheet(lead, { force: true });
+  setIncomingLeadSheetSyncState(lead.id, sheetSynced);
+  lead.sheetSynced = sheetSynced;
+  if (!sheetSynced) {
+    durableStore.enqueueDelivery(lead.id, 'sheets', lead, lead.leadSource || 'Angi');
+  }
+
+  // Render's local JSON files may be lost on restart. Do not acknowledge a
+  // webhook as successful until the durable Google Sheet has the lead.
+  if (!sheetSynced) {
+    throw Object.assign(new Error('Lead received locally, but Google Sheets could not save it. Retry this Zap run.'), { status: 503, phase: 'sheets', leadId: lead.id });
+  }
+
+  const savedDelivery = durableStore.getLeadMetadata(lead.id);
+  const houzzResult = hasHouzzSubmissionStarted({ ...lead, ...savedDelivery })
+    ? { success: true, activityStatus: savedDelivery?.houzzStatus || lead.houzzStatus || 'Already submitted', safeSummary: 'Existing Houzz delivery retained.' }
+    : await houzzDelivery.dispatchLeadToHouzz({ leadId: lead.id, payload: lead, webhookUrl: getBackendWebhookUrl() });
+
+  return {
+    success: true,
+    message: `Angi lead saved in CRM and Google Sheets. ${houzzResult.safeSummary}`,
+    leadId: lead.id,
+    lead,
+    sheetSync: {
+      success: sheetSynced,
+      status: sheetSynced ? 'synced' : 'queued_for_retry',
+    },
+    houzzDelivery: houzzResult,
+  };
+}
+
+
 // 1. Dedicated Angi Webhook (HomeAdvisor / Angi Leads via Zapier or Webhook)
 app.post('/api/webhooks/angi', async (req, res) => {
   try {
@@ -1585,54 +1354,11 @@ app.post('/api/webhooks/angi', async (req, res) => {
     }
 
     console.log('[Webhook] Authenticated Angi lead received.');
-    const parsed = await parseIncomingLeadPayload(req.body, 'Angi');
-    const lead = saveIncomingLeadAndLog(parsed, req, { skipAutoSheet: true, skipAutoHouzz: true });
-
-    // Sheets is part of the Angi transaction: wait for a confirmed append before
-    // reporting the result. A failed append is queued for automatic retry.
-    const sheetSynced = lead.sheetSynced === true || await tryAutoAppendToGoogleSheet(lead, { force: true });
-    setIncomingLeadSheetSyncState(lead.id, sheetSynced);
-    lead.sheetSynced = sheetSynced;
-    if (!sheetSynced) {
-      durableStore.enqueueDelivery(lead.id, 'sheets', lead, lead.leadSource || 'Angi');
-    }
-
-    // Render's local JSON files may be lost on restart. Do not acknowledge a
-    // webhook as successful until the durable Google Sheet has the lead.
-    if (!sheetSynced) {
-      return res.status(503).json({
-        success: false,
-        error: 'Lead received locally, but Google Sheets could not save it. Retry this Zap run.',
-        leadId: lead.id,
-        sheetSync: { success: false, status: 'queued_for_retry' },
-      });
-    }
-
-    const houzzResult = await houzzDelivery.dispatchLeadToHouzz({
-      leadId: lead.id,
-      payload: lead,
-      webhookUrl: getBackendWebhookUrl(),
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: sheetSynced
-        ? (houzzResult.success
-            ? 'Angi lead saved in CRM and Google Sheets; Zapier accepted Houzz delivery and confirmation is pending.'
-            : 'Angi lead saved in CRM and Google Sheets, but Zapier delivery failed.')
-        : (houzzResult.success
-            ? 'Angi lead saved in CRM and sent to Zapier. Google Sheets sync is queued for automatic retry.'
-            : 'Angi lead saved in CRM. Google Sheets retry is queued and Zapier delivery failed.'),
-      leadId: lead.id,
-      lead,
-      sheetSync: {
-        success: sheetSynced,
-        status: sheetSynced ? 'synced' : 'queued_for_retry',
-      },
-      houzzDelivery: houzzResult,
-    });
+    const result = await processAngiDelivery(req.body, (body) => processAngiNotification(body, req), recordAngiIntakeFailure);
+    return res.status(result.status).json(result.body);
   } catch (err: any) {
     console.error('Error processing Angi webhook:', err);
+    recordAngiIntakeFailure('payload', err.status || 500, err.message || 'Invalid Angi delivery.');
     return res.status(err.status || 500).json({ success: false, error: err.message });
   }
 });

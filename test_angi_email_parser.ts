@@ -53,3 +53,81 @@ console.log('Angi HTML replies, full body selection, and message identity tests 
 
 const headerEmail = '\nFrom: Angi <no-reply@angi.com>\nCustomer Name: Alex New\nPhone: 412-555-0199';
 assert.match(currentAngiMessage(headerEmail), /Alex New/);
+
+const { extractFromEmailText } = await import('./server/angiEmailParser.ts');
+const { preferCurrentAngiCustomer, expandAngiDelivery, processAngiDelivery } = await import('./server/angiIntake.ts');
+// Synthetic version of the screenshot's Angi notification card; no real clients.
+const modernCard = `<h1>You have a new lead!</h1><h2>Repair an Asphalt Shingle Roof</h2><span>Customer Information</span><a href="https://example.test/client">Dana Example</a><a href="tel:2155550199">(215) 555-0199</a><p>123 Example Road, Pittsburgh, PA 15220</p>`;
+const modern = extractFromEmailText(modernCard);
+assert.equal(modern.clientName, 'Dana Example');
+assert.equal(modern.clientPhone, '(215) 555-0199');
+assert.equal(modern.serviceNeeded, 'Repair an Asphalt Shingle Roof');
+assert.match(modern.address, /123 Example Road/);
+const silentHtmlQuote = modernCard + '<div class="gmail_quote"><h3>Customer Information</h3><p>Older Person</p><p>724-555-0188</p></div>';
+assert.doesNotMatch(currentAngiMessage(silentHtmlQuote), /Older Person/);
+assert.equal(extractFromEmailText(silentHtmlQuote).clientName, 'Dana Example');
+assert.equal(extractFromEmailText('Thanks, I will call. <blockquote type="cite">' + modernCard + '</blockquote>').clientName, '', 'An ordinary reply must not recreate its quoted lead');
+assert.equal(selectLeadEmailBody({ rawEmail: 'You have a new lead!\nCustomer Information', body_html: modernCard }), modernCard, 'A truncated body with a header must not win over the complete card');
+assert.equal(extractFromEmailText(modernCard.replace('Dana Example', 'Angie Example')).clientName, 'Angie Example');
+assert.equal(extractFromEmailText('To: info@mrcontract.us\n' + modernCard).clientEmail, '', 'The receiving company address is not the customer email');
+assert.equal(extractFromEmailText('<p>Customer Name:</p><p>Dana Example</p><p>Phone:</p><p>215-555-0199</p>').clientName, 'Dana Example');
+
+const stale = { clientName: 'Older Person', clientPhone: '7245550188', clientEmail: 'old@example.test', leadSource: 'Angi', serviceNeeded: 'Old service', rawPayload: {} };
+const preferred = preferCurrentAngiCustomer(stale, modern);
+assert.equal(preferred.clientName, 'Dana Example');
+assert.equal(preferred.clientPhone, modern.clientPhone);
+assert.equal(preferred.clientEmail, '', 'Missing current fields must not inherit a different customer');
+assert.equal(preferred.serviceNeeded, 'Repair an Asphalt Shingle Roof');
+assert.equal(preferCurrentAngiCustomer({ ...stale, leadSource: 'Thumbtack' }, modern).clientName, 'Older Person');
+
+const secondModern = modernCard.replaceAll('Dana Example', 'Alex Example').replaceAll('2155550199', '4125550188').replaceAll('(215) 555-0199', '(412) 555-0188');
+const messages = [{ id: 'old-message', rawEmail: modernCard }, { id: 'new-message', rawEmail: secondModern }];
+assert.deepEqual(expandAngiDelivery({ threadId: 'same-thread', messageId: 'new-message', messages }), [{ ...messages[1], messageId: 'new-message' }]);
+assert.throws(() => expandAngiDelivery({ threadId: 'same-thread', messages }), /newly received message ID/, 'Never backfill a whole thread implicitly');
+const encoded = Buffer.from(modernCard).toString('base64url');
+assert.equal(selectLeadEmailBody({ payload: { mimeType: 'multipart/alternative', parts: [{ mimeType: 'text/html', body: { data: encoded } }] } }), modernCard);
+const seenNames: string[] = [];
+const failures: string[] = [];
+const result = await processAngiDelivery(messages, async (message) => {
+  const parsed = extractFromEmailText(selectLeadEmailBody(message));
+  seenNames.push(parsed.clientName);
+  return { success: true, leadId: incomingLeadIdentity({ ...parsed, leadSource: 'Angi', rawPayload: message }) };
+}, (_phase, _status, error) => failures.push(error));
+assert.equal(result.status, 200);
+assert.deepEqual(seenNames, ['Dana Example', 'Alex Example'], 'Process every delivered item, not just the first');
+assert.notEqual(result.body.results[0].leadId, result.body.results[1].leadId);
+const partial = await processAngiDelivery(messages, async (message) => {
+  if (message.id === 'new-message') throw Object.assign(new Error('Sheets unavailable'), { phase: 'sheets', status: 503 });
+  return { success: true };
+}, (_phase, _status, error) => failures.push(error));
+assert.equal(partial.status, 503, 'A partly failed batch must be retryable, not acknowledged as complete');
+assert.equal(partial.body.results[0].success, true);
+assert.deepEqual(failures, ['Sheets unavailable']);
+console.log('Angi screenshot-style cards, quote-only replies, stale mapping, Gmail message selection, MIME, and batch processing passed.');
+
+const { assertCurrentAngiLeadEmail } = await import('./server/angiIntake.ts');
+assert.throws(() => assertCurrentAngiLeadEmail({ rawEmail: 'Thanks <blockquote>' + modernCard + '</blockquote>', ...stale }, {}, 'Thanks <blockquote>' + modernCard + '</blockquote>'), /no new Angi customer notification/);
+assert.doesNotThrow(() => assertCurrentAngiLeadEmail({ rawEmail: modernCard }, {}, modernCard));
+assert.doesNotThrow(() => assertCurrentAngiLeadEmail({ clientName: 'Structured Client', clientPhone: '2155550199' }, {}, ''));
+
+// Failure visibility must not persist raw email content or create any lead.
+const fs = await import('node:fs');
+const os = await import('node:os');
+const path = await import('node:path');
+const originalCwd = process.cwd();
+const logDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'angi-intake-log-'));
+process.chdir(logDirectory);
+try {
+  const { recordAngiIntakeFailure } = await import('./server/angiIntakeLog.ts');
+  recordAngiIntakeFailure('extraction', 422, 'Customer name missing; token=do-not-save-this');
+  const logs = JSON.parse(fs.readFileSync(path.join(logDirectory, 'data/webhook_logs.json'), 'utf8'));
+  assert.equal(logs[0].success, false);
+  assert.equal(logs[0].phase, 'extraction');
+  assert.equal(logs[0].statusCode, 422);
+  assert.doesNotMatch(logs[0].error, /do-not-save-this/);
+  assert.equal(fs.existsSync(path.join(logDirectory, 'data/incoming_leads.json')), false);
+  console.log('Angi failure diagnostics passed without creating leads.');
+} finally {
+  process.chdir(originalCwd);
+  fs.rmSync(logDirectory, { recursive: true, force: true });
+}
