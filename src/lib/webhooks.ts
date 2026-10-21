@@ -28,6 +28,9 @@ export interface IncomingWebhookLead {
 }
 
 export interface WebhookLogItem {
+ error?: string;
+ phase?: string;
+ statusCode?: number;
  id: string;
  receivedAt: string;
  source: string;

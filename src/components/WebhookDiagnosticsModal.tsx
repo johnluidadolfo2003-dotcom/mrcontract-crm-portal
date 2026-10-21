@@ -834,6 +834,7 @@ Lead Fee: $45.00`)
                         </div>
                       </div>
 
+                      {log.error && <p className="text-rose-600 dark:text-rose-400" role="status">{log.phase ? `${log.phase}: ` : ''}{log.error}{log.statusCode ? ` (HTTP ${log.statusCode})` : ''}</p>}
                       {log.payloadSnippet && (
                         <pre className="bg-zinc-50 dark:bg-zinc-950 p-2.5 rounded-md font-mono text-[11px] text-zinc-700 dark:text-zinc-400 overflow-x-auto max-h-24 border border-zinc-200 dark:border-zinc-800/60">
                           {typeof log.payloadSnippet === 'object'
