@@ -171,7 +171,7 @@ export const CustomerServicePage: React.FC = () => {
  console.warn('Could not fetch sheet metadata:', e);
  }
 
- // Always include all 10 default lead sources + any tabs discovered in the sheet
+ // Always include all standard lead sources + any tabs discovered in the sheet
  const mergedSources = Array.from(
  new Set([...DEFAULT_LEAD_SOURCES, ...validTabs, ...(config.leadSources || [])])
  ).filter(isLeadSourceTab);

@@ -23,7 +23,7 @@ import {
  Upload,
 } from 'lucide-react';
 import { AppConfig, LEAD_STATUS_OPTIONS, LeadStatus } from '../types';
-import { DEFAULT_LEAD_SOURCES, isLeadSourceTab } from '../config';
+import { mergeLeadSources } from '../config';
 import { formatName, formatPhoneNumber } from '../lib/utils';
 import { AddLeadConfirmModal, AddLeadPayload } from './AddLeadConfirmModal';
 import { AddressAutocomplete } from './ui/AddressAutocomplete';
@@ -194,9 +194,7 @@ export const AddLeadForm: React.FC<AddLeadFormProps> = ({
  setShowPasteBox(false);
  };
 
- const leadSourcesList = ((config.leadSources && config.leadSources.length > 0)
- ? config.leadSources
- : DEFAULT_LEAD_SOURCES).filter(isLeadSourceTab);
+ const leadSourcesList = mergeLeadSources(config.leadSources);
 
  const handleExtractText = async () => {
  if (!pasteText.trim()) return;

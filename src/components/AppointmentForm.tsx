@@ -33,7 +33,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { AppointmentFormData, AppConfig } from '../types';
-import { DEFAULT_LEAD_SOURCES, DEFAULT_LEAD_TYPES, isLeadSourceTab } from '../config';
+import { mergeLeadSources, DEFAULT_LEAD_TYPES } from '../config';
 import { AddressAutocomplete } from './ui/AddressAutocomplete';
 import {
  parseCalendarEventToFormData,
@@ -229,7 +229,7 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
  editingEventId,
  onClearLoadedEvent,
 }) => {
- const activeSources = (config.leadSources?.length ? config.leadSources : DEFAULT_LEAD_SOURCES).filter(isLeadSourceTab);
+ const activeSources = mergeLeadSources(config.leadSources);
  const activeTypes = config.leadTypes?.length ? config.leadTypes : DEFAULT_LEAD_TYPES;
 
  const todayStr = new Date().toISOString().split('T')[0];

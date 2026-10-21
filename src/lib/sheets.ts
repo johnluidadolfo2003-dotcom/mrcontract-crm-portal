@@ -1,3 +1,4 @@
+import { normalizeLeadSource } from './leadSources';
 import { AppointmentFormData } from '../types';
 
 export interface GoogleDriveFile {
@@ -373,6 +374,7 @@ export function mapFormDataToSheetRow(
  if (mapping.typeCol >= 0 && mapping.typeCol < rowSize) row[mapping.typeCol] = svcVal;
  if (mapping.leadFeeCol >= 0 && mapping.leadFeeCol < rowSize) row[mapping.leadFeeCol] = formData.leadFee || '';
  if (mapping.statusCol >= 0 && mapping.statusCol < rowSize) row[mapping.statusCol] = status || 'New';
+ if (mapping.sourceCol >= 0 && mapping.sourceCol < rowSize) row[mapping.sourceCol] = normalizeLeadSource(formData.leadSource || '');
 
  return row;
 }

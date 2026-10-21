@@ -22,7 +22,7 @@ import { formatPhoneNumber, getLeadActivities, addLeadActivity, LeadActivity, is
 import { matchCalendarEventForLead, formatAppointmentDateTime } from '../../lib/calendar';
 import { logAuditActivity } from '../../lib/activityLogger';
 import { SalespersonOption } from '../../types';
-import { loadAppConfig } from '../../config';
+import { loadAppConfig, mergeLeadSources } from '../../config';
 import { updateNewLeadInfo } from '../../lib/newLeads';
 import { isFollowedUpStage } from '../../lib/leadScheduling';
 import { hasHouzzRequiredInfo as isHouzzReady } from '../../lib/houzzReadiness';
@@ -544,9 +544,13 @@ export const LeadDrawer: React.FC<LeadDrawerProps> = ({
                     type="text"
                     value={editSource}
                     onChange={(e) => setEditSource(e.target.value)}
-                    placeholder="Angi, Thumbtack, Direct"
+                    list="drawer-lead-source-options"
+                    placeholder="Select or enter a lead source"
                     className={inputClass}
                   />
+                  <datalist id="drawer-lead-source-options">
+                    {mergeLeadSources(loadAppConfig().leadSources).map((source) => <option key={source} value={source} />)}
+                  </datalist>
                 </div>
                 <div>
                   <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 block mb-1">Lead Fee ($)</label>

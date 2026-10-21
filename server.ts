@@ -1,3 +1,4 @@
+import { DEFAULT_LEAD_SOURCES, mergeLeadSources, normalizeLeadSource } from './src/lib/leadSources.ts';
 import express from 'express';
 import { canonicalContactKey, reconcileIncomingLeadStatus } from './server/leadStatusReconciliation.ts';
 import { createServer as createViteServer } from 'vite';
@@ -135,7 +136,7 @@ function heuristicExtractText(text: string): any {
   const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
   const clientEmail = emailMatch ? emailMatch[0] : '';
 
-  const sources = ['Angi', 'Thumbtack', 'Houzz', 'HomeAdvisor', 'Facebook', 'Google', 'Direct', 'Yelp'];
+  const sources = [...DEFAULT_LEAD_SOURCES, 'Houzz', 'HomeAdvisor', 'Facebook', 'Google', 'Direct', 'Yelp'];
   let leadSource = 'Direct';
   for (const s of sources) {
     if (new RegExp(s, 'i').test(text)) {
@@ -312,7 +313,7 @@ app.get('/api/config', (req, res) => {
     }
     // Always supply shared team-wide backend webhook URL
     delete configData.houzzWebhookUrl;
-    return res.json({ ...configData, houzzWebhookConfigured: Boolean(getBackendWebhookUrl()) });
+    return res.json({ ...configData, leadSources: mergeLeadSources(configData.leadSources), houzzWebhookConfigured: Boolean(getBackendWebhookUrl()) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -341,6 +342,7 @@ app.post('/api/config', (req, res) => {
     const mergedData = {
       ...existingData,
       ...incoming,
+      leadSources: mergeLeadSources(incoming.leadSources ?? existingData.leadSources),
     };
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(mergedData, null, 2), 'utf-8');
     res.json({ success: true, config: { ...mergedData, houzzWebhookConfigured: Boolean(getBackendWebhookUrl()) } });
@@ -1152,7 +1154,7 @@ async function parseIncomingLeadPayload(body: any, defaultSource: string = 'Angi
 
   // Extract Lead Source
   // Weakness 20: If missing, flag as "Source needs review" instead of defaulting to Angi
-  const rawSource = String(
+  const rawSource = normalizeLeadSource(String(
     b.leadSource ||
     b.source ||
     b.lead_source ||
@@ -1161,7 +1163,7 @@ async function parseIncomingLeadPayload(body: any, defaultSource: string = 'Angi
     nestedLead.source ||
     defaultSource ||
     ''
-  ).trim();
+  ).trim());
 
   let leadSource = 'Source needs review';
   if (/thumbtack/i.test(rawSource)) {
@@ -1802,16 +1804,11 @@ function getLeadNewestOrder(lead: any): number {
 }
 
 function configuredLeadSourceTabs(): string[] {
-  const fallback = ['Angi', 'Thumbtack', 'Referral', 'Big Fish', 'Houzz Pro', 'Roof R', 'Home Launch', 'Website', 'Yard Sign', 'Other'];
   try {
     const cfg = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'config.json'), 'utf8'));
-    const values = Array.isArray(cfg.leadSources) ? cfg.leadSources : fallback;
-    return values.filter((name: any) => {
-      const clean = String(name || '').trim().toLowerCase();
-      return clean && !clean.includes('summary') && !clean.includes('zapier');
-    });
+    return mergeLeadSources(cfg.leadSources);
   } catch {
-    return fallback;
+    return mergeLeadSources();
   }
 }
 
@@ -1980,7 +1977,7 @@ app.post('/api/leads/manual', async (req, res) => {
   try {
     const body = req.body || {};
     const clientName = String(body.clientName || '').trim();
-    const leadSource = String(body.leadSource || 'Other').trim();
+    const leadSource = normalizeLeadSource(body.leadSource || 'Other');
     if (!clientName) return res.status(400).json({ success: false, error: 'Client name is required.' });
     const newestOrder = Date.now();
     const lead = {

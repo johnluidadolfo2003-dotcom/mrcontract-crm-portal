@@ -1,5 +1,6 @@
 import { getDateTimeFormatter } from './dateTimeFormatters';
 import { AppointmentFormData, AppConfig, GoogleCalendarEventPayload, CreatedCalendarEvent } from '../types';
+import { mergeLeadSources, normalizeLeadSource } from './leadSources';
 import { loadAppConfig } from '../config';
 import { clearCachedAccessToken, getCachedAccessToken, googleSignIn } from './firebase';
 import { isGoogleCalendarAuthFailure } from './googleToken';
@@ -842,7 +843,8 @@ export function parseCalendarEventToFormData(
 		}
 	}
 
- const activeSources = config?.leadSources?.length ? config.leadSources : ['Angi', 'Thumbtack', 'Houzz', 'Referral'];
+ const activeSources = mergeLeadSources(config?.leadSources);
+ leadSource = normalizeLeadSource(leadSource);
  const activeTypes = config?.leadTypes?.length ? config.leadTypes : ['Direct', 'Insurance', 'Other'];
 
  if (!leadSource) {
