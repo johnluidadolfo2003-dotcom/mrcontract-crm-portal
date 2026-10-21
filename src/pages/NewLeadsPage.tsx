@@ -34,7 +34,7 @@ import { hasHouzzRequiredInfo } from '../lib/houzzReadiness';
 import { getNewLeads, fetchNewLeads, migrateLegacyNewLeads, deleteNewLead, updateNewLeadStatus, updateNewLeadInfo, NewLeadRecord } from '../lib/newLeads';
 import { compareNewestLeads, wasLeadCreatedToday } from '../lib/newLeadOrder';
 import { logAuditActivity } from '../lib/activityLogger';
-import { loadAppConfig, isLeadSourceTab, DEFAULT_LEAD_SOURCES } from '../config';
+import { loadAppConfig, isLeadSourceTab, DEFAULT_LEAD_SOURCES, mergeLeadSources } from '../config';
 import { LEAD_STATUS_OPTIONS } from '../types';
 import {
  readSpreadsheetRows,
@@ -658,7 +658,7 @@ export const NewLeadsPage: React.FC = () => {
   const availableSources = Array.from(
  new Set([
  ...ANGI_ACCOUNT_OPTIONS.map((option) => option.label),
- 'Thumbtack',
+ ...mergeLeadSources(loadAppConfig().leadSources).filter((source) => source !== 'Angi'),
  ...leads
   .map((lead) => lead.leadSource)
   .filter((source): source is string => Boolean(source) && source.toLowerCase() !== 'angi'),
@@ -1180,8 +1180,12 @@ export const NewLeadsPage: React.FC = () => {
  value={editFormData.leadSource}
  onChange={(e) => setEditFormData({ ...editFormData, leadSource: e.target.value })}
  className="w-full px-3.5 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-[#EF7E15] text-zinc-900 dark:text-white"
- placeholder="e.g. Angi, Thumbtack, Website"
+ list="new-lead-source-options"
+ placeholder="Select or enter a lead source"
  />
+ <datalist id="new-lead-source-options">
+ {mergeLeadSources(loadAppConfig().leadSources).map((source) => <option key={source} value={source} />)}
+ </datalist>
  </div>
  <div>
  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1">

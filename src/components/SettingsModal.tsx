@@ -21,7 +21,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { AppConfig, SalespersonOption } from '../types';
-import { US_TIME_ZONES, applyTheme, isLeadSourceTab } from '../config';
+import { US_TIME_ZONES, applyTheme, isLeadSourceTab, mergeLeadSources } from '../config';
 import { sendLeadToHouzzPro } from '../lib/houzz';
 import { getWebhookUrls, sendTestWebhookLead, runFullPipelineTest } from '../lib/webhooks';
 import { WebhookDiagnosticsModal } from './WebhookDiagnosticsModal';
@@ -70,7 +70,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [timeZone, setTimeZone] = useState(config.timeZone || 'America/New_York');
   const [theme, setTheme] = useState<'dark' | 'light'>(config.theme || 'dark');
   const [salespeople, setSalespeople] = useState<SalespersonOption[]>(config.salespeople);
-  const [leadSources, setLeadSources] = useState<string[]>((config.leadSources || []).filter(isLeadSourceTab));
+  const [leadSources, setLeadSources] = useState<string[]>(mergeLeadSources(config.leadSources));
   const [leadTypes, setLeadTypes] = useState<string[]>(config.leadTypes || []);
   const { currentUser, updateUser, setIsSwitchUserModalOpen } = useUser();
   const [editingUserName, setEditingUserName] = useState(currentUser?.name || '');
@@ -195,7 +195,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setTimeZone(config.timeZone || 'America/New_York');
       setTheme(config.theme || 'dark');
       setSalespeople(config.salespeople || []);
-      setLeadSources((config.leadSources || []).filter(isLeadSourceTab));
+      setLeadSources(mergeLeadSources(config.leadSources));
       setLeadTypes(config.leadTypes || []);
       setHouzzWebhookUrl(config.houzzWebhookUrl || '');
       setAutoSendToHouzz(config.autoSendToHouzz || false);

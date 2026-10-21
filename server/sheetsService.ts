@@ -1,3 +1,4 @@
+import { DEFAULT_LEAD_SOURCES, existingSheetTabs, normalizeLeadSource } from '../src/lib/leadSources.ts';
 
 export function getCachedSpreadsheetDetails(): SpreadsheetDetails | null {
   for (const entry of detailsCache.values()) {
@@ -650,6 +651,12 @@ export async function readSheetRows(
   forceFresh = false
 ): Promise<{ headers: string[]; rows: SheetRowRecord[]; statusColIndex: number }> {
   const cleanId = extractSpreadsheetId(spreadsheetId);
+  if (DEFAULT_LEAD_SOURCES.includes(normalizeLeadSource(sheetTab))) {
+    const details = await getSpreadsheetDetails(cleanId, forceFresh);
+    const existing = existingSheetTabs([sheetTab], details.sheets.map((sheet) => sheet.title));
+    if (!existing.length) return { headers: DEFAULT_SHEET_HEADERS, rows: [], statusColIndex: 7 };
+    sheetTab = existing[0];
+  }
   const cacheKey = `${cleanId}_${sheetTab}`;
   const now = Date.now();
 
@@ -692,6 +699,9 @@ export async function readAllTabs(
     return { headers: DEFAULT_SHEET_HEADERS, rows: [] };
   }
 
+  const details = await getSpreadsheetDetails(cleanId, forceFresh);
+  sheetTabs = existingSheetTabs(sheetTabs, details.sheets.map((sheet) => sheet.title));
+  if (!sheetTabs.length) return { headers: DEFAULT_SHEET_HEADERS, rows: [] };
   const sortedTabsKey = [...sheetTabs].sort().join(',');
   const cacheKey = `${cleanId}_BATCH_${sortedTabsKey}`;
   const now = Date.now();
@@ -1031,7 +1041,7 @@ async function executeAppendLeadRow(
   status: string = 'New'
 ): Promise<{ updatedRange: string; updatedRows: number }> {
   const cleanId = extractSpreadsheetId(spreadsheetId);
-  const targetTab = (leadData.leadSource || sheetTab || 'Angi').trim();
+  const targetTab = normalizeLeadSource(leadData.leadSource || sheetTab || 'Angi');
 
   await createTabIfNotExists(cleanId, targetTab);
 
@@ -1073,7 +1083,7 @@ async function executeAppendLeadRow(
 
   if (mapping.leadFeeCol >= 0) rowValues[mapping.leadFeeCol] = leadData.leadFee || '';
   if (mapping.statusCol >= 0) rowValues[mapping.statusCol] = status || 'New';
-  if (mapping.sourceCol >= 0) rowValues[mapping.sourceCol] = leadData.leadSource || targetTab;
+  if (mapping.sourceCol >= 0) rowValues[mapping.sourceCol] = targetTab;
   if (mapping.dateCol >= 0) rowValues[mapping.dateCol] = leadData.appointmentDate || '';
   if (mapping.startCol >= 0) rowValues[mapping.startCol] = leadData.startTime || '';
   if (mapping.endCol >= 0) rowValues[mapping.endCol] = leadData.endTime || '';

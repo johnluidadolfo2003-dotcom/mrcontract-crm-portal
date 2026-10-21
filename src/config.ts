@@ -1,4 +1,6 @@
 import { AppConfig, SalespersonOption } from './types';
+import { DEFAULT_LEAD_SOURCES, mergeLeadSources } from './lib/leadSources';
+export { DEFAULT_LEAD_SOURCES, isLeadSourceTab, mergeLeadSources } from './lib/leadSources';
 
 export const DEFAULT_SALESPEOPLE: SalespersonOption[] = [
  { id: 'sp_dg', code: 'DG', name: 'DG' },
@@ -42,28 +44,7 @@ export const US_TIME_ZONES = [
  { value: 'Pacific/Honolulu', label: 'Hawaii Time (HT - Hawaii)' },
 ];
 
-export const DEFAULT_LEAD_SOURCES = [
- 'Angi',
- 'Thumbtack',
- 'Referral',
- 'Big Fish',
- 'Houzz Pro',
- 'Roof R',
- 'Home Launch',
- 'Website',
- 'Yard Sign',
- 'Other',
-];
 export const DEFAULT_LEAD_TYPES = ['Direct', 'Other'];
-
-export function isLeadSourceTab(name: string): boolean {
- if (!name) return false;
- const clean = name.trim().toLowerCase();
- if (clean === 'summary' || clean === 'zapier' || clean.includes('summary') || clean.includes('zapier')) {
- return false;
- }
- return true;
-}
 
 export const DEFAULT_CONFIG: AppConfig = {
  salespeople: DEFAULT_SALESPEOPLE,
@@ -158,9 +139,7 @@ export function loadAppConfig(): AppConfig {
  }
 
  // Ensure all standard lead sources are present without Summary or Zapier
- const mergedLeadSources = Array.from(
- new Set([...DEFAULT_LEAD_SOURCES, ...(parsed.leadSources || [])])
- ).filter(isLeadSourceTab);
+ const mergedLeadSources = mergeLeadSources(parsed.leadSources);
  const loadedSalespeople = mergeStandardSalespeople(parsed.salespeople);
 
  const loaded: AppConfig = {
@@ -190,7 +169,7 @@ export function loadAppConfig(): AppConfig {
 export function saveAppConfig(config: AppConfig): void {
  try {
  // Strip spreadsheet ID and URL so they are never saved to browser storage
- const sanitized = { ...config };
+ const sanitized = { ...config, leadSources: mergeLeadSources(config.leadSources) };
  delete (sanitized as any).spreadsheetId;
  delete (sanitized as any).spreadsheetUrl;
  delete (sanitized as any).spreadsheetName;
@@ -219,6 +198,7 @@ export async function fetchAndSyncServerConfig(): Promise<AppConfig> {
  const merged = {
  ...local,
  ...serverCfg,
+ leadSources: mergeLeadSources(serverCfg.leadSources ?? local.leadSources),
  salespeople: mergeStandardSalespeople(serverCfg.salespeople ?? local.salespeople),
  houzzWebhookUrl: '',
  };

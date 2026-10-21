@@ -1,3 +1,4 @@
+import { normalizeLeadSource } from '../lib/leadSources';
 import { ListPagination, usePaginatedList } from '../components/ui/ListPagination';
 import React, { useState, useEffect } from 'react';
 import {
@@ -64,7 +65,7 @@ import { LeadDrawer } from '../components/ui/LeadDrawer';
 import { formatName, formatPhoneNumber, isFollowUpOverdue, calculateLeadAge, checkFollowUpOverdue, addLeadActivity, getEstimateFollowUpInfo, isFollowUpStatus, isMeetingScheduledStatus } from '../lib/utils';
 import { buildSheetLeadAppointmentPrefill } from '../lib/leadScheduling';
 import { logAuditActivity } from '../lib/activityLogger';
-import { loadAppConfig, saveAppConfig, applyTheme, isLeadSourceTab } from '../config';
+import { loadAppConfig, saveAppConfig, applyTheme, isLeadSourceTab, mergeLeadSources } from '../config';
 import { AppConfig, AppointmentFormData, LEAD_STATUS_OPTIONS, LeadStatus } from '../types';
 import { sendLeadToHouzzPro, isLeadInHouzzPro, getLeadUniqueKey, getHouzzSyncedLeadKeys } from '../lib/houzz';
 import { fetchGoogleCalendarEvents, matchCalendarEventForLead, formatAppointmentDateTime } from '../lib/calendar';
@@ -386,21 +387,11 @@ export const SpreadsheetPage: React.FC = () => {
  const [isInitializingTabs, setIsInitializingTabs] = useState(false);
  const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
 
- // Default 10 lead source tabs requested by user
- const standardTabs = config.leadSources && config.leadSources.length > 0 ? config.leadSources : [
- 'Angi',
- 'Thumbtack',
- 'Referral',
- 'Big Fish',
- 'Houzz Pro',
- 'Roof R',
- 'Home Launch',
- 'Website',
- 'Yard Sign',
- 'Other',
- ];
+ // Standard sources are always available, including existing saved configurations.
+ const standardTabs = mergeLeadSources(config.leadSources);
 
- // Combine standard 10 tabs with any additional custom tabs found in the spreadsheet (excluding non-lead tabs like Summary and Zapier)
+ // Include additional source tabs discovered in the spreadsheet.
+
  const allDisplayTabs = Array.from(
  new Set([...standardTabs, ...availableTabs])
  ).filter(isLeadSourceTab);
@@ -1007,9 +998,7 @@ export const SpreadsheetPage: React.FC = () => {
 
  // Helper to accurately resolve lead source from record, tab, or config sources
  const resolveLeadSource = (lead: SheetRowRecord | null | undefined, fallbackTab?: string): string => {
- const sources = (config.leadSources && config.leadSources.length > 0 ? config.leadSources : [
- 'Angi', 'Thumbtack', 'Referral', 'Big Fish', 'Houzz Pro', 'Roof R', 'Home Launch', 'Website', 'Yard Sign', 'Other'
- ]).filter(isLeadSourceTab);
+ const sources = mergeLeadSources(config.leadSources);
 
  const isNonSource = (val: string) => {
  if (!val) return true;
@@ -1048,7 +1037,7 @@ export const SpreadsheetPage: React.FC = () => {
 
  const matchKnownSource = (str: string): string | null => {
  if (!str || isNonSource(str)) return null;
- const trimmed = str.trim();
+ const trimmed = normalizeLeadSource(str);
  const low = trimmed.toLowerCase();
 
  // Check exact matches against configured sources
@@ -1837,7 +1826,7 @@ export const SpreadsheetPage: React.FC = () => {
  const baseFollowUpsSource = (allSourcesRows.length > 0 ? allSourcesRows : rows).filter(isValidLeadRecord);
  const allFollowUps = baseFollowUpsSource.filter((r) => isFollowUpStatus(r.status));
 
- // Guaranteed 10 lead sources + any sheet tabs
+ // Standard lead sources + any sheet tabs
  const csLeadSources = Array.from(
  new Set([...standardTabs, ...allDisplayTabs])
  ).filter(isLeadSourceTab);
