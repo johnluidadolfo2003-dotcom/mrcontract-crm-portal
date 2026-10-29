@@ -5,11 +5,11 @@ export const DEFAULT_LEAD_SOURCES = [
   'Referral',
   'Big Fish',
   'Houzz Pro',
-  'Roof R',
   'Home Launch',
   'Website',
   'Yard Sign',
   'Chimney Fixers',
+  'Direct from Daniel',
   'Truck Sign',
   'Other',
 ];
@@ -20,10 +20,13 @@ export function isLeadSourceTab(name: string): boolean {
   return Boolean(clean) && !clean.includes('summary') && !clean.includes('zapier');
 }
 
+const RETIRED_LEAD_SOURCE_KEYS = new Set(['roofr']);
+
 export function normalizeLeadSource(value: string): string {
   const clean = String(value || '').trim();
   const key = clean.toLowerCase().replace(/[\s_-]+/g, '');
-  return DEFAULT_LEAD_SOURCES.find((source) => source.toLowerCase().replace(/\s+/g, '') === key) || clean;
+  if (RETIRED_LEAD_SOURCE_KEYS.has(key)) return 'Other';
+  return DEFAULT_LEAD_SOURCES.find((source) => source.toLowerCase().replace(/[\s_-]+/g, '') === key) || clean;
 }
 
 export function mergeLeadSources(saved?: unknown): string[] {
