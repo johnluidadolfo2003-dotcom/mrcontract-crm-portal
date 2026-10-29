@@ -1048,7 +1048,7 @@ export const SpreadsheetPage: React.FC = () => {
  if (low.includes('angi') || low.includes('homeadvisor') || low.includes('angie')) return 'Angi';
  if (low.includes('thumbtack') || low === 'tt') return 'Thumbtack';
  if (low.includes('houzz')) return 'Houzz Pro';
- if (low.includes('roof r') || low.includes('roofr') || low.includes('roof-r')) return 'Roof R';
+ if (low.includes('roof r') || low.includes('roofr') || low.includes('roof-r')) return 'Other';
  if (low.includes('referral') || low.includes('word of mouth')) return 'Referral';
  if (low.includes('big fish') || low.includes('bigfish')) return 'Big Fish';
  if (low.includes('home launch') || low.includes('homelaunch')) return 'Home Launch';
