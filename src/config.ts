@@ -7,6 +7,7 @@ export const DEFAULT_SALESPEOPLE: SalespersonOption[] = [
  { id: 'sp_sb', code: 'SB', name: 'SB' },
  { id: 'sp_js', code: 'JS', name: 'JS' },
  { id: 'sp_bk', code: 'BK', name: 'BK' },
+ { id: 'sp_jc', code: 'JC', name: 'JC' },
 ];
 
 export function mergeStandardSalespeople(savedSalespeople?: unknown): SalespersonOption[] {

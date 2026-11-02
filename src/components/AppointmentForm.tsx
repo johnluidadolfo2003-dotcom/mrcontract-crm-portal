@@ -27,7 +27,6 @@ import {
  RotateCcw,
  Send,
  Upload,
-  Link as LinkIcon,
   ChevronLeft,
   ChevronRight,
   RefreshCw,
@@ -939,20 +938,6 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
  <ChevronDown className="w-4 h-4 text-zinc-400 shrink-0 ml-1"/>
  </div>
 
-  {/* Houzz Project Link */}
-  <div className="space-y-1.5 min-w-0">
-  <label className={labelStyle}>
-  <LinkIcon className="w-4 h-4 text-zinc-400 shrink-0 hidden sm:inline"/>
-  Houzz Project Link
-  </label>
-  <input
-  type="text"
-  placeholder="https://..."
-  value={formData.houzzProjectLink || ''}
-  onChange={(e) => handleChange('houzzProjectLink', e.target.value)}
-  className={inputStyle}
-  />
-  </div>
  <select
  value={formData.leadSource}
  onChange={(e) => handleChange('leadSource', e.target.value)}

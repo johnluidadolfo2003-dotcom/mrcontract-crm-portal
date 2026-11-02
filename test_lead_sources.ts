@@ -21,21 +21,24 @@ globalThis.localStorage = {
 };
 try {
   const oldSources = DEFAULT_LEAD_SOURCES.filter((source) => !['Chimney Fixers', 'Direct from Daniel', 'Truck Sign'].includes(source));
-  values.set('masonry_appointment_config', JSON.stringify({ leadSources: [...oldSources, 'Roof R', 'Custom Partner'], theme: 'dark' }));
+  values.set('masonry_appointment_config', JSON.stringify({ leadSources: [...oldSources, 'Roof R', 'Custom Partner'], salespeople: [{ id: 'sp_dg', code: 'DG', name: 'DG' }], theme: 'dark' }));
   const loaded = loadAppConfig();
   for (const source of ['Chimney Fixers', 'Direct from Daniel', 'Truck Sign', 'Custom Partner']) assert.ok(loaded.leadSources.includes(source));
+  assert.ok(loaded.salespeople.some((sp) => sp.code === 'JC' && sp.name === 'JC'), 'Old browser settings cannot hide JC');
   let posted: any;
   globalThis.fetch = async (_url, options) => {
     if (options?.method === 'POST') { posted = JSON.parse(String(options.body)); return Response.json({ success: true }); }
-    return Response.json({ leadSources: [...oldSources, 'Roof R', 'Office Referral'] });
+    return Response.json({ leadSources: [...oldSources, 'Roof R', 'Office Referral'], salespeople: [{ id: 'sp_dg', code: 'DG', name: 'DG' }] });
   };
   const synced = await fetchAndSyncServerConfig();
   for (const source of ['Chimney Fixers', 'Direct from Daniel', 'Truck Sign', 'Office Referral']) assert.ok(synced.leadSources.includes(source), 'Old server settings cannot remove a standard source');
+  assert.ok(synced.salespeople.some((sp) => sp.code === 'JC' && sp.name === 'JC'), 'Old server settings cannot hide JC');
   saveAppConfig({ ...synced, leadSources: oldSources });
   assert.ok(posted.leadSources.includes('Chimney Fixers'));
   assert.ok(posted.leadSources.includes('Direct from Daniel'));
   assert.ok(!posted.leadSources.includes('Roof R'));
   assert.ok(posted.leadSources.includes('Truck Sign'));
+  assert.ok(posted.salespeople.some((sp: any) => sp.code === 'JC' && sp.name === 'JC'));
   assert.equal(mergeLeadSources(['truck sign', 'TRUCK SIGN', 'Chimney_Fixers', 'Direct_from_Daniel', 'Roof R', 'Summary', 'Zapier', 123]).filter((source) => source === 'Truck Sign').length, 1);
   assert.equal(normalizeLeadSource(' chimney-fixers '), 'Chimney Fixers');
   assert.equal(normalizeLeadSource(' direct-from-daniel '), 'Direct from Daniel');
@@ -48,6 +51,8 @@ try {
   const config = { ...DEFAULT_CONFIG, leadSources: oldSources };
   const addLeadMarkup = renderToStaticMarkup(React.createElement(AddLeadForm, { config, onSubmitLead: async () => {}, isSubmitting: false }));
   const appointmentMarkup = renderToStaticMarkup(React.createElement(AppointmentForm, { config, onSubmit: () => {}, isSubmitting: false }));
+  assert.ok(appointmentMarkup.includes('value="JC"'), 'Appointment form must expose JC');
+  assert.ok(!appointmentMarkup.includes('Houzz Project Link'), 'Appointment form must not expose the retired Houzz link field');
   for (const source of ['Chimney Fixers', 'Direct from Daniel', 'Truck Sign']) {
     assert.ok(addLeadMarkup.includes(`value="${source}"`));
     assert.ok(appointmentMarkup.includes(`value="${source}"`));
@@ -59,6 +64,28 @@ try {
     const row = mapFormDataToSheetRow(['Date', 'Client Name', 'Phone', 'Email', 'Address', 'Service', 'Lead Fee', 'Status', 'Lead Source'], form);
     assert.equal(row[8], source);
   }
+  const jcForm: any = {
+    clientName: 'JC Calendar Customer',
+    clientPhone: '2155550111',
+    clientEmail: '',
+    address: '2 Main Street',
+    leadSource: 'Direct from Daniel',
+    serviceNeeded: 'Chimney inspection',
+    leadType: 'Direct',
+    status: 'Meeting Scheduled',
+    appointmentDate: '2026-11-03',
+    startTime: '10:00',
+    endTime: '12:00',
+    salespersonCode: 'JC',
+    notes: 'Ride-along appointment',
+    houzzProjectLink: 'https://pro.houzz.com/project/legacy-link',
+  };
+  const jcPayload = buildEventPayload(jcForm, config);
+  assert.ok(jcPayload.summary.includes('Appt - JC -'), 'JC must be used in the Calendar title');
+  assert.ok(jcPayload.description.includes('SALESPERSON: JC'), 'JC must be written to Calendar metadata');
+  assert.ok(!jcPayload.description.includes('HOUZZ PROJECT LINK'), 'New Calendar appointments must not include a Houzz project-link field');
+  assert.ok(!jcPayload.description.includes(jcForm.houzzProjectLink), 'New Calendar appointments must not leak the Houzz URL');
+
   console.log('Lead source upgrade, stale server config, real forms, missing Sheet tabs, Calendar, Sheets, and Houzz tests passed.');
 } finally {
   globalThis.fetch = previousFetch;
