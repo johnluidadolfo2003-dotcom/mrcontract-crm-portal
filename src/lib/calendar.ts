@@ -142,7 +142,6 @@ export function buildEventPayload(
     leadType,
     notes,
     serviceNeeded,
-    houzzProjectLink,
     status,
   } = formData;
 
@@ -186,7 +185,6 @@ export function buildEventPayload(
     : '□ Direct';
 
   const statusDisplay = (status || 'Appointment Scheduled').trim();
-  const houzzLinkDisplay = (houzzProjectLink || '').trim();
 
   const description = `CLIENT NAME: ${clientStr}
 EVENT NAME: APPOINTMENT
@@ -198,7 +196,6 @@ LEAD SOURCE: ${(leadSource || '').trim()}
 TYPE: ${typeDisplay}
 SALESPERSON: ${spStr}
 STATUS: ${statusDisplay}
-HOUZZ PROJECT LINK: ${houzzLinkDisplay}
 
 Notes:
 ${(notes || '').trim()}`;
