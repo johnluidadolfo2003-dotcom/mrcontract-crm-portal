@@ -20,10 +20,10 @@ globalThis.localStorage = {
   get length() { return values.size; },
 };
 try {
-  const oldSources = DEFAULT_LEAD_SOURCES.filter((source) => !['Chimney Fixers', 'Direct from Daniel', 'Truck Sign'].includes(source));
+  const oldSources = DEFAULT_LEAD_SOURCES.filter((source) => !['Google', 'Chimney Fixers', 'Direct from Daniel', 'Truck Sign'].includes(source));
   values.set('masonry_appointment_config', JSON.stringify({ leadSources: [...oldSources, 'Roof R', 'Custom Partner'], salespeople: [{ id: 'sp_dg', code: 'DG', name: 'DG' }], theme: 'dark' }));
   const loaded = loadAppConfig();
-  for (const source of ['Chimney Fixers', 'Direct from Daniel', 'Truck Sign', 'Custom Partner']) assert.ok(loaded.leadSources.includes(source));
+  for (const source of ['Google', 'Chimney Fixers', 'Direct from Daniel', 'Truck Sign', 'Custom Partner']) assert.ok(loaded.leadSources.includes(source));
   assert.ok(loaded.salespeople.some((sp) => sp.code === 'JC' && sp.name === 'JC'), 'Old browser settings cannot hide JC');
   let posted: any;
   globalThis.fetch = async (_url, options) => {
@@ -31,15 +31,18 @@ try {
     return Response.json({ leadSources: [...oldSources, 'Roof R', 'Office Referral'], salespeople: [{ id: 'sp_dg', code: 'DG', name: 'DG' }] });
   };
   const synced = await fetchAndSyncServerConfig();
-  for (const source of ['Chimney Fixers', 'Direct from Daniel', 'Truck Sign', 'Office Referral']) assert.ok(synced.leadSources.includes(source), 'Old server settings cannot remove a standard source');
+  for (const source of ['Google', 'Chimney Fixers', 'Direct from Daniel', 'Truck Sign', 'Office Referral']) assert.ok(synced.leadSources.includes(source), 'Old server settings cannot remove a standard source');
   assert.ok(synced.salespeople.some((sp) => sp.code === 'JC' && sp.name === 'JC'), 'Old server settings cannot hide JC');
   saveAppConfig({ ...synced, leadSources: oldSources });
+  assert.ok(posted.leadSources.includes('Google'));
   assert.ok(posted.leadSources.includes('Chimney Fixers'));
   assert.ok(posted.leadSources.includes('Direct from Daniel'));
   assert.ok(!posted.leadSources.includes('Roof R'));
   assert.ok(posted.leadSources.includes('Truck Sign'));
   assert.ok(posted.salespeople.some((sp: any) => sp.code === 'JC' && sp.name === 'JC'));
-  assert.equal(mergeLeadSources(['truck sign', 'TRUCK SIGN', 'Chimney_Fixers', 'Direct_from_Daniel', 'Roof R', 'Summary', 'Zapier', 123]).filter((source) => source === 'Truck Sign').length, 1);
+  assert.equal(mergeLeadSources(['google', 'GOOGLE', 'truck sign', 'TRUCK SIGN', 'Chimney_Fixers', 'Direct_from_Daniel', 'Roof R', 'Summary', 'Zapier', 123]).filter((source) => source === 'Truck Sign').length, 1);
+  assert.equal(mergeLeadSources(['google', 'GOOGLE']).filter((source) => source === 'Google').length, 1);
+  assert.equal(normalizeLeadSource(' google '), 'Google');
   assert.equal(normalizeLeadSource(' chimney-fixers '), 'Chimney Fixers');
   assert.equal(normalizeLeadSource(' direct-from-daniel '), 'Direct from Daniel');
   assert.equal(normalizeLeadSource(' roof-r '), 'Other');
@@ -53,7 +56,7 @@ try {
   const appointmentMarkup = renderToStaticMarkup(React.createElement(AppointmentForm, { config, onSubmit: () => {}, isSubmitting: false }));
   assert.ok(appointmentMarkup.includes('value="JC"'), 'Appointment form must expose JC');
   assert.ok(!appointmentMarkup.includes('Houzz Project Link'), 'Appointment form must not expose the retired Houzz link field');
-  for (const source of ['Chimney Fixers', 'Direct from Daniel', 'Truck Sign']) {
+  for (const source of ['Google', 'Chimney Fixers', 'Direct from Daniel', 'Truck Sign']) {
     assert.ok(addLeadMarkup.includes(`value="${source}"`));
     assert.ok(appointmentMarkup.includes(`value="${source}"`));
     const form: any = { clientName: 'Example Customer', clientPhone: '2155550199', clientEmail: '', address: '1 Main Street', leadSource: source, serviceNeeded: 'Chimney repair', leadType: 'Direct', status: 'New', appointmentDate: '2026-10-21', startTime: '10:00', endTime: '11:00', salespersonCode: 'DG', notes: '' };

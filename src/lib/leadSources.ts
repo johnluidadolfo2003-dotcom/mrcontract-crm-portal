@@ -7,6 +7,7 @@ export const DEFAULT_LEAD_SOURCES = [
   'Houzz Pro',
   'Home Launch',
   'Website',
+  'Google',
   'Yard Sign',
   'Chimney Fixers',
   'Direct from Daniel',
